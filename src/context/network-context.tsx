@@ -1,9 +1,15 @@
 "use client";
 
 import React, { createContext, useContext, useCallback, useState, useEffect } from "react";
+import { isMainnetConfigured } from "@/lib/rpc-client";
 import type { NetworkId } from "@/lib/rpc-types";
 
 const STORAGE_KEY = "boing-explorer-network";
+
+function normalizeNetwork(value: string | null): NetworkId {
+  if (value === "mainnet" && isMainnetConfigured()) return "mainnet";
+  return "testnet";
+}
 
 type NetworkContextValue = {
   network: NetworkId;
@@ -19,7 +25,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY) as NetworkId | null;
-      if (stored === "testnet" || stored === "mainnet") setNetworkState(stored);
+      setNetworkState(normalizeNetwork(stored));
     } catch {
       // ignore
     }
@@ -27,9 +33,10 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setNetwork = useCallback((n: NetworkId) => {
-    setNetworkState(n);
+    const next = normalizeNetwork(n);
+    setNetworkState(next);
     try {
-      localStorage.setItem(STORAGE_KEY, n);
+      localStorage.setItem(STORAGE_KEY, next);
     } catch {
       // ignore
     }
@@ -40,7 +47,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     if (!mounted || typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const n = params.get("network");
-    if (n === "mainnet" || n === "testnet") setNetwork(n);
+    if (n === "mainnet" || n === "testnet") setNetwork(normalizeNetwork(n));
   }, [mounted, setNetwork]);
 
   return (

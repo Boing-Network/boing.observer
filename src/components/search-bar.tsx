@@ -4,9 +4,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useNetwork } from "@/context/network-context";
 import { fetchBlockByHash } from "@/lib/rpc-methods";
-import type { NetworkId } from "@/lib/rpc-types";
+import { isHex64, normalizeHex64, type NetworkId } from "@/lib/rpc-types";
 
-const HEX_64 = /^(0x)?[0-9a-fA-F]{64}$/;
 const HEIGHT = /^\d+$/;
 
 export function SearchBar() {
@@ -24,8 +23,8 @@ export function SearchBar() {
       router.push(`/block/${q}?network=${network}`);
       return;
     }
-    if (HEX_64.test(q)) {
-      const hex = (q.startsWith("0x") ? q.slice(2) : q).toLowerCase();
+    if (isHex64(q)) {
+      const hex = normalizeHex64(q);
       setLoading(true);
       try {
         const block = await fetchBlockByHash(network as NetworkId, hex);

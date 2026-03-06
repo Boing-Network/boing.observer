@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
+import { NETWORK_FAUCET_URL, NETWORK_TESTNET_URL } from "@/lib/constants";
 import { faucetRequest, type FaucetResult } from "@/lib/rpc-methods";
+import { toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 
 export default function FaucetPage() {
@@ -16,13 +18,12 @@ export default function FaucetPage() {
   async function handleRequest() {
     setError(null);
     setResult(null);
-    let hex = accountId.trim();
-    if (!hex) {
+    const hex = toPrefixedHex64(accountId);
+    if (!accountId.trim()) {
       setError("Enter your account ID (32-byte hex).");
       return;
     }
-    if (!hex.startsWith("0x")) hex = `0x${hex}`;
-    if (hex.length !== 66) {
+    if (!hex) {
       setError("Account ID must be 32 bytes (64 hex chars + 0x).");
       return;
     }
@@ -55,10 +56,31 @@ export default function FaucetPage() {
 
       <header>
         <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">
-          Testnet Faucet
+          Testnet Faucet Helper
         </h1>
         <p className="mt-2 text-[var(--text-secondary)]">
-          Request testnet BOING for gas and staking. 1,000 per request; rate limit 1 per 60 seconds per account. Uses <code className="px-1.5 py-0.5 rounded bg-white/10 text-sm">boing_faucetRequest</code>.
+          Send a direct testnet faucet RPC request for gas and staking. 1,000 per request; rate limit 1 per 60 seconds per account. Uses <code className="px-1.5 py-0.5 rounded bg-white/10 text-sm">boing_faucetRequest</code>.
+        </p>
+        <p className="mt-2 text-sm text-[var(--text-muted)]">
+          This page is an explorer-side RPC helper. For the canonical public faucet page and broader testnet onboarding flow, see{" "}
+          <a
+            href={NETWORK_FAUCET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-network-cyan hover:underline"
+          >
+            boing.network/network/faucet
+          </a>
+          {" "}or the{" "}
+          <a
+            href={NETWORK_TESTNET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-network-cyan hover:underline"
+          >
+            testnet hub
+          </a>
+          .
         </p>
       </header>
 
@@ -117,6 +139,18 @@ export default function FaucetPage() {
       <section className="text-sm text-[var(--text-muted)]">
         <p>
           Your account ID is the 32-byte hex of your public key (e.g. from your wallet). Rate limit: 1 request per 60 seconds per account.
+        </p>
+        <p className="mt-2">
+          If you want the standard website flow instead of a raw RPC helper, use{" "}
+          <a
+            href={NETWORK_FAUCET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-network-cyan hover:underline"
+          >
+            boing.network/network/faucet
+          </a>
+          .
         </p>
       </section>
     </div>

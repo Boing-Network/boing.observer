@@ -10,6 +10,7 @@ import { fetchChainHeight, fetchBlockByHeight } from "@/lib/rpc-methods";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import type { Block } from "@/lib/rpc-types";
 import { shortenHash, hexForLink } from "@/lib/rpc-types";
+import { NETWORK_FAUCET_URL } from "@/lib/constants";
 
 export default function HomePage() {
   const { network } = useNetwork();
@@ -60,6 +61,40 @@ export default function HomePage() {
         <p className="mt-1 text-[var(--text-secondary)]">
           Explore blocks, transactions, and accounts on Boing Network.
         </p>
+        <p className="mt-2 text-sm text-[var(--text-muted)]">
+          Public onboarding for testnet BOING lives on{" "}
+          <a
+            href={NETWORK_FAUCET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-network-cyan hover:underline"
+          >
+            boing.network/network/faucet
+          </a>
+          . The explorer also includes direct RPC helper pages for advanced users.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-4 text-sm">
+          <a
+            href={NETWORK_FAUCET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-network-cyan hover:text-network-cyan-light font-medium transition-colors"
+          >
+            Get testnet BOING →
+          </a>
+          <Link
+            href="/faucet"
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium transition-colors"
+          >
+            Use RPC faucet helper →
+          </Link>
+          <Link
+            href="/tools/qa-check"
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium transition-colors"
+          >
+            Open QA Check →
+          </Link>
+        </div>
         <div className="mt-6">
           <SearchBar />
         </div>

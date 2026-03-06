@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE_URL, DOCS_BASE } from "@/lib/constants";
+import { SITE_URL, DOCS_BASE, NETWORK_FAUCET_URL, QA_DOC_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "About",
@@ -115,26 +115,19 @@ export default function AboutPage() {
               6. True quality assurance
             </h3>
             <p className="text-[var(--text-secondary)] leading-relaxed">
-              Protocol-enforced QA: only assets meeting rules and security bar are allowed. Meme leniency; no malice. Every deployment is <strong className="text-[var(--text-primary)]">rejected</strong>, <strong className="text-[var(--text-primary)]">approved</strong>, or sent to a{" "}
-              <strong className="text-[var(--text-primary)]">consensus pool</strong> for validation. Opcode whitelist, well-formedness, blocklist, scam patterns, purpose declaration. See{" "}
+              Protocol-enforced QA: only assets meeting rules and security bar are allowed. Meme leniency; no malice. Every deployment is classified as{" "}
+              <strong className="text-[var(--text-primary)]">allow</strong>, <strong className="text-[var(--text-primary)]">reject</strong>, or{" "}
+              <strong className="text-[var(--text-primary)]">unsure</strong>. Unsure cases are routed to the{" "}
+              <strong className="text-[var(--text-primary)]">community QA pool</strong> for review. Opcode whitelist, well-formedness, blocklist, scam patterns, and purpose declaration are part of the check. See{" "}
               <a
-                href={`${DOCS_BASE}/QA-PASS-GUIDE.md`}
+                href={QA_DOC_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-network-cyan hover:underline"
               >
-                How to pass QA
+                Quality assurance rules and guidance
               </a>{" "}
-              and{" "}
-              <a
-                href={`${DOCS_BASE}/CANONICAL-MALICE-DEFINITION.md`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-network-cyan hover:underline"
-              >
-                Canonical malice definition
-              </a>
-              .
+              for the current policy and canonical malice definition.
             </p>
           </div>
         </div>
@@ -145,9 +138,18 @@ export default function AboutPage() {
           Boing Observer
         </h2>
         <p className="text-[var(--text-secondary)] leading-relaxed">
-          Boing Observer is the official blockchain explorer for Boing Network. Search by block height, block hash, or account address. Switch between Testnet and Mainnet. Use the{" "}
+          Boing Observer is the official blockchain explorer for Boing Network. Search by block height, block hash, or account address. Browse Boing testnet today, with mainnet support enabled when a distinct mainnet RPC is configured. Use the{" "}
           <Link href="/tools/qa-check" className="text-network-cyan hover:underline">QA Check</Link>{" "}
-          tool to verify bytecode before deployment, and the <Link href="/faucet" className="text-network-cyan hover:underline">Faucet</Link> for testnet BOING.
+          tool to verify bytecode before deployment, and the <Link href="/faucet" className="text-network-cyan hover:underline">Faucet helper</Link> for direct testnet RPC requests. For the canonical public faucet and onboarding flow, see{" "}
+          <a
+            href={NETWORK_FAUCET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-network-cyan hover:underline"
+          >
+            boing.network/network/faucet
+          </a>
+          .
         </p>
         <div className="mt-4 flex flex-wrap gap-4">
           <Link
@@ -156,11 +158,25 @@ export default function AboutPage() {
           >
             Explore the blockchain →
           </Link>
+          <a
+            href={NETWORK_FAUCET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-network-cyan hover:text-network-cyan-light font-medium transition-colors"
+          >
+            Public faucet →
+          </a>
           <Link
             href="/tools/qa-check"
             className="inline-flex items-center gap-2 text-network-cyan hover:text-network-cyan-light font-medium transition-colors"
           >
             QA Check tool →
+          </Link>
+          <Link
+            href="/faucet"
+            className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium transition-colors"
+          >
+            Faucet helper →
           </Link>
         </div>
       </section>

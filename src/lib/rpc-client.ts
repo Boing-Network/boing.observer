@@ -39,13 +39,30 @@ export async function rpcCall<T>(
   return data.result;
 }
 
+export function getConfiguredRpcUrls() {
+  const testnet = process.env.NEXT_PUBLIC_TESTNET_RPC || PUBLIC_TESTNET_RPC;
+  const mainnet = process.env.NEXT_PUBLIC_MAINNET_RPC || "";
+
+  return {
+    testnet: testnet.replace(/\/$/, ""),
+    mainnet: mainnet.replace(/\/$/, ""),
+  };
+}
+
+export function isMainnetConfigured(): boolean {
+  const { testnet, mainnet } = getConfiguredRpcUrls();
+  return Boolean(mainnet) && mainnet !== testnet;
+}
+
 export function getRpcBaseUrl(network: "testnet" | "mainnet"): string {
-  const testnet =
-    process.env.NEXT_PUBLIC_TESTNET_RPC || PUBLIC_TESTNET_RPC;
-  const mainnet =
-    process.env.NEXT_PUBLIC_MAINNET_RPC ||
-    process.env.NEXT_PUBLIC_TESTNET_RPC ||
-    PUBLIC_TESTNET_RPC;
-  const url = network === "testnet" ? testnet : mainnet;
-  return url.replace(/\/$/, "");
+  const { testnet, mainnet } = getConfiguredRpcUrls();
+
+  if (network === "mainnet") {
+    if (!isMainnetConfigured()) {
+      throw new Error("Mainnet RPC is not configured yet.");
+    }
+    return mainnet;
+  }
+
+  return testnet;
 }

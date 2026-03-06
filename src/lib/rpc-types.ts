@@ -88,6 +88,8 @@ export interface Account {
   stake: string;
 }
 
+const HEX_64_RE = /^[0-9a-fA-F]{64}$/;
+
 /**
  * Safely convert any RPC value (string, number, byte array, object) to a hex string
  * for display and URLs. Handles null/undefined and non-string serializations.
@@ -118,9 +120,31 @@ export function hexForLink(value: unknown): string {
   return h.toLowerCase();
 }
 
+/** Strip an optional 0x prefix and trim whitespace. */
+export function stripHexPrefix(value: string): string {
+  return value.trim().replace(/^0x/i, "");
+}
+
+/** Returns true when the input is exactly 32 bytes of hex (64 chars, optional 0x). */
+export function isHex64(value: string): boolean {
+  return HEX_64_RE.test(stripHexPrefix(value));
+}
+
+/** Normalize a 32-byte hex input for routing and RPC usage. Returns empty string if invalid. */
+export function normalizeHex64(value: string): string {
+  const hex = stripHexPrefix(value);
+  return HEX_64_RE.test(hex) ? hex.toLowerCase() : "";
+}
+
+/** Convert a 32-byte hex input to 0x-prefixed lowercase form. Returns empty string if invalid. */
+export function toPrefixedHex64(value: string): string {
+  const hex = normalizeHex64(value);
+  return hex ? `0x${hex}` : "";
+}
+
 /** Normalize address to 64 hex chars (no 0x) for links and display. */
 export function normalizeAddress(addr: string): string {
-  const hex = addr.startsWith("0x") ? addr.slice(2) : addr;
+  const hex = stripHexPrefix(addr);
   return hex.padStart(64, "0").toLowerCase().slice(-64);
 }
 

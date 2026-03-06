@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
-import { DOCS_BASE } from "@/lib/constants";
+import { QA_DOC_URL } from "@/lib/constants";
 import { qaCheck, type QaCheckResult } from "@/lib/rpc-methods";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 
@@ -24,6 +24,9 @@ export default function QaCheckPage() {
   const { network } = useNetwork();
   const [bytecode, setBytecode] = useState("");
   const [purpose, setPurpose] = useState("");
+  const [descriptionHash, setDescriptionHash] = useState("");
+  const [assetName, setAssetName] = useState("");
+  const [assetSymbol, setAssetSymbol] = useState("");
   const [result, setResult] = useState<QaCheckResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,12 +39,19 @@ export default function QaCheckPage() {
       setError("Enter hex bytecode (e.g. 0x600160005260206000f3)");
       return;
     }
+    if ((assetName.trim() || assetSymbol.trim()) && !descriptionHash.trim()) {
+      setError("Provide a description hash before sending asset name or symbol metadata.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await qaCheck(
         network,
         hex,
-        purpose || undefined
+        purpose || undefined,
+        descriptionHash || undefined,
+        assetName || undefined,
+        assetSymbol || undefined
       );
       setResult(res);
     } catch (e) {
@@ -72,7 +82,10 @@ export default function QaCheckPage() {
           QA Check — Pre-flight
         </h1>
         <p className="mt-2 text-[var(--text-secondary)]">
-          Verify bytecode passes protocol QA before submitting a deployment. Uses <code className="px-1.5 py-0.5 rounded bg-white/10 text-sm">boing_qaCheck</code>.
+          Verify bytecode against the protocol QA rules before submitting a deployment. Uses <code className="px-1.5 py-0.5 rounded bg-white/10 text-sm">boing_qaCheck</code>.
+        </p>
+        <p className="mt-2 text-sm text-[var(--text-muted)]">
+          This page supports the current runtime pre-flight shape: bytecode, optional purpose category, optional description hash, and optional asset metadata fields when your deploy flow uses them.
         </p>
       </header>
 
@@ -108,6 +121,53 @@ export default function QaCheckPage() {
             ))}
           </select>
         </div>
+        <div>
+          <label htmlFor="description-hash" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+            Description hash (optional)
+          </label>
+          <input
+            id="description-hash"
+            type="text"
+            value={descriptionHash}
+            onChange={(e) => setDescriptionHash(e.target.value)}
+            placeholder="0x..."
+            className="w-full font-mono text-sm p-3 rounded-lg bg-boing-navy-mid border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-network-cyan/50"
+          />
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
+            Use when your deployment flow already includes a purpose description hash. This keeps the pre-flight request aligned with the current Boing QA docs.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label htmlFor="asset-name" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+              Asset name (optional)
+            </label>
+            <input
+              id="asset-name"
+              type="text"
+              value={assetName}
+              onChange={(e) => setAssetName(e.target.value)}
+              placeholder="Boing Token"
+              className="w-full p-3 rounded-lg bg-boing-navy-mid border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-network-cyan/50"
+            />
+          </div>
+          <div>
+            <label htmlFor="asset-symbol" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+              Asset symbol (optional)
+            </label>
+            <input
+              id="asset-symbol"
+              type="text"
+              value={assetSymbol}
+              onChange={(e) => setAssetSymbol(e.target.value)}
+              placeholder="BOING"
+              className="w-full p-3 rounded-lg bg-boing-navy-mid border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-network-cyan/50"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-[var(--text-muted)]">
+          Asset fields are passed only when a description hash is also provided, because the RPC accepts these as later optional metadata parameters.
+        </p>
         <button
           onClick={handleCheck}
           disabled={loading}
@@ -148,13 +208,18 @@ export default function QaCheckPage() {
           {result.result === "reject" && (
             <p className="mt-3 text-sm">
               <a
-                href={`${DOCS_BASE}/QA-PASS-GUIDE.md`}
+                href={result.doc_url || QA_DOC_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-network-cyan hover:underline"
               >
-                See QA Pass Guide for fixes →
+                See canonical QA guidance →
               </a>
+            </p>
+          )}
+          {result.result === "unsure" && (
+            <p className="mt-3 text-sm text-[var(--text-secondary)]">
+              This deployment would go to the community QA pool for review.
             </p>
           )}
         </div>
@@ -165,23 +230,18 @@ export default function QaCheckPage() {
           Valid purpose categories: dApp, token, NFT, meme, community, entertainment, tooling, other.
         </p>
         <p>
+          Advanced metadata note: `asset_name` and `asset_symbol` are supported by the current node RPC and are sent from this UI only when a description hash is present.
+        </p>
+        <p>
           <a
-            href={`${DOCS_BASE}/QA-PASS-GUIDE.md`}
+            href={QA_DOC_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="text-network-cyan hover:underline"
           >
-            QA Pass Guide
+            Quality assurance rules and guidance
           </a>{" "}
-          ·{" "}
-          <a
-            href={`${DOCS_BASE}/CANONICAL-MALICE-DEFINITION.md`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-network-cyan hover:underline"
-          >
-            Canonical malice definition
-          </a>
+          cover both the QA flow and the canonical malice definition.
         </p>
       </section>
     </div>

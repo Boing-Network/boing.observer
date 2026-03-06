@@ -1,10 +1,12 @@
 "use client";
 
 import { useNetwork } from "@/context/network-context";
+import { isMainnetConfigured } from "@/lib/rpc-client";
 import type { NetworkId } from "@/lib/rpc-types";
 
 export function NetworkSelector() {
   const { network, setNetwork } = useNetwork();
+  const mainnetConfigured = isMainnetConfigured();
 
   return (
     <div className="flex items-center gap-2 rounded-lg border border-[var(--border-color)] bg-boing-navy/80 px-3 py-1.5">
@@ -18,7 +20,9 @@ export function NetworkSelector() {
         aria-label="Select network"
       >
         <option value="testnet">Testnet</option>
-        <option value="mainnet">Mainnet</option>
+        <option value="mainnet" disabled={!mainnetConfigured}>
+          {mainnetConfigured ? "Mainnet" : "Mainnet (coming soon)"}
+        </option>
       </select>
     </div>
   );

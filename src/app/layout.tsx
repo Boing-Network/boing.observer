@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: "%s | Boing Observer",
   },
   description:
-    "Explore blocks, transactions, and accounts on Boing Network. Browse the blockchain on testnet and mainnet. Search by block height, block hash, or account address at boing.observer.",
+    "Explore blocks, transactions, and accounts on Boing Network. Browse Boing testnet today, with mainnet support enabled when configured. Search by block height, block hash, or account address at boing.observer.",
   keywords: [
     "Boing Network",
     "blockchain explorer",
@@ -51,32 +51,19 @@ export const metadata: Metadata = {
     siteName: "Boing Observer",
     title: "Boing Observer — Blockchain Explorer | Boing Network",
     description:
-      "Explore blocks, transactions, and accounts on Boing Network. Browse blocks, transactions, and account balances on testnet and mainnet.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Boing Observer — Blockchain Explorer",
-      },
-    ],
+      "Explore blocks, transactions, and accounts on Boing Network. Browse Boing testnet today, with mainnet support enabled when configured.",
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "Boing Observer — Blockchain Explorer | Boing Network",
     description: "Explore blocks, transactions, and accounts on Boing Network.",
-    images: ["/og-image.png"],
   },
   alternates: {
     canonical: SITE_URL,
   },
   category: "technology",
   icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "any" },
-    ],
-    apple: "/apple-touch-icon.png",
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
   manifest: "/manifest.json",
   ...((googleVerification || bingVerification) && {

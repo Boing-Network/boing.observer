@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
 import { fetchAccount } from "@/lib/rpc-methods";
 import type { Account } from "@/lib/rpc-types";
-import { normalizeAddress, formatBalance } from "@/lib/rpc-types";
+import { isHex64, normalizeAddress, formatBalance, toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
 
@@ -20,7 +20,7 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!address || address.length !== 64) {
+    if (!isHex64(address)) {
       setLoading(false);
       setError("Invalid account address");
       return;
@@ -28,7 +28,7 @@ export default function AccountPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    const hexId = address.startsWith("0x") ? address : `0x${address}`;
+    const hexId = toPrefixedHex64(address);
     fetchAccount(network, hexId)
       .then((a) => {
         if (!cancelled) setAccount(a);
@@ -44,7 +44,7 @@ export default function AccountPage() {
     };
   }, [network, address]);
 
-  if (!address || address.length !== 64) {
+  if (!isHex64(address)) {
     return (
       <div className="space-y-4">
         <Link href="/" className="text-network-cyan hover:underline text-sm">← Home</Link>
@@ -64,7 +64,7 @@ export default function AccountPage() {
         <p className="hash text-sm text-[var(--text-muted)] break-all font-mono" title={address}>
           0x{address}
         </p>
-        <CopyButton value={`0x${address}`} label="Copy address" />
+        <CopyButton value={toPrefixedHex64(address)} label="Copy address" />
       </div>
 
       {loading && (
