@@ -165,7 +165,7 @@ NEXT_PUBLIC_BING_SITE_VERIFICATION=your-bing-code
 
 - **RPC spec:** `boing-network/docs/RPC-API-SPEC.md`
 - **QA rules:** `boing-network/docs/QUALITY-ASSURANCE-NETWORK.md`
-- **Wallet/auth alignment:** `WALLET-INTEGRATION-NOTES.md`
+- **Wallet/auth alignment:** See [HANDOFF.md](HANDOFF.md) (sync review and wallet integration notes).
 - **Design system:** `boing-network/docs/BOING-DESIGN-SYSTEM.md`
 - **Explorer prompt:** `boing-network/docs/BOING-OBSERVER-EXPLORER-PROMPT.md`
 

@@ -4,6 +4,9 @@ export const SITE_URL = "https://boing.observer";
 /** Canonical Boing Network website URL. */
 export const WEBSITE_URL = "https://boing.network";
 
+/** Canonical Boing Wallet (boing.express). */
+export const WALLET_URL = "https://boing.express";
+
 /** Base URL for external Boing Network docs (GitHub). */
 export const DOCS_BASE =
   "https://github.com/boing-network/boing.network/blob/main/docs";

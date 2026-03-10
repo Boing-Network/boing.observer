@@ -3,7 +3,7 @@ import "./globals.css";
 import { NetworkProvider } from "@/context/network-context";
 import { Header } from "@/components/header";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
-import { SITE_URL } from "@/lib/constants";
+import { SITE_URL, WEBSITE_URL, WALLET_URL } from "@/lib/constants";
 
 // Verification codes from Google Search Console, Bing Webmaster Tools, etc.
 // Set in env: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION, NEXT_PUBLIC_BING_SITE_VERIFICATION
@@ -119,7 +119,11 @@ export default function RootLayout({
           <NetworkStatusBanner />
           <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6" role="main" id="main-content">{children}</main>
           <footer className="mt-auto border-t border-[var(--border-color)] py-6 text-center text-sm text-[var(--text-muted)]">
-            Boing Network — Authentic. Decentralized. Optimal. Sustainable.
+            <p className="mb-2">Boing Network — Authentic. Decentralized. Optimal. Sustainable.</p>
+            <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+              <a href={WEBSITE_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">boing.network</a>
+              <a href={WALLET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">Wallet (boing.express)</a>
+            </p>
           </footer>
         </NetworkProvider>
       </body>

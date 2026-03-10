@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { NETWORK_FAUCET_URL } from "@/lib/constants";
+import { NETWORK_FAUCET_URL, WALLET_URL } from "@/lib/constants";
 import { NetworkSelector } from "./network-selector";
 import { SearchBar } from "./search-bar";
 
@@ -35,6 +35,14 @@ export function Header() {
           >
             About
           </Link>
+          <a
+            href={WALLET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            Wallet
+          </a>
           <a
             href={NETWORK_FAUCET_URL}
             target="_blank"

@@ -300,3 +300,51 @@ If another agent picks this up in `boing.network` or `boing.express`, the highes
 ## Short Version
 
 `boing.observer` is already a solid first-version explorer with block, account, stats, charts, QA, faucet, and SEO support. The biggest ecosystem wins now are shared chain metadata, one consistent wallet/provider/auth contract across Boing properties, better cross-linking between website/wallet/explorer, transaction-level visibility, and an eventual indexing/caching layer for richer search and analytics.
+
+---
+
+## Sync review (2026-03-06)
+
+This section records the concrete sync pass performed against the current `boing.network` docs and portal rollout.
+
+### Fixed in this repo
+
+- Replaced stale QA links with the canonical `QUALITY-ASSURANCE-NETWORK.md` doc in `boing.network`.
+- Updated QA wording to match the current Boing terminology: `allow`, `reject`, `unsure`, community QA pool.
+- Surfaced `doc_url` from `boing_qaCheck` responses when provided by the node.
+- Added optional `description_hash` input support to the explorer QA pre-flight UI.
+- Added advanced optional `asset_name` and `asset_symbol` QA metadata inputs, with guardrails around parameter ordering.
+- Removed the misleading mainnet fallback behavior; mainnet is only selectable when configured.
+- Updated network selector and persisted network handling accordingly.
+- Clarified that the explorer faucet is a direct RPC helper; canonical public faucet lives on `boing.network`.
+- De-emphasized the explorer faucet in navigation in favor of the canonical faucet page.
+- Added explicit wallet-integration notes for future account-aware features.
+
+### Still documented, not changed yet
+
+- The explorer still contains its own faucet helper route for advanced/direct RPC use.
+- The explorer does not implement wallet connect today; future account-aware features should reuse the provider and auth contract in `boing.network/docs/WALLET-CONNECTION-AND-SIGNIN.md` and `PORTAL-WALLET-AUTH-ROLLOUT.md`.
+- A shared cross-app metadata/config source is still recommended (see [THREE-CODEBASE-ALIGNMENT.md](https://github.com/boing-network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md) in boing.network).
+
+---
+
+## Wallet integration notes
+
+`boing.observer` does not implement wallet connect today. Any future account-aware explorer features should stay aligned with the current Boing website and wallet contract.
+
+### Use the existing Boing contract
+
+If the explorer later adds wallet-aware features (account shortcuts, faucet autofill, saved watchlists, authenticated QA helper flows, transaction receipt linking, user sessions), it should reuse the same provider and sign-in conventions documented in `boing.network`.
+
+Preferred provider methods: `boing_requestAccounts`, `boing_signMessage`, `boing_chainId`, `boing_switchChain`. Compatibility aliases: `eth_requestAccounts`, `personal_sign`, `eth_chainId`, `wallet_switchEthereumChain`.
+
+### Testnet expectations
+
+- Current Boing public rollout is testnet-first.
+- Portal sign-in expects Boing testnet chain ID `0x1b01`.
+- Account format is `0x` + 32-byte hex.
+- Authentication should verify an Ed25519 signature against the account public key.
+
+### Sign-in message shape
+
+If the explorer ever needs user authentication, reuse the nonce-backed message format used by the portal (see `boing.network/docs/WALLET-CONNECTION-AND-SIGNIN.md` and `PORTAL-WALLET-AUTH-ROLLOUT.md`). Avoid drifting provider methods, chain checks, or message formats across boing.network, boing.express, and boing.observer.
