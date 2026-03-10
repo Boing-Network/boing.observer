@@ -9,6 +9,7 @@ import type { Account } from "@/lib/rpc-types";
 import { isHex64, normalizeAddress, formatBalance, toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
+import { NETWORK_FAUCET_URL } from "@/lib/constants";
 
 export default function AccountPage() {
   const params = useParams();
@@ -99,6 +100,18 @@ export default function AccountPage() {
           <p className="text-xs text-[var(--text-muted)] mt-2">
             Balances and stake are in smallest units (u128); displayed with 18 decimals for BOING.
           </p>
+          {network === "testnet" && (
+            <p className="text-sm mt-3">
+              <a
+                href={`${NETWORK_FAUCET_URL}?address=${encodeURIComponent(toPrefixedHex64(address))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-network-cyan hover:underline"
+              >
+                Get testnet BOING →
+              </a>
+            </p>
+          )}
         </div>
       )}
     </div>
