@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/constants";
+import { buildBreadcrumbJsonLd, toSafeJsonScript } from "@/lib/breadcrumb-jsonld";
 
 type Props = {
   params: Promise<{ hash: string }>;
@@ -13,17 +14,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    openGraph: {
-      title,
-      description,
-    },
-    twitter: {
-      title,
-      description,
-    },
-    alternates: {
-      canonical: `${SITE_URL}/block/hash/${hash}`,
-    },
+    openGraph: { title, description },
+    twitter: { title, description },
+    alternates: { canonical: `${SITE_URL}/block/hash/${hash}` },
   };
 }
 
@@ -36,22 +29,16 @@ export default async function BlockHashLayout({
 }) {
   const { hash } = await params;
   const shortHash = hash.length > 16 ? `${hash.slice(0, 16)}...` : hash;
-  const breadcrumbJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-      { "@type": "ListItem", position: 2, name: `Block ${shortHash}`, item: `${SITE_URL}/block/hash/${hash}` },
-    ],
-  };
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: "Home", url: SITE_URL },
+    { name: `Block ${shortHash}`, url: `${SITE_URL}/block/hash/${hash}` },
+  ]);
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c"),
-        }}
+        dangerouslySetInnerHTML={{ __html: toSafeJsonScript(breadcrumb) }}
       />
       {children}
     </>
