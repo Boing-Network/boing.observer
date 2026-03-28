@@ -69,7 +69,7 @@ export default function FaucetPage() {
             rel="noopener noreferrer"
             className="text-network-cyan hover:underline"
           >
-            boing.network/network/faucet
+            boing.network/faucet
           </a>
           {" "}or the{" "}
           <a
@@ -148,7 +148,7 @@ export default function FaucetPage() {
             rel="noopener noreferrer"
             className="text-network-cyan hover:underline"
           >
-            boing.network/network/faucet
+            boing.network/faucet
           </a>
           .
         </p>

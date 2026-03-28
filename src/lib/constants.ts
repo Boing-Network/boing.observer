@@ -15,7 +15,7 @@ export const DOCS_BASE =
 export const QA_DOC_URL = `${DOCS_BASE}/QUALITY-ASSURANCE-NETWORK.md`;
 
 /** Canonical public faucet page on boing.network. */
-export const NETWORK_FAUCET_URL = `${WEBSITE_URL}/network/faucet`;
+export const NETWORK_FAUCET_URL = `${WEBSITE_URL}/faucet`;
 
-/** Canonical public testnet landing page on boing.network. */
-export const NETWORK_TESTNET_URL = `${WEBSITE_URL}/network/testnet`;
+/** Canonical public “Join testnet” hub on boing.network (portal home is /testnet). */
+export const NETWORK_TESTNET_URL = `${WEBSITE_URL}/testnet/join`;

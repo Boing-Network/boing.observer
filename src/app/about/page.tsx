@@ -147,7 +147,7 @@ export default function AboutPage() {
             rel="noopener noreferrer"
             className="text-network-cyan hover:underline"
           >
-            boing.network/network/faucet
+            boing.network/faucet
           </a>
           .
         </p>

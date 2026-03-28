@@ -46,28 +46,54 @@ export async function POST(req: NextRequest) {
 
   const upstreamUrl = upstreamBase.endsWith("/") ? upstreamBase : `${upstreamBase}/`;
 
+  const reqId =
+    typeof (body as { id?: unknown }).id === "number" ? (body as { id: number }).id : 0;
+
   try {
     const upstream = await fetch(upstreamUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify(body),
     });
 
     const text = await upstream.text();
+
+    // Upstream often returns 530 + plain text (e.g. Cloudflare tunnel error 1033). Forwarding
+    // that status breaks the browser client (non-OK + non-JSON). Map to JSON-RPC error over HTTP 200.
+    if (!upstream.ok) {
+      const tunnelHint =
+        upstream.status === 530 || /\b1033\b/i.test(text)
+          ? " Tunnel or origin is likely down—verify the node and Cloudflare Tunnel for the public RPC hostname."
+          : "";
+      return NextResponse.json(
+        {
+          jsonrpc: "2.0",
+          id: reqId,
+          error: {
+            code: -32_000,
+            message: `Boing RPC endpoint returned HTTP ${upstream.status}.${tunnelHint}`.trim(),
+          },
+        },
+        { status: 200 }
+      );
+    }
+
     const ct = upstream.headers.get("Content-Type") ?? "application/json";
     return new NextResponse(text, {
       status: upstream.status,
       headers: { "Content-Type": ct },
     });
   } catch {
-    const id = typeof (body as { id?: unknown }).id === "number" ? (body as { id: number }).id : 0;
     return NextResponse.json(
       {
         jsonrpc: "2.0",
-        id,
-        error: { code: -32_000, message: "Upstream RPC unreachable" },
+        id: reqId,
+        error: { code: -32_000, message: "Upstream RPC unreachable (network error from proxy)." },
       },
-      { status: 502 }
+      { status: 200 }
     );
   }
 }

@@ -69,7 +69,7 @@ export default function HomePage() {
             rel="noopener noreferrer"
             className="text-network-cyan hover:underline"
           >
-            boing.network/network/faucet
+            boing.network/faucet
           </a>
           . The explorer also includes direct RPC helper pages for advanced users.
         </p>

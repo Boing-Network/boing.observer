@@ -10,7 +10,7 @@ Blockchain explorer for **Boing Network** at **boing.observer**. Browse blocks, 
 - **Account page** — Balance, nonce, and stake for a 32-byte hex address (`/account/:address`).
 - **Search** — By block height (number), block hash (64 hex), or account address (64 hex). Dispatches to the appropriate page (64-hex tries block-by-hash first, then account).
 - **QA Check** — Pre-flight `boing_qaCheck` with optional purpose category, description hash, and advanced asset metadata fields, aligned to the canonical QA docs in `boing.network`.
-- **Faucet helper** — Direct testnet RPC helper for `boing_faucetRequest`; the canonical public faucet landing page lives on `boing.network/network/faucet`, and the site navigation now points there first.
+- **Faucet helper** — Direct testnet RPC helper for `boing_faucetRequest`; the canonical public faucet landing page lives on `boing.network/faucet`, and the site navigation now points there first.
 
 ## Tech stack
 
