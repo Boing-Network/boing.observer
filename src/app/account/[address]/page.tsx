@@ -98,7 +98,7 @@ export default function AccountPage() {
             </div>
           </dl>
           <p className="text-xs text-[var(--text-muted)] mt-2">
-            Balances and stake are in smallest units (u128); displayed with 18 decimals for BOING.
+            Balances and stake are on-chain u128 amounts in whole BOING (same units as the node RPC).
           </p>
           {network === "testnet" && (
             <p className="text-sm mt-3">

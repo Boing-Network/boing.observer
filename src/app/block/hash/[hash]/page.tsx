@@ -60,6 +60,10 @@ export default function BlockByHashPage() {
       <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">
         Block by hash
       </h1>
+      <p className="text-sm text-[var(--text-muted)] -mt-2">
+        BLAKE3 block identifier — not an EVM-style transaction hash. On-chain transfers appear in the
+        transactions table below.
+      </p>
       <div className="flex items-center gap-2 flex-wrap">
         <p className="hash text-sm text-[var(--text-muted)] break-all">{hash}</p>
         <CopyButton value={`0x${hash}`} label="Copy hash" />
@@ -75,7 +79,7 @@ export default function BlockByHashPage() {
       {error && <p className="text-amber-300" role="alert">{error}</p>}
       {!loading && !error && !block && <p className="text-[var(--text-muted)]">Block not found.</p>}
 
-      {block && <BlockDetails block={block} network={network} />}
+      {block && <BlockDetails block={block} network={network} explainerVariant="by-hash" />}
     </div>
   );
 }

@@ -148,8 +148,8 @@ export function normalizeAddress(addr: string): string {
   return hex.padStart(64, "0").toLowerCase().slice(-64);
 }
 
-/** Format u128 decimal string with decimals (e.g. 18) for display. */
-const DECIMALS = 18;
+/** Native BOING balances from RPC are whole units (u128), not 10^-18 fractions. */
+const DECIMALS = 0;
 
 export function formatBalance(raw: string, decimals: number = DECIMALS): string {
   const s = raw.trim();

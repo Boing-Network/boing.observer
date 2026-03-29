@@ -69,7 +69,7 @@ export default function BlockByHeightPage() {
       {error && <p className="text-amber-300" role="alert">{error}</p>}
       {!loading && !error && !block && <p className="text-[var(--text-muted)]">Block not found.</p>}
 
-      {block && <BlockDetails block={block} network={network} />}
+      {block && <BlockDetails block={block} network={network} explainerVariant="by-height" />}
     </div>
   );
 }

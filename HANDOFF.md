@@ -57,7 +57,7 @@ Current state:
 - When RPC is unavailable, the UI shows a friendly network-unavailable message instead of failing silently.
 - Search treats `64`-char hex input as block hash first, then falls back to account address.
 - Hex values are normalized for links and copied values.
-- Account balances are displayed with `18` decimals.
+- Account balances use whole BOING units (`0` display decimals); RPC returns u128 strings as on-chain.
 
 ## Architectural Notes
 
