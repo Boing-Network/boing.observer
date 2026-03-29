@@ -35,6 +35,12 @@ export function Header() {
           >
             About
           </Link>
+          <Link
+            href="/qa"
+            className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            QA
+          </Link>
           <a
             href={WALLET_URL}
             target="_blank"

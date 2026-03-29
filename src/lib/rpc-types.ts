@@ -88,6 +88,44 @@ export interface Account {
   stake: string;
 }
 
+/** Row from `boing_qaPoolList` (public RPC). */
+export interface QaPoolItemSummary {
+  tx_hash: string;
+  bytecode_hash: string;
+  deployer: string;
+  allow_votes: number;
+  reject_votes: number;
+  age_secs: number;
+}
+
+export interface QaPoolListResult {
+  items: QaPoolItemSummary[];
+}
+
+/** Effective governance parameters from `boing_qaPoolConfig`. */
+export interface QaPoolConfigResult {
+  max_pending_items: number;
+  max_pending_per_deployer: number;
+  review_window_secs: number;
+  quorum_fraction: number;
+  allow_threshold_fraction: number;
+  reject_threshold_fraction: number;
+  default_on_expiry: "reject" | "allow";
+  dev_open_voting: boolean;
+  administrator_count: number;
+  accepts_new_pending: boolean;
+  pending_count: number;
+}
+
+/** Result of `boing_getQaRegistry` (read-only). */
+export interface QaRegistryResult {
+  max_bytecode_size: number;
+  blocklist: number[][];
+  scam_patterns: number[][];
+  always_review_categories: string[];
+  content_blocklist: string[];
+}
+
 const HEX_64_RE = /^[0-9a-fA-F]{64}$/;
 
 /**

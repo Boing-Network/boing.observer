@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE_URL, DOCS_BASE, NETWORK_FAUCET_URL, QA_DOC_URL } from "@/lib/constants";
+import { SITE_URL, DOCS_BASE, NETWORK_FAUCET_URL, QA_DOC_URL, RPC_SPEC_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "About",
@@ -106,7 +106,9 @@ export default function AboutPage() {
               5. Transparency
             </h3>
             <p className="text-[var(--text-secondary)] leading-relaxed">
-              100% openness. Open source, public specs, account proof APIs, human-readable signing. QA rejections include <code className="px-1.5 py-0.5 rounded bg-white/10 text-xs">rule_id</code> and <code className="px-1.5 py-0.5 rounded bg-white/10 text-xs">message</code> for structured feedback.
+              100% openness. Open source, public specs, account proof APIs, human-readable signing. QA rejections include <code className="px-1.5 py-0.5 rounded bg-white/10 text-xs">rule_id</code> and <code className="px-1.5 py-0.5 rounded bg-white/10 text-xs">message</code> for structured feedback. The explorer publishes a live{" "}
+              <Link href="/qa" className="text-network-cyan hover:underline">QA transparency</Link>{" "}
+              dashboard (pool queue and governance parameters from public RPC).
             </p>
           </div>
 
@@ -127,7 +129,10 @@ export default function AboutPage() {
               >
                 Quality assurance rules and guidance
               </a>{" "}
-              for the current policy and canonical malice definition.
+              for the current policy and canonical malice definition. See live pool status on{" "}
+              <Link href="/qa" className="text-network-cyan hover:underline">QA transparency</Link>{" "}
+              and machine-readable details in{" "}
+              <a href={RPC_SPEC_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">RPC-API-SPEC</a>.
             </p>
           </div>
         </div>
@@ -166,6 +171,12 @@ export default function AboutPage() {
           >
             Public faucet →
           </a>
+          <Link
+            href="/qa"
+            className="inline-flex items-center gap-2 text-network-cyan hover:text-network-cyan-light font-medium transition-colors"
+          >
+            QA transparency →
+          </Link>
           <Link
             href="/tools/qa-check"
             className="inline-flex items-center gap-2 text-network-cyan hover:text-network-cyan-light font-medium transition-colors"

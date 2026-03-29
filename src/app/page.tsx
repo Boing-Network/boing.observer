@@ -89,10 +89,16 @@ export default function HomePage() {
             Use RPC faucet helper →
           </Link>
           <Link
+            href="/qa"
+            className="text-network-cyan hover:text-network-cyan-light font-medium transition-colors"
+          >
+            QA transparency (live pool) →
+          </Link>
+          <Link
             href="/tools/qa-check"
             className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium transition-colors"
           >
-            Open QA Check →
+            QA Check →
           </Link>
         </div>
         <div className="mt-6">

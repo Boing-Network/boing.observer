@@ -3,6 +3,7 @@ import "./globals.css";
 import { NetworkProvider } from "@/context/network-context";
 import { Header } from "@/components/header";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
+import Link from "next/link";
 import { SITE_URL, WEBSITE_URL, WALLET_URL } from "@/lib/constants";
 
 // Verification codes from Google Search Console, Bing Webmaster Tools, etc.
@@ -123,6 +124,7 @@ export default function RootLayout({
             <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
               <a href={WEBSITE_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">boing.network</a>
               <a href={WALLET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">Wallet (boing.express)</a>
+              <Link href="/qa" className="text-network-cyan hover:underline">QA transparency</Link>
             </p>
           </footer>
         </NetworkProvider>

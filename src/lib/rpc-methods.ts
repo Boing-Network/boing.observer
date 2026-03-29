@@ -3,7 +3,13 @@
  */
 
 import { rpcCall, getRpcBaseUrl } from "./rpc-client";
-import type { Block, Account } from "./rpc-types";
+import type {
+  Block,
+  Account,
+  QaPoolConfigResult,
+  QaPoolListResult,
+  QaRegistryResult,
+} from "./rpc-types";
 
 export type NetworkId = "testnet" | "mainnet";
 
@@ -117,4 +123,28 @@ export async function faucetRequest(
   const base = getRpcBaseUrl(network);
   const id = hexAccountId.startsWith("0x") ? hexAccountId : `0x${hexAccountId}`;
   return rpcCall<FaucetResult>(network, base, "boing_faucetRequest", [id]);
+}
+
+/** Live QA pool queue (public read). Short cache so the transparency page stays fresh. */
+export async function fetchQaPoolList(network: NetworkId): Promise<QaPoolListResult> {
+  const base = getRpcBaseUrl(network);
+  return cachedRpc(`${base}:boing_qaPoolList`, 12_000, () =>
+    rpcCall<QaPoolListResult>(network, base, "boing_qaPoolList", [])
+  );
+}
+
+/** Effective QA pool governance config and queue depth (public read). */
+export async function fetchQaPoolConfig(network: NetworkId): Promise<QaPoolConfigResult> {
+  const base = getRpcBaseUrl(network);
+  return cachedRpc(`${base}:boing_qaPoolConfig`, 12_000, () =>
+    rpcCall<QaPoolConfigResult>(network, base, "boing_qaPoolConfig", [])
+  );
+}
+
+/** Effective QA rule registry (read-only). Same shape as on-disk `qa_registry.json`. */
+export async function fetchQaRegistry(network: NetworkId): Promise<QaRegistryResult> {
+  const base = getRpcBaseUrl(network);
+  return cachedRpc(`${base}:boing_getQaRegistry`, 12_000, () =>
+    rpcCall<QaRegistryResult>(network, base, "boing_getQaRegistry", [])
+  );
 }
