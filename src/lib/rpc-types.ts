@@ -216,6 +216,9 @@ export function formatBalance(raw: string, decimals: number = DECIMALS): string 
   const s = raw.trim();
   if (!/^\d+$/.test(s)) return raw;
   if (s === "0") return "0";
+  if (decimals <= 0) {
+    return s.replace(/^0+/, "") || "0";
+  }
   let padded = s.padStart(decimals + 1, "0");
   const intPart = padded.slice(0, -decimals).replace(/^0+/, "") || "0";
   const fracPart = padded.slice(-decimals).replace(/0+$/, "");

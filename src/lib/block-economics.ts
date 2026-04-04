@@ -4,7 +4,7 @@
 
 import type { Block, BlockTransaction } from "./rpc-types";
 import { hexForLink } from "./rpc-types";
-import { getTxPayloadKind } from "./tx-payload";
+import { getTxPayloadKind, getTxPayloadInner } from "./tx-payload";
 
 export type BlockEconomicsRow = {
   height: number;
@@ -44,7 +44,7 @@ function txContribution(tx: BlockTransaction): {
   transferTxs: number;
 } {
   const kind = getTxPayloadKind(tx.payload);
-  const p = tx.payload as Record<string, unknown>;
+  const p = getTxPayloadInner(tx.payload);
   let bond = BigInt(0);
   let unbond = BigInt(0);
   let transfer = BigInt(0);

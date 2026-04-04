@@ -128,15 +128,11 @@ function formatPurpose(cat: string): string {
   return cat.toLowerCase();
 }
 
-/** Whole BOING units from RPC (u128 string). */
+/** Whole BOING units from RPC (u128 string). No fractional display — decimals must stay 0 here. */
 export function formatBoingAmount(raw: string): string {
   if (!/^\d+$/.test(raw)) return raw;
-  const decimals = 0;
   if (raw === "0") return "0";
-  let padded = raw.padStart(decimals + 1, "0");
-  const intPart = padded.slice(0, -decimals).replace(/^0+/, "") || "0";
-  const fracPart = padded.slice(-decimals).replace(/0+$/, "").slice(0, 4);
-  return fracPart ? `${intPart}.${fracPart}` : intPart;
+  return raw.replace(/^0+/, "") || "0";
 }
 
 /**
