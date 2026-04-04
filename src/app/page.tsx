@@ -6,6 +6,7 @@ import { useNetwork } from "@/context/network-context";
 import { SearchBar } from "@/components/search-bar";
 import { NetworkStats } from "@/components/network-stats";
 import { NetworkCharts } from "@/components/network-charts";
+import { NetworkEconomyInsights } from "@/components/network-economy-insights";
 import { fetchChainHeight, fetchBlockByHeight } from "@/lib/rpc-methods";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import type { Block } from "@/lib/rpc-types";
@@ -86,15 +87,21 @@ export default function HomePage() {
         </div>
       )}
 
-      <section className="space-y-4" aria-labelledby="network-overview-heading">
-        <h2
-          id="network-overview-heading"
-          className="font-display text-xl font-semibold text-[var(--text-primary)]"
-        >
-          Network overview
-        </h2>
+      <section className="space-y-6" aria-labelledby="network-overview-heading">
+        <div>
+          <h2
+            id="network-overview-heading"
+            className="font-display text-xl font-semibold text-[var(--text-primary)]"
+          >
+            Network activity
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm text-[var(--text-muted)]">
+            Live chain metrics, throughput charts, and recent staking / transfer flows (window sums — not global TVL).
+          </p>
+        </div>
         <NetworkStats />
         <NetworkCharts />
+        <NetworkEconomyInsights />
       </section>
 
       <section aria-labelledby="latest-blocks-heading">

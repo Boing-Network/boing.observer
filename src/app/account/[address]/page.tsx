@@ -9,6 +9,7 @@ import type { Account } from "@/lib/rpc-types";
 import { isHex64, normalizeAddress, formatBalance, toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
+import { AccountBalanceMix } from "@/components/account-balance-mix";
 import { NETWORK_FAUCET_URL } from "@/lib/constants";
 
 export default function AccountPage() {
@@ -82,36 +83,44 @@ export default function AccountPage() {
       {error && <p className="text-amber-300" role="alert">{error}</p>}
 
       {!loading && !error && account && (
-        <section className="glass-card space-y-4 p-4 sm:p-6" aria-labelledby="account-state-heading">
+        <section className="space-y-4" aria-labelledby="account-state-heading">
           <h2 id="account-state-heading" className="font-display text-lg font-semibold text-[var(--text-primary)]">
             On-chain state
           </h2>
-          <dl className="grid gap-3 text-sm">
-            <div className="flex flex-wrap gap-x-2">
-              <dt className="text-[var(--text-muted)]">Balance</dt>
-              <dd className="font-mono font-medium text-network-cyan">{formatBalance(account.balance)} BOING</dd>
+          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+            <div className="glass-card space-y-4 p-4 sm:p-6">
+              <h3 className="sr-only">Balances and nonce</h3>
+              <dl className="grid gap-3 text-sm">
+                <div className="flex flex-wrap gap-x-2">
+                  <dt className="text-[var(--text-muted)]">Balance</dt>
+                  <dd className="font-mono font-medium text-network-cyan">
+                    {formatBalance(account.balance)} BOING
+                  </dd>
+                </div>
+                <div className="flex flex-wrap gap-x-2">
+                  <dt className="text-[var(--text-muted)]">Nonce</dt>
+                  <dd className="font-mono">{account.nonce}</dd>
+                </div>
+                <div className="flex flex-wrap gap-x-2">
+                  <dt className="text-[var(--text-muted)]">Stake</dt>
+                  <dd className="font-mono text-network-primary-light">{formatBalance(account.stake)} BOING</dd>
+                </div>
+              </dl>
+              {network === "testnet" && (
+                <p className="text-sm">
+                  <a
+                    href={`${NETWORK_FAUCET_URL}?address=${encodeURIComponent(toPrefixedHex64(address))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-network-cyan hover:underline"
+                  >
+                    Get testnet BOING →
+                  </a>
+                </p>
+              )}
             </div>
-            <div className="flex flex-wrap gap-x-2">
-              <dt className="text-[var(--text-muted)]">Nonce</dt>
-              <dd className="font-mono">{account.nonce}</dd>
-            </div>
-            <div className="flex flex-wrap gap-x-2">
-              <dt className="text-[var(--text-muted)]">Stake</dt>
-              <dd className="font-mono text-network-cyan">{formatBalance(account.stake)} BOING</dd>
-            </div>
-          </dl>
-          {network === "testnet" && (
-            <p className="text-sm mt-3">
-              <a
-                href={`${NETWORK_FAUCET_URL}?address=${encodeURIComponent(toPrefixedHex64(address))}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-network-cyan hover:underline"
-              >
-                Get testnet BOING →
-              </a>
-            </p>
-          )}
+            <AccountBalanceMix balance={account.balance} stake={account.stake} />
+          </div>
         </section>
       )}
     </div>
