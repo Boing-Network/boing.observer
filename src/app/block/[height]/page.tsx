@@ -27,7 +27,7 @@ export default function BlockByHeightPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchBlockByHeight(network, height)
+    fetchBlockByHeight(network, height, true)
       .then((b) => {
         if (!cancelled) setBlock(b ?? null);
       })

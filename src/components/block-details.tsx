@@ -1,68 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import type { Block, BlockTransaction } from "@/lib/rpc-types";
+import type { Block } from "@/lib/rpc-types";
 import { shortenHash, hexForLink, toPrefixedHex64 } from "@/lib/rpc-types";
-import { getTxPayloadKind, getTxPayloadSummary, getTxExplorerNarrative } from "@/lib/tx-payload";
 import { CopyButton } from "@/components/copy-button";
 import { BlockExplainerBanner } from "@/components/block-explainer";
-
-function TxRow({ tx, index, network }: { tx: BlockTransaction; index: number; network: string }) {
-  const kind = getTxPayloadKind(tx.payload);
-  const summary = getTxPayloadSummary(tx.payload);
-  const narrative = getTxExplorerNarrative(tx.sender, tx.payload);
-  const sender = hexForLink(tx.sender);
-
-  return (
-    <tr className="border-b border-[var(--border-color)]/60 hover:bg-white/5 align-top">
-      <td className="py-2 pr-4 font-mono text-sm text-[var(--text-muted)]">{index}</td>
-      <td className="py-2 pr-4">
-        <span className="rounded bg-boing-navy-mid px-2 py-0.5 text-xs font-medium text-network-cyan">
-          {kind}
-        </span>
-      </td>
-      <td className="py-2 pr-4">
-        <Link href={`/account/${sender}?network=${network}`} className="address-link">
-          {shortenHash(sender || "0")}
-        </Link>
-      </td>
-      <td className="py-2 pr-4 text-sm text-[var(--text-secondary)]">{summary}</td>
-      <td className="py-2 text-sm text-[var(--text-muted)] max-w-md">{narrative}</td>
-    </tr>
-  );
-}
-
-function TxMobileCard({ tx, index, network }: { tx: BlockTransaction; index: number; network: string }) {
-  const kind = getTxPayloadKind(tx.payload);
-  const summary = getTxPayloadSummary(tx.payload);
-  const narrative = getTxExplorerNarrative(tx.sender, tx.payload);
-  const sender = hexForLink(tx.sender);
-
-  return (
-    <div className="glass-card space-y-3 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-mono text-xs text-[var(--text-muted)]">#{index}</span>
-        <span className="rounded bg-boing-navy-mid px-2 py-0.5 text-xs font-medium text-network-cyan">
-          {kind}
-        </span>
-      </div>
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Sender</p>
-        <Link href={`/account/${sender}?network=${network}`} className="address-link mt-1 inline-block text-sm">
-          {shortenHash(sender || "0")}
-        </Link>
-      </div>
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Summary</p>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">{summary}</p>
-      </div>
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Effect</p>
-        <p className="mt-1 text-sm text-[var(--text-muted)] leading-relaxed">{narrative}</p>
-      </div>
-    </div>
-  );
-}
+import { TransactionInsight } from "@/components/transaction-insight";
 
 export function BlockDetails({
   block,
@@ -76,6 +19,9 @@ export function BlockDetails({
   const proposerHex = hexForLink(block.header.proposer);
   const parentHash = hexForLink(block.header.parent_hash);
   const blockHash = hexForLink(block.hash);
+  const txs = block.transactions ?? [];
+  const receipts = block.receipts;
+  const receiptsWereRequested = Array.isArray(receipts);
 
   return (
     <>
@@ -136,7 +82,9 @@ export function BlockDetails({
                 <Link href={`/block/hash/${parentHash}?network=${network}`} className="text-network-cyan hover:underline">
                   {block.header.parent_hash}
                 </Link>
-              ) : "—"}
+              ) : (
+                "—"
+              )}
             </dd>
           </div>
           <div className="flex flex-wrap gap-x-2">
@@ -150,42 +98,32 @@ export function BlockDetails({
         </dl>
       </div>
 
-      <div className="glass-card p-4 sm:p-6">
-        <h2 className="font-display text-lg font-semibold text-[var(--text-primary)] mb-4">
-          Transactions ({block.transactions?.length ?? 0})
-        </h2>
-        <p className="text-xs text-[var(--text-muted)] mb-4">
-          Each row is one signed transaction executed atomically with this block. Effects (e.g. faucet
-          credit) are final once the block is committed.
-        </p>
-        {!block.transactions?.length ? (
+      <div className="space-y-4">
+        <div>
+          <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
+            Transactions ({txs.length})
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm text-[var(--text-muted)] leading-relaxed">
+            Each card is one signed transaction executed in this block. Boing does not use an EVM-style
+            “transaction hash” for every transfer; execution receipts (gas, return data, logs) appear when
+            the node returns them with the block.
+          </p>
+        </div>
+        {!txs.length ? (
           <p className="text-[var(--text-muted)]">No transactions.</p>
         ) : (
-          <>
-            <div className="space-y-3 md:hidden">
-              {block.transactions.map((tx, i) => (
-                <TxMobileCard key={i} tx={tx} index={i} network={network} />
-              ))}
-            </div>
-            <div className="hidden md:block overflow-x-auto -mx-1 px-1">
-              <table className="w-full min-w-[720px]">
-                <thead>
-                  <tr className="border-b border-[var(--border-color)] text-left text-sm text-[var(--text-muted)]">
-                    <th className="pb-2 pr-4">#</th>
-                    <th className="pb-2 pr-4">Type</th>
-                    <th className="pb-2 pr-4">Sender</th>
-                    <th className="pb-2 pr-4">Summary</th>
-                    <th className="pb-2">What happened</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {block.transactions.map((tx, i) => (
-                    <TxRow key={i} tx={tx} index={i} network={network} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+          <div className="space-y-5">
+            {txs.map((tx, i) => (
+              <TransactionInsight
+                key={i}
+                tx={tx}
+                index={i}
+                network={network}
+                receipt={receiptsWereRequested ? (receipts?.[i] ?? null) : undefined}
+                receiptsWereRequested={receiptsWereRequested}
+              />
+            ))}
+          </div>
         )}
       </div>
     </>

@@ -29,7 +29,7 @@ export default function BlockByHashPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchBlockByHash(network, hash)
+    fetchBlockByHash(network, hash, true)
       .then((b) => {
         if (!cancelled) setBlock(b ?? null);
       })

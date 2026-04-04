@@ -43,7 +43,25 @@ export type TxPayloadKind =
   | "ContractCall"
   | "ContractDeploy"
   | "ContractDeployWithPurpose"
+  | "ContractDeployWithPurposeAndMetadata"
   | "Unknown";
+
+/** Execution outcome when blocks are fetched with `include_receipts: true`. */
+export interface TxLogEntry {
+  topics: string[];
+  data: string;
+}
+
+export interface TransactionReceipt {
+  tx_id?: string;
+  block_height?: number;
+  tx_index?: number;
+  success?: boolean;
+  gas_used?: number;
+  return_data?: string;
+  logs?: TxLogEntry[];
+  error?: string | null;
+}
 
 export interface TxPayloadTransfer {
   to: string;
@@ -72,7 +90,10 @@ export interface BlockTransaction {
   nonce?: number;
   sender: string;
   payload: unknown;
-  access_list?: unknown;
+  access_list?: {
+    read?: string[];
+    write?: string[];
+  };
 }
 
 /** Block object from boing_getBlockByHeight / boing_getBlockByHash. */
@@ -80,6 +101,8 @@ export interface Block {
   hash: string;
   header: BlockHeader;
   transactions: BlockTransaction[];
+  /** Present when RPC is called with `include_receipts: true` (same order as `transactions`). */
+  receipts?: (TransactionReceipt | null)[] | null;
 }
 
 export interface Account {

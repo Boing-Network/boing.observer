@@ -47,22 +47,28 @@ export async function fetchChainHeight(network: NetworkId): Promise<number> {
 
 export async function fetchBlockByHeight(
   network: NetworkId,
-  height: number
+  height: number,
+  includeReceipts = false
 ): Promise<Block | null> {
   const base = getRpcBaseUrl(network);
-  return cachedRpc(`${base}:boing_getBlockByHeight:${height}`, 10_000, () =>
-    rpcCall<Block | null>(network, base, "boing_getBlockByHeight", [height])
+  const cacheKey = `${base}:boing_getBlockByHeight:${height}:r${includeReceipts ? 1 : 0}`;
+  const params = includeReceipts ? [height, true] : [height];
+  return cachedRpc(cacheKey, 10_000, () =>
+    rpcCall<Block | null>(network, base, "boing_getBlockByHeight", params)
   );
 }
 
 export async function fetchBlockByHash(
   network: NetworkId,
-  hexBlockHash: string
+  hexBlockHash: string,
+  includeReceipts = false
 ): Promise<Block | null> {
   const base = getRpcBaseUrl(network);
   const hash = hexBlockHash.startsWith("0x") ? hexBlockHash : `0x${hexBlockHash}`;
-  return cachedRpc(`${base}:boing_getBlockByHash:${hash}`, 10_000, () =>
-    rpcCall<Block | null>(network, base, "boing_getBlockByHash", [hash])
+  const cacheKey = `${base}:boing_getBlockByHash:${hash}:r${includeReceipts ? 1 : 0}`;
+  const params = includeReceipts ? [hash, true] : [hash];
+  return cachedRpc(cacheKey, 10_000, () =>
+    rpcCall<Block | null>(network, base, "boing_getBlockByHash", params)
   );
 }
 

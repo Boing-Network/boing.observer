@@ -11,7 +11,11 @@ export function getTxPayloadKind(payload: unknown): TxPayloadKind {
   if (!payload || typeof payload !== "object") return "Unknown";
   const p = payload as Record<string, unknown>;
   if ("bytecode" in p) {
-    return "purpose_category" in p ? "ContractDeployWithPurpose" : "ContractDeploy";
+    if (!("purpose_category" in p)) return "ContractDeploy";
+    if ("asset_name" in p || "asset_symbol" in p) {
+      return "ContractDeployWithPurposeAndMetadata";
+    }
+    return "ContractDeployWithPurpose";
   }
   if ("contract" in p) return "ContractCall";
   if ("to" in p && "amount" in p) return "Transfer";
@@ -35,17 +39,21 @@ export function getTxPayloadSummary(payload: unknown): string {
   const p = payload as Record<string, unknown>;
   switch (kind) {
     case "Transfer":
-      return `to ${formatShortAddr(p.to)} · ${formatAmount(String(p.amount ?? ""))} BOING`;
+      return `to ${formatShortAddr(p.to)} · ${formatBoingAmount(String(p.amount ?? ""))} BOING`;
     case "Bond":
-      return `${formatAmount(String(p.amount))} BOING stake`;
+      return `${formatBoingAmount(String(p.amount))} BOING stake`;
     case "Unbond":
-      return `unbond ${formatAmount(String(p.amount))} BOING`;
+      return `unbond ${formatBoingAmount(String(p.amount))} BOING`;
     case "ContractCall":
       return `contract ${formatShortAddr(p.contract)}`;
     case "ContractDeploy":
       return "deploy contract";
     case "ContractDeployWithPurpose":
       return `deploy contract · ${formatPurpose(String(p.purpose_category ?? "other"))}`;
+    case "ContractDeployWithPurposeAndMetadata": {
+      const meta = [p.asset_name, p.asset_symbol].filter(Boolean).join(" · ");
+      return `deploy · ${formatPurpose(String(p.purpose_category ?? "other"))}${meta ? ` · ${meta}` : ""}`;
+    }
     default:
       return "—";
   }
@@ -62,7 +70,8 @@ function formatPurpose(cat: string): string {
   return cat.toLowerCase();
 }
 
-function formatAmount(raw: string): string {
+/** Whole BOING units from RPC (u128 string). */
+export function formatBoingAmount(raw: string): string {
   if (!/^\d+$/.test(raw)) return raw;
   const decimals = 0;
   if (raw === "0") return "0";
@@ -87,7 +96,7 @@ export function getTxExplorerNarrative(sender: unknown, payload: unknown): strin
   const p = payload as Record<string, unknown>;
 
   if (kind === "Transfer") {
-    const amount = formatAmount(String(p.amount ?? ""));
+    const amount = formatBoingAmount(String(p.amount ?? ""));
     const toH = senderHexNormalized(p.to);
     const isFaucet = from === TESTNET_FAUCET_ACCOUNT_HEX.toLowerCase();
     if (isFaucet) {
@@ -97,15 +106,19 @@ export function getTxExplorerNarrative(sender: unknown, payload: unknown): strin
   }
 
   if (kind === "Bond") {
-    return `Sender ${formatShortAddr(sender)} staked ${formatAmount(String(p.amount ?? ""))} BOING (bond).`;
+    return `Sender ${formatShortAddr(sender)} staked ${formatBoingAmount(String(p.amount ?? ""))} BOING (bond).`;
   }
   if (kind === "Unbond") {
-    return `Sender ${formatShortAddr(sender)} began unbonding ${formatAmount(String(p.amount ?? ""))} BOING.`;
+    return `Sender ${formatShortAddr(sender)} began unbonding ${formatBoingAmount(String(p.amount ?? ""))} BOING.`;
   }
   if (kind === "ContractCall") {
     return `Sender ${formatShortAddr(sender)} invoked contract ${formatShortAddr(p.contract)}.`;
   }
-  if (kind === "ContractDeploy" || kind === "ContractDeployWithPurpose") {
+  if (
+    kind === "ContractDeploy" ||
+    kind === "ContractDeployWithPurpose" ||
+    kind === "ContractDeployWithPurposeAndMetadata"
+  ) {
     return `Sender ${formatShortAddr(sender)} deployed a contract (subject to protocol QA when enabled).`;
   }
   if (kind === "Unknown") {
