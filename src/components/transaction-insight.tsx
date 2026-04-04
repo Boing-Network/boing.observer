@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { BlockTransaction, TransactionReceipt } from "@/lib/rpc-types";
-import { hexForLink, shortenHash, toPrefixedHex64 } from "@/lib/rpc-types";
+import { hexForLink, shortenHash, toPrefixedHex64, normalizeHex64 } from "@/lib/rpc-types";
 import {
   formatBoingAmount,
   getTxExplorerNarrative,
@@ -17,47 +17,181 @@ import {
 } from "@/lib/tx-details";
 import { CopyButton } from "@/components/copy-button";
 
+type VisualScale = "standard" | "featured";
+
 function TransferFlowDiagram({
   sender,
   payload,
   network,
+  scale = "standard",
 }: {
+  sender: unknown;
+  payload: unknown;
+  network: string;
+  scale?: VisualScale;
+}) {
+  const p = payload as Record<string, unknown>;
+  const from = hexForLink(sender);
+  const to = hexForLink(p.to);
+  const amount = formatBoingAmount(String(p.amount ?? ""));
+  const featured = scale === "featured";
+
+  return (
+    <div
+      className={`rounded-xl border border-network-cyan/25 bg-gradient-to-br from-network-cyan/10 via-boing-navy-mid/40 to-boing-black/30 ${
+        featured ? "p-5 sm:p-8" : "p-4 sm:p-5"
+      }`}
+    >
+      {featured ? (
+        <div className="mb-6 rounded-lg border border-network-cyan/30 bg-boing-black/40 px-4 py-6 text-center sm:px-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-network-cyan/90">
+            Amount transferred
+          </p>
+          <p className="mt-3 font-display text-4xl font-bold tabular-nums tracking-tight text-[var(--text-primary)] sm:text-5xl">
+            {amount}
+          </p>
+          <p className="mt-1 font-display text-xl font-semibold text-network-cyan-light">BOING</p>
+          <p className="mt-3 text-xs text-[var(--text-muted)]">
+            Debited from the sender account and credited to the recipient when this block executed.
+          </p>
+        </div>
+      ) : null}
+      <p
+        className={`mb-3 text-center font-semibold uppercase tracking-wider text-network-cyan/90 ${
+          featured ? "text-sm" : "text-xs"
+        }`}
+      >
+        {featured ? "Parties" : "Value flow"}
+      </p>
+      <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-stretch sm:justify-between">
+        <div className="flex-1 rounded-lg border border-[var(--border-color)] bg-boing-black/30 p-3 text-center sm:p-4 sm:text-left">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
+            {featured ? "Sender (debited)" : "From"}
+          </p>
+          <Link
+            href={`/account/${from}?network=${network}`}
+            className={`address-link mt-1 inline-block ${featured ? "text-base font-semibold" : "text-sm"}`}
+          >
+            {shortenHash(from) || "—"}
+          </Link>
+          {featured && from ? (
+            <p className="mt-2 hash break-all text-left text-[0.65rem] leading-snug text-[var(--text-muted)]">
+              0x{from}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex flex-col items-center justify-center gap-2 px-2 text-center">
+          {featured ? (
+            <span className="text-4xl leading-none text-network-cyan sm:text-5xl" aria-hidden>
+              →
+            </span>
+          ) : (
+            <>
+              <span className="text-2xl leading-none text-network-cyan" aria-hidden>
+                ↓
+              </span>
+              <span className="font-display text-lg font-bold tabular-nums text-[var(--text-primary)]">
+                {amount}{" "}
+                <span className="text-sm font-semibold text-network-cyan-light">BOING</span>
+              </span>
+            </>
+          )}
+        </div>
+        <div className="flex-1 rounded-lg border border-[var(--border-color)] bg-boing-black/30 p-3 text-center sm:p-4 sm:text-right">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
+            {featured ? "Recipient (credited)" : "To"}
+          </p>
+          <Link
+            href={`/account/${to}?network=${network}`}
+            className={`address-link mt-1 inline-block ${featured ? "text-base font-semibold" : "text-sm"}`}
+          >
+            {shortenHash(to) || "—"}
+          </Link>
+          {featured && to ? (
+            <p className="mt-2 hash break-all text-right text-[0.65rem] leading-snug text-[var(--text-muted)] sm:text-right">
+              0x{to}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StakeMovementVisual({
+  kind,
+  sender,
+  payload,
+  network,
+}: {
+  kind: "Bond" | "Unbond";
   sender: unknown;
   payload: unknown;
   network: string;
 }) {
   const p = payload as Record<string, unknown>;
   const from = hexForLink(sender);
-  const to = hexForLink(p.to);
   const amount = formatBoingAmount(String(p.amount ?? ""));
+  const title = kind === "Bond" ? "Staked (bonded)" : "Unbond requested";
+  const subtitle =
+    kind === "Bond"
+      ? "BOING moved into your validator stake for this account."
+      : "BOING scheduled to leave stake per protocol unbonding rules.";
 
   return (
-    <div className="rounded-xl border border-network-cyan/25 bg-gradient-to-br from-network-cyan/10 via-boing-navy-mid/40 to-boing-black/30 p-4 sm:p-5">
-      <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wider text-network-cyan/90">
-        Value flow
+    <div className="rounded-xl border border-network-primary/35 bg-gradient-to-br from-network-primary/15 via-boing-navy-mid/50 to-boing-black/40 p-5 sm:p-8">
+      <div className="text-center">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-network-primary-light/90">
+          {title}
+        </p>
+        <p className="mt-3 font-display text-4xl font-bold tabular-nums text-[var(--text-primary)] sm:text-5xl">
+          {amount}
+        </p>
+        <p className="mt-1 font-display text-xl font-semibold text-network-primary-light">BOING</p>
+        <p className="mx-auto mt-3 max-w-md text-sm text-[var(--text-secondary)]">{subtitle}</p>
+      </div>
+      <div className="mt-6 rounded-lg border border-[var(--border-color)] bg-boing-black/35 p-4 text-center">
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Signer account</p>
+        <Link href={`/account/${from}?network=${network}`} className="address-link mt-2 inline-block text-base font-semibold">
+          {shortenHash(from) || "—"}
+        </Link>
+        {from ? (
+          <p className="mt-2 hash break-all text-center text-[0.65rem] leading-snug text-[var(--text-muted)]">
+            0x{from}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ContractCallFeaturedVisual({ payload, network }: { payload: unknown; network: string }) {
+  const p = payload as Record<string, unknown>;
+  const contract = hexForLink(p.contract);
+  const cd = normalizeHexData(p.calldata);
+  return (
+    <div className="rounded-xl border border-amber-500/35 bg-gradient-to-br from-amber-950/40 via-boing-navy-mid/50 to-boing-black/40 p-5 sm:p-8">
+      <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-amber-200/90">
+        Contract interaction
       </p>
-      <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex-1 rounded-lg border border-[var(--border-color)] bg-boing-black/30 p-3 text-center sm:text-left">
-          <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">From</p>
-          <Link href={`/account/${from}?network=${network}`} className="address-link mt-1 inline-block text-sm">
-            {shortenHash(from) || "—"}
-          </Link>
-        </div>
-        <div className="flex flex-col items-center justify-center gap-1 px-2 text-center">
-          <span className="text-2xl leading-none text-network-cyan" aria-hidden>
-            ↓
-          </span>
-          <span className="font-display text-lg font-bold tabular-nums text-[var(--text-primary)]">
-            {amount}{" "}
-            <span className="text-sm font-semibold text-network-cyan-light">BOING</span>
-          </span>
-        </div>
-        <div className="flex-1 rounded-lg border border-[var(--border-color)] bg-boing-black/30 p-3 text-center sm:text-right">
-          <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">To</p>
-          <Link href={`/account/${to}?network=${network}`} className="address-link mt-1 inline-block text-sm">
-            {shortenHash(to) || "—"}
-          </Link>
-        </div>
+      <p className="mt-2 text-center text-sm text-[var(--text-secondary)]">
+        No native BOING is transferred unless the contract logic sends an internal transfer; see execution
+        receipt and logs below.
+      </p>
+      <div className="mt-6 rounded-lg border border-[var(--border-color)] bg-boing-black/35 p-4 text-center">
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Contract account</p>
+        <Link
+          href={`/account/${contract}?network=${network}`}
+          className="mt-2 inline-block font-display text-lg font-semibold text-amber-100 hover:text-amber-50"
+        >
+          {shortenHash(contract) || "—"}
+        </Link>
+        {contract ? (
+          <p className="mt-2 hash break-all text-center text-[0.65rem] text-[var(--text-muted)]">0x{contract}</p>
+        ) : null}
+        <p className="mt-4 text-sm text-[var(--text-secondary)]">
+          Calldata: <span className="font-mono text-network-cyan">{cd.bytes}</span> bytes
+        </p>
       </div>
     </div>
   );
@@ -101,10 +235,20 @@ function AccessListPanel({ tx }: { tx: BlockTransaction }) {
   );
 }
 
-function ReceiptPanel({ receipt }: { receipt: TransactionReceipt }) {
+function ReceiptPanel({
+  receipt,
+  network,
+  showTransactionPageLink,
+}: {
+  receipt: TransactionReceipt;
+  network: string;
+  showTransactionPageLink: boolean;
+}) {
   const ok = receipt.success !== false;
   const rd = normalizeHexData(receipt.return_data);
-  const txIdRaw = receipt.tx_id ? receipt.tx_id.replace(/^0x/i, "").toLowerCase() : "";
+  const txIdRaw = receipt.tx_id ? normalizeHex64(receipt.tx_id) : "";
+  const txPageHref =
+    txIdRaw.length === 64 ? `/tx/${txIdRaw}?network=${encodeURIComponent(network)}` : "";
 
   return (
     <div
@@ -137,6 +281,14 @@ function ReceiptPanel({ receipt }: { receipt: TransactionReceipt }) {
             <dd className="flex flex-wrap items-center gap-2">
               <span className="hash text-xs text-[var(--text-secondary)]">{shortenHash(txIdRaw)}</span>
               <CopyButton value={toPrefixedHex64(txIdRaw)} label="Copy tx id" />
+              {showTransactionPageLink && txPageHref ? (
+                <Link
+                  href={txPageHref}
+                  className="text-xs font-semibold text-network-cyan hover:text-network-cyan-light hover:underline"
+                >
+                  Transaction page
+                </Link>
+              ) : null}
             </dd>
           </div>
         ) : null}
@@ -204,6 +356,8 @@ export function TransactionInsight({
   network,
   receipt,
   receiptsWereRequested,
+  visualScale = "standard",
+  blockPlacement,
 }: {
   tx: BlockTransaction;
   index: number;
@@ -211,12 +365,16 @@ export function TransactionInsight({
   receipt?: TransactionReceipt | null;
   /** When true but receipt is null, show “not cached” message. */
   receiptsWereRequested: boolean;
+  visualScale?: VisualScale;
+  /** When set (e.g. standalone tx page), links to the enclosing block and anchor. */
+  blockPlacement?: { height: number; txIndex: number };
 }) {
   const kind = getTxPayloadKind(tx.payload);
   const summary = getTxPayloadSummary(tx.payload);
   const narrative = getTxExplorerNarrative(tx.sender, tx.payload);
   const sender = hexForLink(tx.sender);
   const detailLines = buildPayloadDetailLines(tx.payload);
+  const featured = visualScale === "featured";
 
   return (
     <article
@@ -226,7 +384,16 @@ export function TransactionInsight({
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border-color)] pb-3">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-sm text-[var(--text-muted)]">#{index}</span>
+            {blockPlacement ? (
+              <Link
+                href={`/block/${blockPlacement.height}?network=${network}#tx-${blockPlacement.txIndex}`}
+                className="font-mono text-sm text-network-cyan hover:text-network-cyan-light hover:underline"
+              >
+                Block #{blockPlacement.height} · slot {blockPlacement.txIndex}
+              </Link>
+            ) : (
+              <span className="font-mono text-sm text-[var(--text-muted)]">#{index}</span>
+            )}
             <span
               className={`rounded-md border px-2.5 py-0.5 text-xs font-semibold ${kindBadgeTone(kind)}`}
             >
@@ -252,7 +419,21 @@ export function TransactionInsight({
       </header>
 
       {kind === "Transfer" ? (
-        <TransferFlowDiagram sender={tx.sender} payload={tx.payload} network={network} />
+        <TransferFlowDiagram
+          sender={tx.sender}
+          payload={tx.payload}
+          network={network}
+          scale={visualScale}
+        />
+      ) : null}
+      {featured && kind === "Bond" ? (
+        <StakeMovementVisual kind="Bond" sender={tx.sender} payload={tx.payload} network={network} />
+      ) : null}
+      {featured && kind === "Unbond" ? (
+        <StakeMovementVisual kind="Unbond" sender={tx.sender} payload={tx.payload} network={network} />
+      ) : null}
+      {featured && kind === "ContractCall" ? (
+        <ContractCallFeaturedVisual payload={tx.payload} network={network} />
       ) : null}
 
       <div className="rounded-lg border border-[var(--border-color)] bg-boing-black/20 p-3 sm:p-4">
@@ -298,7 +479,11 @@ export function TransactionInsight({
 
       {receiptsWereRequested ? (
         receipt ? (
-          <ReceiptPanel receipt={receipt} />
+          <ReceiptPanel
+            receipt={receipt}
+            network={network}
+            showTransactionPageLink={!blockPlacement}
+          />
         ) : (
           <div
             className="rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/30 p-3 text-sm text-[var(--text-muted)]"

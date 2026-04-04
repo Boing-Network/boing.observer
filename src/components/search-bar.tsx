@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useNetwork } from "@/context/network-context";
-import { fetchBlockByHash } from "@/lib/rpc-methods";
+import { fetchBlockByHash, fetchTransactionReceipt } from "@/lib/rpc-methods";
 import { isHex64, normalizeHex64, type NetworkId } from "@/lib/rpc-types";
 
 const HEIGHT = /^\d+$/;
@@ -34,6 +34,11 @@ export function SearchBar({ layout = "inline", className = "" }: SearchBarProps)
       const hex = normalizeHex64(q);
       setLoading(true);
       try {
+        const txReceipt = await fetchTransactionReceipt(network as NetworkId, hex);
+        if (txReceipt) {
+          router.push(`/tx/${hex}?network=${network}`);
+          return;
+        }
         const block = await fetchBlockByHash(network as NetworkId, hex);
         if (block) router.push(`/block/hash/${hex}?network=${network}`);
         else router.push(`/account/${hex}?network=${network}`);
@@ -44,7 +49,9 @@ export function SearchBar({ layout = "inline", className = "" }: SearchBarProps)
       }
       return;
     }
-    setError("Enter a block height (number), block hash (64 hex), or account address (64 hex).");
+    setError(
+      "Enter a block height (number), or 64 hex (transaction id, block hash, or account — we try tx first)."
+    );
   }, [value, network, router]);
 
   return (
@@ -57,11 +64,11 @@ export function SearchBar({ layout = "inline", className = "" }: SearchBarProps)
           onKeyDown={(e) => e.key === "Enter" && search()}
           placeholder={
             stacked
-              ? "Height, 64-char hash, or address"
-              : "Block height, block hash, or account address (64 hex)"
+              ? "Height or 64-char hex (tx / block / account)"
+              : "Block height, or 64 hex (tx id, block hash, address)"
           }
           className="hash min-h-11 w-full flex-1 rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/80 px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-network-primary focus:outline-none focus:ring-1 focus:ring-network-primary sm:px-4"
-          aria-label="Search by block height, block hash, or account address"
+          aria-label="Search by block height, transaction id, block hash, or account address"
         />
         <button
           type="button"

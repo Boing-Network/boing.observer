@@ -9,7 +9,9 @@ import type {
   QaPoolConfigResult,
   QaPoolListResult,
   QaRegistryResult,
+  TransactionReceipt,
 } from "./rpc-types";
+import { normalizeHex64 } from "./rpc-types";
 
 export type NetworkId = "testnet" | "mainnet";
 
@@ -70,6 +72,18 @@ export async function fetchBlockByHash(
   return cachedRpc(cacheKey, 10_000, () =>
     rpcCall<Block | null>(network, base, "boing_getBlockByHash", params)
   );
+}
+
+/** 32-byte transaction id (signable payload hash); same param as `boing_getTransactionReceipt`. */
+export async function fetchTransactionReceipt(
+  network: NetworkId,
+  txIdHex: string
+): Promise<TransactionReceipt | null> {
+  const hex = normalizeHex64(txIdHex.trim());
+  if (!hex) return null;
+  const base = getRpcBaseUrl(network);
+  const param = `0x${hex}`;
+  return rpcCall<TransactionReceipt | null>(network, base, "boing_getTransactionReceipt", [param]);
 }
 
 export async function fetchAccount(
