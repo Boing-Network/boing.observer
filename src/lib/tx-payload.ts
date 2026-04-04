@@ -97,32 +97,31 @@ export function getTxExplorerNarrative(sender: unknown, payload: unknown): strin
 
   if (kind === "Transfer") {
     const amount = formatBoingAmount(String(p.amount ?? ""));
-    const toH = senderHexNormalized(p.to);
     const isFaucet = from === TESTNET_FAUCET_ACCOUNT_HEX.toLowerCase();
     if (isFaucet) {
-      return `Testnet faucet sent ${amount} BOING to recipient ${formatShortAddr(p.to)}. This is the on-chain transfer that credits your account; it is recorded here as part of this block (there is no separate Boing “transaction hash” for this drip).`;
+      return `Testnet faucet → ${formatShortAddr(p.to)} · ${amount} BOING`;
     }
-    return `Sender ${formatShortAddr(sender)} transferred ${amount} BOING to ${formatShortAddr(p.to)}. Balances for both accounts were updated when this block was executed.`;
+    return `${formatShortAddr(sender)} → ${formatShortAddr(p.to)} · ${amount} BOING`;
   }
 
   if (kind === "Bond") {
-    return `Sender ${formatShortAddr(sender)} staked ${formatBoingAmount(String(p.amount ?? ""))} BOING (bond).`;
+    return `Stake (bond) · ${formatBoingAmount(String(p.amount ?? ""))} BOING`;
   }
   if (kind === "Unbond") {
-    return `Sender ${formatShortAddr(sender)} began unbonding ${formatBoingAmount(String(p.amount ?? ""))} BOING.`;
+    return `Unbond · ${formatBoingAmount(String(p.amount ?? ""))} BOING`;
   }
   if (kind === "ContractCall") {
-    return `Sender ${formatShortAddr(sender)} invoked contract ${formatShortAddr(p.contract)}.`;
+    return `Call ${formatShortAddr(p.contract)}`;
   }
   if (
     kind === "ContractDeploy" ||
     kind === "ContractDeployWithPurpose" ||
     kind === "ContractDeployWithPurposeAndMetadata"
   ) {
-    return `Sender ${formatShortAddr(sender)} deployed a contract (subject to protocol QA when enabled).`;
+    return `Contract deploy · ${formatShortAddr(sender)} (QA may apply)`;
   }
   if (kind === "Unknown") {
-    return "State-changing transaction included in this block (payload type not recognized by the explorer).";
+    return "Payload shape not recognized by this explorer.";
   }
   return "—";
 }

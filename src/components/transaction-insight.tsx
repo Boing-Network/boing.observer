@@ -16,8 +16,21 @@ import {
   normalizeHexData,
 } from "@/lib/tx-details";
 import { CopyButton } from "@/components/copy-button";
+import { TESTNET_FAUCET_ACCOUNT_HEX } from "@/lib/testnet-constants";
+import type { TxPayloadKind } from "@/lib/rpc-types";
 
 type VisualScale = "standard" | "featured";
+
+function isDeployPayloadKind(kind: TxPayloadKind): boolean {
+  switch (kind) {
+    case "ContractDeploy":
+    case "ContractDeployWithPurpose":
+    case "ContractDeployWithPurposeAndMetadata":
+      return true;
+    default:
+      return false;
+  }
+}
 
 function TransferFlowDiagram({
   sender,
@@ -51,9 +64,7 @@ function TransferFlowDiagram({
             {amount}
           </p>
           <p className="mt-1 font-display text-xl font-semibold text-network-cyan-light">BOING</p>
-          <p className="mt-3 text-xs text-[var(--text-muted)]">
-            Debited from the sender account and credited to the recipient when this block executed.
-          </p>
+          <p className="mt-2 text-xs text-[var(--text-muted)]">Applied when this block executed.</p>
         </div>
       ) : null}
       <p
@@ -133,10 +144,7 @@ function StakeMovementVisual({
   const from = hexForLink(sender);
   const amount = formatBoingAmount(String(p.amount ?? ""));
   const title = kind === "Bond" ? "Staked (bonded)" : "Unbond requested";
-  const subtitle =
-    kind === "Bond"
-      ? "BOING moved into your validator stake for this account."
-      : "BOING scheduled to leave stake per protocol unbonding rules.";
+  const subtitle = kind === "Bond" ? "Added to validator stake." : "Scheduled to unbond per protocol.";
 
   return (
     <div className="rounded-xl border border-network-primary/35 bg-gradient-to-br from-network-primary/15 via-boing-navy-mid/50 to-boing-black/40 p-5 sm:p-8">
@@ -174,9 +182,8 @@ function ContractCallFeaturedVisual({ payload, network }: { payload: unknown; ne
       <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-amber-200/90">
         Contract interaction
       </p>
-      <p className="mt-2 text-center text-sm text-[var(--text-secondary)]">
-        No native BOING is transferred unless the contract logic sends an internal transfer; see execution
-        receipt and logs below.
+      <p className="mt-1 text-center text-xs text-[var(--text-secondary)]">
+        Native transfer only if the contract sends one; see receipt and logs.
       </p>
       <div className="mt-6 rounded-lg border border-[var(--border-color)] bg-boing-black/35 p-4 text-center">
         <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Contract account</p>
@@ -207,7 +214,7 @@ function AccessListPanel({ tx }: { tx: BlockTransaction }) {
   return (
     <details className="rounded-lg border border-[var(--border-color)] bg-boing-black/25">
       <summary className="cursor-pointer select-none px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-white/5">
-        Access list (parallel scheduling) · {reads} read · {writes} write
+        Access list · {reads} read · {writes} write
       </summary>
       <div className="space-y-3 border-t border-[var(--border-color)] px-3 py-3 text-xs">
         {reads > 0 ? (
@@ -313,39 +320,35 @@ function ReceiptPanel({
         </div>
       </dl>
 
-      <div className="mt-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
+      <details className="mt-3 rounded-lg border border-[var(--border-color)] bg-boing-black/25">
+        <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-white/5">
           Event logs ({receipt.logs?.length ?? 0})
-        </p>
-        {!receipt.logs?.length ? (
-          <p className="mt-1 text-sm text-[var(--text-muted)]">None for this transaction.</p>
-        ) : (
-          <ul className="mt-2 space-y-3">
-            {receipt.logs.map((log, i) => (
-              <li
-                key={i}
-                className="rounded-lg border border-[var(--border-color)] bg-boing-black/40 p-3 text-xs"
-              >
-                <p className="font-mono text-[var(--text-muted)]">#{i}</p>
-                <p className="mt-1 text-[var(--text-muted)]">
-                  Topics ({log.topics.length})
-                </p>
-                <ul className="mt-1 space-y-1 hash break-all text-[var(--text-secondary)]">
-                  {log.topics.map((t, j) => (
-                    <li key={j}>
-                      [{j}] {t}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-2 text-[var(--text-muted)]">Data</p>
-                <p className="hash mt-0.5 break-all text-[var(--text-secondary)]">
-                  {hexPreview(log.data, 80)}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+        </summary>
+        <div className="border-t border-[var(--border-color)] px-3 py-3">
+          {!receipt.logs?.length ? (
+            <p className="text-xs text-[var(--text-muted)]">None.</p>
+          ) : (
+            <ul className="space-y-2">
+              {receipt.logs.map((log, i) => (
+                <li
+                  key={i}
+                  className="rounded-md border border-[var(--border-color)]/80 bg-boing-black/40 p-2.5 text-xs"
+                >
+                  <p className="font-mono text-[var(--text-muted)]">#{i}</p>
+                  <ul className="mt-1 space-y-0.5 hash break-all text-[var(--text-secondary)]">
+                    {log.topics.map((t, j) => (
+                      <li key={j}>
+                        t{j} {t}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-1.5 hash break-all text-[var(--text-secondary)]">{hexPreview(log.data, 64)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </details>
     </div>
   );
 }
@@ -375,6 +378,16 @@ export function TransactionInsight({
   const sender = hexForLink(tx.sender);
   const detailLines = buildPayloadDetailLines(tx.payload);
   const featured = visualScale === "featured";
+
+  const isFaucetTransfer =
+    kind === "Transfer" && sender === TESTNET_FAUCET_ACCOUNT_HEX.toLowerCase();
+  const showContextNote = kind === "Unknown" || isDeployPayloadKind(kind) || isFaucetTransfer;
+
+  const redundantPayloadDetails =
+    kind === "Transfer" ||
+    kind === "Bond" ||
+    kind === "Unbond" ||
+    (kind === "ContractCall" && featured);
 
   return (
     <article
@@ -436,14 +449,11 @@ export function TransactionInsight({
         <ContractCallFeaturedVisual payload={tx.payload} network={network} />
       ) : null}
 
-      <div className="rounded-lg border border-[var(--border-color)] bg-boing-black/20 p-3 sm:p-4">
-        <h4 className="font-display text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-          What happened
-        </h4>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{narrative}</p>
-      </div>
+      {showContextNote ? (
+        <p className="text-sm leading-snug text-[var(--text-secondary)]">{narrative}</p>
+      ) : null}
 
-      {detailLines.length > 0 ? (
+      {detailLines.length > 0 && !redundantPayloadDetails ? (
         <div>
           <h4 className="font-display text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             Payload details
@@ -489,15 +499,14 @@ export function TransactionInsight({
             className="rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/30 p-3 text-sm text-[var(--text-muted)]"
             role="status"
           >
-            No execution receipt is stored for this transaction on this node (older build, pruned data, or
-            not yet indexed). Payload above still reflects what was signed.
+            No receipt from this node. Payload above is still what was signed.
           </div>
         )
       ) : null}
 
       <details className="rounded-lg border border-[var(--border-color)] bg-boing-black/30">
         <summary className="cursor-pointer select-none px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-white/5">
-          Raw payload (JSON)
+          Raw JSON
         </summary>
         <pre className="max-h-[min(320px,50vh)] overflow-auto border-t border-[var(--border-color)] p-3 text-xs text-[var(--text-secondary)] hash">
           {JSON.stringify(tx.payload, null, 2)}
