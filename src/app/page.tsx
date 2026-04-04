@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
 import { SearchBar } from "@/components/search-bar";
 import { NetworkStats } from "@/components/network-stats";
+import { NetworkChainContext } from "@/components/network-chain-context";
 import { NetworkCharts } from "@/components/network-charts";
 import { NetworkEconomyInsights } from "@/components/network-economy-insights";
 import { fetchChainHeight, fetchBlockByHeight } from "@/lib/rpc-methods";
@@ -96,10 +97,12 @@ export default function HomePage() {
             Network activity
           </h2>
           <p className="mt-1 max-w-2xl text-sm text-[var(--text-muted)]">
-            Live chain metrics, throughput charts, and recent staking / transfer flows (window sums — not global TVL).
+            Live chain metrics, charts, pie breakdowns of recent activity, and context for supply data the RPC does not
+            expose globally.
           </p>
         </div>
         <NetworkStats />
+        <NetworkChainContext />
         <NetworkCharts />
         <NetworkEconomyInsights />
       </section>

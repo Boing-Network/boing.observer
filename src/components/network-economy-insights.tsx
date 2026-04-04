@@ -5,9 +5,12 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -67,6 +70,23 @@ function formatBig(b: bigint): string {
   return `${formatBoingAmount(b.toString())} BOING`;
 }
 
+type TxPieRow = { name: string; value: number; fill: string };
+
+type VolPieRow = { name: string; value: number; fill: string; raw: bigint };
+
+/** Integer slice weights for Recharts; avoids huge Number() on u128 totals. */
+function volumePieWeights(bond: bigint, unbond: bigint, transfer: bigint): VolPieRow[] {
+  const total = bond + unbond + transfer;
+  if (total === BigInt(0)) return [];
+  const w = (b: bigint) => Number((b * BigInt(100000)) / total);
+  const rows: VolPieRow[] = [
+    { name: "Bond", value: w(bond), fill: "var(--network-primary-light)", raw: bond },
+    { name: "Unbond", value: w(unbond), fill: "rgba(251, 191, 36, 0.9)", raw: unbond },
+    { name: "Transfer", value: w(transfer), fill: "var(--network-cyan)", raw: transfer },
+  ];
+  return rows.filter((r) => r.value > 0);
+}
+
 export function NetworkEconomyInsights() {
   const { network } = useNetwork();
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -120,6 +140,22 @@ export function NetworkEconomyInsights() {
     [cumulative]
   );
 
+  const txPieData = useMemo((): TxPieRow[] => {
+    const { bond, unbond, transfer, other } = totals.txCounts;
+    const rows: TxPieRow[] = [
+      { name: "Bond", value: bond, fill: "var(--network-primary-light)" },
+      { name: "Unbond", value: unbond, fill: "rgba(251, 191, 36, 0.9)" },
+      { name: "Transfer", value: transfer, fill: "var(--network-cyan)" },
+      { name: "Other", value: other, fill: "rgba(100, 116, 139, 0.85)" },
+    ];
+    return rows.filter((r) => r.value > 0);
+  }, [totals.txCounts]);
+
+  const volPieData = useMemo(
+    () => volumePieWeights(totals.bond, totals.unbond, totals.transferVolume),
+    [totals.bond, totals.unbond, totals.transferVolume]
+  );
+
   if (error) {
     return (
       <div className="py-2" role="region" aria-label="Network economy insights">
@@ -141,7 +177,7 @@ export function NetworkEconomyInsights() {
           <strong className="text-[var(--text-secondary)]">Unbond</strong>, and{" "}
           <strong className="text-[var(--text-secondary)]">Transfer</strong> payloads in the last{" "}
           {BLOCKS_TO_SAMPLE} blocks. They are <strong className="text-[var(--text-secondary)]">not</strong>{" "}
-          chain-wide TVL. Global stake and staking APY are not returned by the public RPC this explorer uses.
+          chain-wide TVL. Pie charts show the mix of transaction types and BOING volume in that same window.
         </p>
       </div>
 
@@ -187,6 +223,105 @@ export function NetworkEconomyInsights() {
           sub={`in ${totals.blocksSampled} blocks`}
           loading={loading}
         />
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="glass-card p-4">
+          <h4 className="mb-1 text-sm font-medium text-[var(--text-muted)]">Transactions by type</h4>
+          <p className="mb-3 text-xs text-[var(--text-muted)]">
+            Share of txs in sample ({totals.txCounts.total.toLocaleString()} total)
+          </p>
+          {loading ? (
+            <div className="flex h-[220px] items-center justify-center text-[var(--text-muted)]">Loading…</div>
+          ) : txPieData.length === 0 ? (
+            <div className="flex h-[220px] items-center justify-center text-center text-sm text-[var(--text-muted)]">
+              No transactions in sampled blocks.
+            </div>
+          ) : (
+            <div className="h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart margin={{ top: 0, right: 8, bottom: 8, left: 8 }}>
+                  <Pie
+                    data={txPieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={52}
+                    outerRadius={88}
+                    paddingAngle={2}
+                    isAnimationActive={false}
+                  >
+                    {txPieData.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} stroke="var(--boing-navy-deep)" strokeWidth={1} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--boing-navy-deep)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: 8,
+                    }}
+                    labelStyle={{ color: "var(--text-primary)" }}
+                    formatter={(value: number | undefined, name: string | undefined) => [
+                      `${(value ?? 0).toLocaleString()} tx${(value ?? 0) === 1 ? "" : "s"}`,
+                      name ?? "",
+                    ]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        <div className="glass-card p-4">
+          <h4 className="mb-1 text-sm font-medium text-[var(--text-muted)]">BOING volume by flow</h4>
+          <p className="mb-3 text-xs text-[var(--text-muted)]">Bond + unbond + transfer amounts (window)</p>
+          {loading ? (
+            <div className="flex h-[220px] items-center justify-center text-[var(--text-muted)]">Loading…</div>
+          ) : volPieData.length === 0 ? (
+            <div className="flex h-[220px] items-center justify-center text-center text-sm text-[var(--text-muted)]">
+              No bond, unbond, or transfer volume in sampled blocks.
+            </div>
+          ) : (
+            <div className="h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart margin={{ top: 0, right: 8, bottom: 8, left: 8 }}>
+                  <Pie
+                    data={volPieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={52}
+                    outerRadius={88}
+                    paddingAngle={2}
+                    isAnimationActive={false}
+                  >
+                    {volPieData.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} stroke="var(--boing-navy-deep)" strokeWidth={1} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--boing-navy-deep)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: 8,
+                    }}
+                    labelStyle={{ color: "var(--text-primary)" }}
+                    formatter={(_value: number | undefined, name: string | undefined, item) => {
+                      const raw = (item?.payload as VolPieRow | undefined)?.raw;
+                      const amt = raw != null ? formatBoingAmount(raw.toString()) : "—";
+                      return [`${amt} BOING`, name ?? ""];
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -281,9 +416,9 @@ export function NetworkEconomyInsights() {
       </div>
 
       <aside className="rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/40 px-4 py-3 text-xs text-[var(--text-muted)]">
-        <strong className="text-[var(--text-secondary)]">TVL &amp; APY:</strong> Total staked supply and reward rate need
-        protocol-level or archive APIs. When Boing exposes them on RPC, they can appear here without double-counting
-        window sums.
+        <strong className="text-[var(--text-secondary)]">TVL &amp; APY:</strong> Network-wide staked supply and reward
+        rate are not on this RPC. See the <strong className="text-[var(--text-secondary)]">Chain tip &amp; supply context</strong>{" "}
+        section for circulation / total supply, and use account lookup for per-address stake.
       </aside>
     </div>
   );

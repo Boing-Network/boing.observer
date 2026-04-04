@@ -6,6 +6,7 @@ import { rpcCall, getRpcBaseUrl } from "./rpc-client";
 import type {
   Block,
   Account,
+  BoingSyncState,
   QaPoolConfigResult,
   QaPoolListResult,
   QaRegistryResult,
@@ -44,6 +45,14 @@ export async function fetchChainHeight(network: NetworkId): Promise<number> {
   const base = getRpcBaseUrl(network);
   return cachedRpc(`${base}:boing_chainHeight`, 5_000, () =>
     rpcCall<number>(network, base, "boing_chainHeight", [])
+  );
+}
+
+/** Committed chain tip: heights and latest block hash (see RPC-API-SPEC `boing_getSyncState`). */
+export async function fetchSyncState(network: NetworkId): Promise<BoingSyncState> {
+  const base = getRpcBaseUrl(network);
+  return cachedRpc(`${base}:boing_getSyncState`, 5_000, () =>
+    rpcCall<BoingSyncState>(network, base, "boing_getSyncState", [])
   );
 }
 

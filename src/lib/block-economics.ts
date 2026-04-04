@@ -23,6 +23,14 @@ export type BlockEconomicsTotals = {
   netStakeFlow: bigint;
   uniqueProposers: number;
   blocksSampled: number;
+  /** Count of txs by payload kind in the sampled blocks (each tx is one kind). */
+  txCounts: {
+    bond: number;
+    unbond: number;
+    transfer: number;
+    other: number;
+    total: number;
+  };
 };
 
 function safeU128BigInt(raw: unknown): bigint {
@@ -124,6 +132,12 @@ export function analyzeBlockEconomics(blocks: Block[]): { rows: BlockEconomicsRo
     };
   });
 
+  const bondN = rows.reduce((s, r) => s + r.bondTxs, 0);
+  const unbondN = rows.reduce((s, r) => s + r.unbondTxs, 0);
+  const transferN = rows.reduce((s, r) => s + r.transferTxs, 0);
+  const totalTxs = sorted.reduce((s, b) => s + (b.transactions?.length ?? 0), 0);
+  const otherN = Math.max(0, totalTxs - bondN - unbondN - transferN);
+
   return {
     rows,
     totals: {
@@ -133,6 +147,13 @@ export function analyzeBlockEconomics(blocks: Block[]): { rows: BlockEconomicsRo
       netStakeFlow: bondT - unbondT,
       uniqueProposers: proposers.size,
       blocksSampled: rows.length,
+      txCounts: {
+        bond: bondN,
+        unbond: unbondN,
+        transfer: transferN,
+        other: otherN,
+        total: totalTxs,
+      },
     },
   };
 }

@@ -105,6 +105,13 @@ export interface Block {
   receipts?: (TransactionReceipt | null)[] | null;
 }
 
+/** Result of `boing_getSyncState` (committed tip; head vs finalized may diverge in future). */
+export interface BoingSyncState {
+  head_height: number;
+  finalized_height: number;
+  latest_block_hash: string;
+}
+
 export interface Account {
   balance: string;
   nonce: number;
