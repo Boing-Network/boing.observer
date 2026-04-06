@@ -4,6 +4,8 @@ This document is intended for agents or contributors working in the `boing.netwo
 
 It has been updated to reflect the current `boing.network` state, including the testnet portal sign-in flow, the nonce-backed wallet-auth rollout, and the need to keep explorer, website, and wallet behavior synchronized.
 
+Cross-repo backlog and consumer alignment for **boing.express**, **boing.observer**, and partner dApps now also live in the network monorepo as [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md), alongside [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md). This file remains the observer-local view; treat the network doc as the shared checklist and verification entry point.
+
 ## Current Status
 
 `boing.observer` is a functioning read-only blockchain explorer for Boing Network built with `Next.js 15`, `React 18`, `TypeScript`, `Tailwind CSS`, and deployed toward `Cloudflare Workers` via the `OpenNext` Cloudflare adapter.
@@ -13,10 +15,12 @@ Current state:
 - Home page works as a live explorer landing page.
 - Testnet is the default network; mainnet selection is only enabled when a distinct mainnet RPC is configured.
 - Block lookup works by both height and hash.
-- Account lookup works by 32-byte hex address.
+- Account lookup works by 32-byte hex address (strict 64 hex digits; no silent padding of short input).
+- Transaction detail exists at `/tx/[txId]` when the node returns receipts.
 - Basic chain metrics and charts are implemented client-side.
 - QA pre-flight tooling is exposed in the UI.
 - Faucet UI is exposed for testnet.
+- Native DEX read-only tooling: `/dex/pools` (directory snapshot + optional bounded logs) and `/dex/quote` (CP route quotes via `boing-sdk`), aligned with [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md) Observer §3.
 - SEO, structured data, sitemap, robots, favicon, OG image, and metadata are implemented.
 - Build passes successfully with `npm run build`.
 
@@ -32,9 +36,17 @@ Current state:
 - `/block/hash/[hash]`
   - Block lookup by hash with the same detail surface.
 - `/account/[address]`
-  - Account balance, nonce, and stake.
+  - Account balance, nonce, and stake; optional **contract hints** (`boing_getNetworkInfo` canonical addresses + `boing_getContractStorage` zero-slot probe).
+- `/tx/[txId]`
+  - Transaction receipt and decoded payload when available from RPC.
+- `/dex/pools`, `/dex/quote`
+  - Server-backed `boing-sdk` views (directory + quotes); respect header network selector.
 - `/tools/qa-check`
   - Calls the protocol QA RPC to evaluate deployment bytecode before submission.
+- `/tools/rpc-catalog`
+  - Live `boing_getRpcMethodCatalog` table for the selected RPC (method-not-found hints link to alignment §2.1).
+- `/tools/node-health`
+  - `boing_chainHeight`, `boing_getSyncState`, optional `boing_health` (RPC limits + metrics when exposed).
 - `/faucet`
   - Testnet faucet request flow.
 - `/about`
@@ -46,12 +58,17 @@ Current state:
 - `boing_getBlockByHeight`
 - `boing_getBlockByHash`
 - `boing_getAccount`
+- `boing_getNetworkInfo` (block pages consensus hint; account contract hints)
+- `boing_getContractStorage` (optional account zero-slot probe)
+- `boing_getRpcMethodCatalog` (`/tools/rpc-catalog`)
+- `boing_health` (optional; `/tools/node-health`)
+- `boing_getSyncState` (sync panel, network stats, node health)
 - `boing_qaCheck`
 - `boing_faucetRequest`
 
 ### Core behavior
 
-- No SDK is used; the explorer talks directly to JSON-RPC over `fetch()`.
+- Most views use plain JSON-RPC over `fetch()` (browser via `/api/rpc` proxy). **Native DEX** pages call **`boing-sdk`** on the server (`GET /api/dex/snapshot`, `POST /api/dex/quote`) so routing math matches the network monorepo.
 - Network selection is persisted in local storage.
 - `?network=testnet|mainnet` is respected on page load, but `mainnet` is ignored unless a real mainnet RPC is configured.
 - When RPC is unavailable, the UI shows a friendly network-unavailable message instead of failing silently.
@@ -63,10 +80,18 @@ Current state:
 
 ### Important implementation characteristics
 
-- The explorer is currently a pure frontend app with no custom backend or indexer.
+- The explorer is mostly a thin RPC client; **minimal API routes** proxy JSON-RPC for CORS and run **DEX** snapshots/quotes server-side.
 - Most chain data is fetched directly in client components.
 - Stats and charts fetch a recent block sample by making multiple RPC calls from the browser.
 - The app is intentionally thin and RPC-driven, which keeps it simple but also makes performance and feature scope dependent on the RPC surface.
+
+### Durable indexer (OBS-1) — product boundary
+
+Normative specs for ingestion, SQL storage, reorgs, and a read API live in **`boing.network`** ([OBSERVER-HOSTED-SERVICE.md](https://github.com/Boing-Network/boing.network/blob/main/docs/OBSERVER-HOSTED-SERVICE.md), [INDEXER-RECEIPT-AND-LOG-INGESTION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/INDEXER-RECEIPT-AND-LOG-INGESTION.md)). That monorepo intentionally does **not** ship the long-running hosted ingestion worker today: it owns the chain, RPC, **`boing-sdk`**, docs, and website—not the OBS-1 data plane unless scope is explicitly expanded there.
+
+**Who builds the indexer:** treat it as a **separate product** from the node and from **boing.express** (wallets sign and call RPC; they may deep-link to explorer/indexer URLs but should not own chain indexing). Practical ownership patterns: (A) this repo or an adjacent worker/DB in the same org as the explorer, (B) a small dedicated repo (e.g. indexer service) that **boing.observer** and optionally partners call over HTTP, or (C) an internal platform/infra team equivalent to B. Pick one pattern and keep it stable.
+
+**This explorer** stays on **bounded RPC + SDK** for DEX-style and similar views until a real index exists; that matches the spec and does **not** push OBS-1 work back onto **boing.network** or **boing.express**.
 
 ### Deployment and infra
 
@@ -102,7 +127,6 @@ This matters even though the explorer does not require authentication today. Any
 
 The explorer is usable today, but there are several notable limitations:
 
-- No transaction detail page yet.
 - No validator page, proposer page, or staking leaderboard.
 - No contract page, token page, NFT page, or asset metadata layer.
 - No indexed search beyond height/hash/account heuristics.
@@ -111,8 +135,7 @@ The explorer is usable today, but there are several notable limitations:
 - No mempool visibility.
 - No address labeling or known-entity tagging.
 - No wallet-aware deep linking from explorer views.
-- No formal automated test suite yet.
-- `npm run lint` is not currently usable in CI because Next prompts for first-time ESLint setup instead of using a committed ESLint config.
+- Expand Playwright coverage (account/tx flows, mobile nav) beyond `e2e/smoke.spec.ts`.
 
 ## What `boing.network` Should Know
 
@@ -324,7 +347,7 @@ This section records the concrete sync pass performed against the current `boing
 
 - The explorer still contains its own faucet helper route for advanced/direct RPC use.
 - The explorer does not implement wallet connect today; future account-aware features should reuse the provider and auth contract in `boing.network/docs/WALLET-CONNECTION-AND-SIGNIN.md` and `PORTAL-WALLET-AUTH-ROLLOUT.md`.
-- A shared cross-app metadata/config source is still recommended (see [THREE-CODEBASE-ALIGNMENT.md](https://github.com/chiku524/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md) in boing.network).
+- A shared cross-app metadata/config source is still recommended (see [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md) in boing.network).
 
 ---
 

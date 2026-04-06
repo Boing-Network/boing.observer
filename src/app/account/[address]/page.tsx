@@ -10,7 +10,8 @@ import { isHex64, normalizeAddress, formatBalance, toPrefixedHex64 } from "@/lib
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
 import { AccountBalanceMix } from "@/components/account-balance-mix";
-import { NETWORK_FAUCET_URL } from "@/lib/constants";
+import { AccountContractHints } from "@/components/account-contract-hints";
+import { ADDRESS_FORMAT_ALIGNMENT_URL, NETWORK_FAUCET_URL } from "@/lib/constants";
 
 export default function AccountPage() {
   const params = useParams();
@@ -52,9 +53,14 @@ export default function AccountPage() {
         <Link href="/" className="text-sm text-network-cyan hover:underline">
           ← Home
         </Link>
-        <p className="text-red-400" role="alert">
-          Invalid account address (32-byte hex, 64 characters).
-        </p>
+        <div className="space-y-2 text-red-400" role="alert">
+          <p>Invalid account address. Boing uses a 32-byte AccountId (64 hex digits, optional 0x) — not a 20-byte EVM address.</p>
+          <p className="text-sm text-[var(--text-muted)]">
+            <a href={ADDRESS_FORMAT_ALIGNMENT_URL} className="text-network-cyan hover:underline" target="_blank" rel="noopener noreferrer">
+              Address format (alignment doc §4)
+            </a>
+          </p>
+        </div>
       </div>
     );
   }
@@ -66,6 +72,12 @@ export default function AccountPage() {
           ← Home
         </Link>
         <h1 className="font-display text-xl font-bold text-[var(--text-primary)] sm:text-2xl">Account</h1>
+        <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+          32-byte Boing AccountId (Ed25519 pubkey hash).{" "}
+          <a href={ADDRESS_FORMAT_ALIGNMENT_URL} className="text-network-cyan hover:underline" target="_blank" rel="noopener noreferrer">
+            Format reference
+          </a>
+        </p>
         <div className="flex flex-wrap items-center gap-2">
           <p className="hash break-all font-mono text-sm text-[var(--text-muted)]" title={address}>
             0x{address}
@@ -121,6 +133,7 @@ export default function AccountPage() {
             </div>
             <AccountBalanceMix balance={account.balance} stake={account.stake} />
           </div>
+          <AccountContractHints network={network} address64={address} />
         </section>
       )}
     </div>

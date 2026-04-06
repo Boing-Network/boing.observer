@@ -4,8 +4,8 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
-import { fetchBlockByHash } from "@/lib/rpc-methods";
-import type { Block } from "@/lib/rpc-types";
+import { fetchBlockByHash, fetchNetworkInfo } from "@/lib/rpc-methods";
+import type { Block, BoingNetworkInfo } from "@/lib/rpc-types";
 import { isHex64, normalizeHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
@@ -17,11 +17,12 @@ export default function BlockByHashPage() {
   const hashParam = params?.hash as string;
   const hash = hashParam ? normalizeHex64(hashParam) : "";
   const [block, setBlock] = useState<Block | null>(null);
+  const [netInfo, setNetInfo] = useState<BoingNetworkInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isHex64(hashParam || "")) {
+    if (!isHex64(hash)) {
       setLoading(false);
       setError("Invalid block hash");
       return;
@@ -29,12 +30,18 @@ export default function BlockByHashPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchBlockByHash(network, hash, true)
-      .then((b) => {
-        if (!cancelled) setBlock(b ?? null);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(getFriendlyRpcErrorMessage(e, network, "block"));
+    void Promise.allSettled([fetchBlockByHash(network, hash, true), fetchNetworkInfo(network)])
+      .then((results) => {
+        if (cancelled) return;
+        const [blockRes, infoRes] = results;
+        if (blockRes.status === "fulfilled") {
+          setBlock(blockRes.value ?? null);
+        } else {
+          setBlock(null);
+          setError(getFriendlyRpcErrorMessage(blockRes.reason, network, "block"));
+        }
+        if (infoRes.status === "fulfilled") setNetInfo(infoRes.value);
+        else setNetInfo(null);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -83,7 +90,15 @@ export default function BlockByHashPage() {
 
       {block ? (
         <section aria-label="Block details and transactions">
-          <BlockDetails block={block} network={network} explainerVariant="by-hash" />
+          <BlockDetails
+            block={block}
+            network={network}
+            explainerVariant="by-hash"
+            consensusHint={{
+              validatorCount: netInfo?.consensus?.validator_count ?? null,
+              model: netInfo?.consensus?.model,
+            }}
+          />
         </section>
       ) : null}
     </div>

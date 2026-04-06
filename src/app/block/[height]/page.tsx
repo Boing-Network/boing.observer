@@ -4,8 +4,8 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
-import { fetchBlockByHeight } from "@/lib/rpc-methods";
-import type { Block } from "@/lib/rpc-types";
+import { fetchBlockByHeight, fetchNetworkInfo } from "@/lib/rpc-methods";
+import type { Block, BoingNetworkInfo } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { BlockDetails } from "@/components/block-details";
 
@@ -15,6 +15,7 @@ export default function BlockByHeightPage() {
   const heightParam = params?.height as string;
   const height = heightParam ? parseInt(heightParam, 10) : NaN;
   const [block, setBlock] = useState<Block | null>(null);
+  const [netInfo, setNetInfo] = useState<BoingNetworkInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,12 +28,18 @@ export default function BlockByHeightPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchBlockByHeight(network, height, true)
-      .then((b) => {
-        if (!cancelled) setBlock(b ?? null);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(getFriendlyRpcErrorMessage(e, network, "block"));
+    void Promise.allSettled([fetchBlockByHeight(network, height, true), fetchNetworkInfo(network)])
+      .then((results) => {
+        if (cancelled) return;
+        const [blockRes, infoRes] = results;
+        if (blockRes.status === "fulfilled") {
+          setBlock(blockRes.value ?? null);
+        } else {
+          setBlock(null);
+          setError(getFriendlyRpcErrorMessage(blockRes.reason, network, "block"));
+        }
+        if (infoRes.status === "fulfilled") setNetInfo(infoRes.value);
+        else setNetInfo(null);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -78,7 +85,15 @@ export default function BlockByHeightPage() {
 
       {block ? (
         <section aria-label="Block details and transactions">
-          <BlockDetails block={block} network={network} explainerVariant="by-height" />
+          <BlockDetails
+            block={block}
+            network={network}
+            explainerVariant="by-height"
+            consensusHint={{
+              validatorCount: netInfo?.consensus?.validator_count ?? null,
+              model: netInfo?.consensus?.model,
+            }}
+          />
         </section>
       ) : null}
     </div>

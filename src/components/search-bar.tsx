@@ -69,12 +69,14 @@ export function SearchBar({ layout = "inline", className = "" }: SearchBarProps)
           }
           className="hash min-h-11 w-full flex-1 rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/80 px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-network-primary focus:outline-none focus:ring-1 focus:ring-network-primary sm:px-4"
           aria-label="Search by block height, transaction id, block hash, or account address"
+          data-testid="explorer-search-input"
         />
         <button
           type="button"
           onClick={() => search()}
           disabled={loading}
           aria-label={loading ? "Searching…" : "Search"}
+          data-testid="explorer-search-submit"
           className={`min-h-11 shrink-0 rounded-lg bg-network-primary px-4 py-2.5 font-display text-sm font-semibold text-white hover:bg-network-primary-light transition-colors focus:outline-none focus:ring-2 focus:ring-network-cyan disabled:opacity-60 ${
             stacked ? "w-full" : ""
           }`}

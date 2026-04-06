@@ -150,6 +150,12 @@ export default function RootLayout({
               <Link href="/tools" className="text-network-cyan hover:underline">
                 Tools
               </Link>
+              <Link href="/dex/pools" className="text-network-cyan hover:underline">
+                DEX directory
+              </Link>
+              <Link href="/tools/node-health" className="text-network-cyan hover:underline">
+                Node health
+              </Link>
             </nav>
           </footer>
         </NetworkProvider>

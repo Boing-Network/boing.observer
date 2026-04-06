@@ -155,7 +155,17 @@ export default function HomePage() {
                       </span>
                     </div>
                     <p className="text-xs text-[var(--text-muted)]">
-                      Proposer <span className="hash text-[var(--text-secondary)]">{shortenHash(proposerStr)}</span>
+                      Proposer{" "}
+                      {proposerStr ? (
+                        <Link
+                          href={`/account/${proposerStr}?network=${network}`}
+                          className="hash text-network-cyan hover:underline"
+                        >
+                          {shortenHash(proposerStr)}
+                        </Link>
+                      ) : (
+                        <span className="hash text-[var(--text-secondary)]">—</span>
+                      )}
                     </p>
                   </Link>
                 );

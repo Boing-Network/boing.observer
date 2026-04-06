@@ -39,6 +39,9 @@ export function Header() {
           <Link href="/tools" className="nav-link whitespace-nowrap px-1 py-2 text-sm">
             Tools
           </Link>
+          <Link href="/dex/pools" className="nav-link whitespace-nowrap px-1 py-2 text-sm">
+            DEX
+          </Link>
           <a
             href={WALLET_URL}
             target="_blank"

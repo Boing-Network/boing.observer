@@ -11,6 +11,9 @@ const NAV_LINKS = [
   { href: "/about", label: "About" },
   { href: "/qa", label: "QA transparency" },
   { href: "/tools", label: "Tools" },
+  { href: "/dex/pools", label: "DEX directory" },
+  { href: "/dex/quote", label: "DEX quotes" },
+  { href: "/tools/node-health", label: "Node health" },
 ] as const;
 
 export function MobileMenu() {

@@ -112,6 +112,36 @@ export interface BoingSyncState {
   latest_block_hash: string;
 }
 
+/** Result of `boing_health` (liveness + RPC limits snapshot; shape may grow with node). */
+export interface BoingHealthRpcSurface {
+  jsonrpc_batch_max?: number;
+  get_logs_max_block_range?: number;
+  get_logs_max_results?: number;
+  http_max_body_megabytes?: number;
+  http_rate_limit_requests_per_sec?: number;
+  websocket_max_connections?: number;
+  ready_min_peers?: number | null;
+  max_log_topic_filters?: number;
+}
+
+export interface BoingHealthRpcMetrics {
+  rate_limited_total?: number;
+  json_parse_errors_total?: number;
+  batch_too_large_total?: number;
+  method_not_found_total?: number;
+  websocket_cap_rejects_total?: number;
+}
+
+export interface BoingHealth {
+  ok?: boolean;
+  client_version?: string;
+  chain_id?: number | null;
+  chain_name?: string | null;
+  head_height?: number;
+  rpc_surface?: BoingHealthRpcSurface;
+  rpc_metrics?: BoingHealthRpcMetrics;
+}
+
 export interface Account {
   balance: string;
   nonce: number;
@@ -145,6 +175,40 @@ export interface QaPoolConfigResult {
   administrator_count: number;
   accepts_new_pending: boolean;
   pending_count: number;
+}
+
+/** Subset of `boing_getNetworkInfo` used by the explorer UI. */
+export interface BoingNetworkInfo {
+  chain_id?: number | null;
+  chain_name?: string | null;
+  head_height: number;
+  consensus?: {
+    validator_count?: number;
+    model?: string;
+  };
+  end_user?: {
+    chain_display_name?: string;
+    explorer_url?: string | null;
+    faucet_url?: string | null;
+    canonical_native_cp_pool?: string | null;
+    canonical_native_dex_factory?: string | null;
+  };
+}
+
+/** Result of `boing_getContractStorage`. */
+export interface ContractStorageWord {
+  value: string;
+}
+
+/** Embedded method catalog from `boing_getRpcMethodCatalog` (shape varies by node). */
+export interface RpcMethodCatalogResult {
+  description?: string;
+  methods?: Array<{
+    name: string;
+    summary?: string;
+    params?: unknown;
+    result?: unknown;
+  }>;
 }
 
 /** Result of `boing_getQaRegistry` (read-only). */
@@ -210,10 +274,12 @@ export function toPrefixedHex64(value: string): string {
   return hex ? `0x${hex}` : "";
 }
 
-/** Normalize address to 64 hex chars (no 0x) for links and display. */
+/**
+ * Normalize a Boing AccountId for links: exactly 32 bytes (64 hex), optional 0x.
+ * Does not left-pad short hex (avoids mistaking truncated input for a valid account).
+ */
 export function normalizeAddress(addr: string): string {
-  const hex = stripHexPrefix(addr);
-  return hex.padStart(64, "0").toLowerCase().slice(-64);
+  return normalizeHex64(addr);
 }
 
 /** Native BOING balances from RPC are whole units (u128), not 10^-18 fractions. */

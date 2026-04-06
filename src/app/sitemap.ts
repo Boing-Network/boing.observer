@@ -34,10 +34,34 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
+      url: `${SITE_URL}/tools/rpc-catalog`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.65,
+    },
+    {
+      url: `${SITE_URL}/tools/node-health`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.65,
+    },
+    {
       url: `${SITE_URL}/qa`,
       lastModified: new Date(),
       changeFrequency: "hourly",
       priority: 0.85,
+    },
+    {
+      url: `${SITE_URL}/dex/pools`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.65,
+    },
+    {
+      url: `${SITE_URL}/dex/quote`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.65,
     },
   ];
 }

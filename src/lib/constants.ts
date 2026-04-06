@@ -15,7 +15,7 @@ export const WALLET_URL = "https://boing.express";
 const rawRepo = process.env.NEXT_PUBLIC_BOING_PROTOCOL_DOCS_REPO?.trim();
 /** Non-empty `owner/repo` only; otherwise default development repo where `docs/` exists on `main`. */
 export const BOING_PROTOCOL_DOCS_REPO =
-  rawRepo && rawRepo.includes("/") ? rawRepo : "chiku524/boing.network";
+  rawRepo && rawRepo.includes("/") ? rawRepo : "Boing-Network/boing.network";
 
 /** Base URL for external Boing Network docs (GitHub blob UI). */
 export const DOCS_BASE = `https://github.com/${BOING_PROTOCOL_DOCS_REPO}/blob/main/docs`;
@@ -38,8 +38,20 @@ export const CANONICAL_QA_POOL_CONFIG_JSON_URL = `${DOCS_RAW_BASE}/config/qa_poo
 /** Explains canonical vs live QA config and links to RPC. */
 export const CANONICAL_QA_DOC_URL = `${DOCS_BASE}/config/CANONICAL-QA-REGISTRY.md`;
 
+/** Cross-app alignment: URLs, RPC envs, chain IDs, address format (§4). */
+export const THREE_CODEBASE_ALIGNMENT_URL = `${DOCS_BASE}/THREE-CODEBASE-ALIGNMENT.md`;
+
+/** Dependent-project backlog: Express, Observer, partners. */
+export const HANDOFF_DEPENDENT_PROJECTS_URL = `${DOCS_BASE}/HANDOFF-DEPENDENT-PROJECTS.md`;
+
+/** Hosted indexer / durable read path (OBS-1); not implemented in this explorer repo by default. */
+export const OBSERVER_HOSTED_SERVICE_URL = `${DOCS_BASE}/OBSERVER-HOSTED-SERVICE.md`;
+
+/** §4 — 32-byte AccountId (64 hex), not 20-byte Ethereum addresses. */
+export const ADDRESS_FORMAT_ALIGNMENT_URL = `${THREE_CODEBASE_ALIGNMENT_URL}#4-token-and-address-format`;
+
 /** Local VibeMiner / localhost:8545 vs public testnet RPC (THREE-CODEBASE-ALIGNMENT §2.1). */
-export const QA_RPC_TWO_SURFACES_DOC_URL = `${DOCS_BASE}/THREE-CODEBASE-ALIGNMENT.md#21-qa-registry-rpc-boing_getqaregistry--two-different-surfaces`;
+export const QA_RPC_TWO_SURFACES_DOC_URL = `${THREE_CODEBASE_ALIGNMENT_URL}#21-qa-registry-rpc-boing_getqaregistry--two-different-surfaces`;
 
 /** Canonical public faucet page on boing.network. */
 export const NETWORK_FAUCET_URL = `${WEBSITE_URL}/faucet`;

@@ -6,10 +6,14 @@ import { rpcCall, getRpcBaseUrl } from "./rpc-client";
 import type {
   Block,
   Account,
+  BoingHealth,
+  BoingNetworkInfo,
   BoingSyncState,
+  ContractStorageWord,
   QaPoolConfigResult,
   QaPoolListResult,
   QaRegistryResult,
+  RpcMethodCatalogResult,
   TransactionReceipt,
 } from "./rpc-types";
 import { normalizeHex64 } from "./rpc-types";
@@ -54,6 +58,16 @@ export async function fetchSyncState(network: NetworkId): Promise<BoingSyncState
   return cachedRpc(`${base}:boing_getSyncState`, 5_000, () =>
     rpcCall<BoingSyncState>(network, base, "boing_getSyncState", [])
   );
+}
+
+/** Liveness + build identity (`boing_health`). Returns `null` if the method is missing or errors. */
+export async function tryFetchBoingHealth(network: NetworkId): Promise<BoingHealth | null> {
+  const base = getRpcBaseUrl(network);
+  try {
+    return await rpcCall<BoingHealth>(network, base, "boing_health", []);
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchBlockByHeight(
@@ -176,4 +190,41 @@ export async function fetchQaRegistry(network: NetworkId): Promise<QaRegistryRes
   return cachedRpc(`${base}:boing_getQaRegistry`, 12_000, () =>
     rpcCall<QaRegistryResult>(network, base, "boing_getQaRegistry", [])
   );
+}
+
+/** Embedded JSON-RPC catalog from the node (see RPC-API-SPEC `boing_getRpcMethodCatalog`). */
+export async function fetchRpcMethodCatalog(network: NetworkId): Promise<RpcMethodCatalogResult> {
+  const base = getRpcBaseUrl(network);
+  return cachedRpc(`${base}:boing_getRpcMethodCatalog`, 300_000, () =>
+    rpcCall<RpcMethodCatalogResult>(network, base, "boing_getRpcMethodCatalog", [])
+  );
+}
+
+/** Chain metadata + consensus snapshot (see RPC-API-SPEC `boing_getNetworkInfo`). */
+export async function fetchNetworkInfo(network: NetworkId): Promise<BoingNetworkInfo> {
+  const base = getRpcBaseUrl(network);
+  return cachedRpc(`${base}:boing_getNetworkInfo`, 15_000, () =>
+    rpcCall<BoingNetworkInfo>(network, base, "boing_getNetworkInfo", [])
+  );
+}
+
+const ZERO_STORAGE_KEY = `0x${"0".repeat(64)}` as const;
+
+/**
+ * Read one 32-byte storage word (`boing_getContractStorage`). Returns `null` on RPC failure
+ * (e.g. method missing, account not a contract) so callers can treat as inconclusive.
+ */
+export async function tryFetchContractStorageWord(
+  network: NetworkId,
+  contractHex0x: string,
+  keyHex0x: string = ZERO_STORAGE_KEY
+): Promise<ContractStorageWord | null> {
+  const base = getRpcBaseUrl(network);
+  const c = contractHex0x.startsWith("0x") ? contractHex0x : `0x${contractHex0x}`;
+  const k = keyHex0x.startsWith("0x") ? keyHex0x : `0x${keyHex0x}`;
+  try {
+    return await rpcCall<ContractStorageWord>(network, base, "boing_getContractStorage", [c, k]);
+  } catch {
+    return null;
+  }
 }

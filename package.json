@@ -6,16 +6,23 @@
     "node": ">=20"
   },
   "scripts": {
+    "postinstall": "node scripts/sync-boing-sdk.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
+    "@noble/ed25519": "^2.2.0",
+    "@noble/hashes": "^1.6.0",
+    "boing-network-root": "git+https://github.com/Boing-Network/boing.network.git",
     "next": "15.5.14",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -31,7 +38,9 @@
     "eslint-config-next": "15.5.14",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
+    "@playwright/test": "^1.50.1",
     "typescript": "^5.7.2",
+    "vitest": "^3.0.5",
     "wrangler": "^4.76.0"
   }
 }

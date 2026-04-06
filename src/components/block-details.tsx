@@ -11,10 +11,13 @@ export function BlockDetails({
   block,
   network,
   explainerVariant,
+  consensusHint,
 }: {
   block: Block;
   network: string;
   explainerVariant?: "by-hash" | "by-height";
+  /** From `boing_getNetworkInfo.consensus` on the same RPC (optional). */
+  consensusHint?: { validatorCount: number | null; model?: string };
 }) {
   const proposerHex = hexForLink(block.header.proposer);
   const parentHash = hexForLink(block.header.parent_hash);
@@ -62,19 +65,43 @@ export function BlockDetails({
                 : "—"}
             </dd>
           </div>
-          <div className="flex flex-wrap gap-x-2 items-center gap-y-1">
-            <dt className="text-[var(--text-muted)]">Proposer</dt>
-            <dd className="flex items-center gap-2 flex-wrap">
-              {proposerHex ? (
-                <>
-                  <Link href={`/account/${proposerHex}?network=${network}`} className="address-link">
-                    {shortenHash(block.header.proposer)}
-                  </Link>
-                  <CopyButton value={toPrefixedHex64(proposerHex)} label="Copy address" />
-                </>
-              ) : (
-                "—"
-              )}
+          <div className="flex flex-wrap gap-x-2 items-start gap-y-1">
+            <dt className="pt-0.5 text-[var(--text-muted)]">Block proposer</dt>
+            <dd className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-2">
+                {proposerHex ? (
+                  <>
+                    <Link
+                      href={`/account/${proposerHex}?network=${network}`}
+                      className="address-link font-mono text-sm"
+                      title="Validator account that proposed this block (HotStuff BFT)"
+                    >
+                      {shortenHash(block.header.proposer)}
+                    </Link>
+                    <CopyButton value={toPrefixedHex64(proposerHex)} label="Copy proposer address" />
+                  </>
+                ) : (
+                  "—"
+                )}
+              </div>
+              <p className="text-xs leading-relaxed text-[var(--text-muted)]">
+                Consensus validators rotate proposal duties; open the account page for balance and contract hints.
+              </p>
+              {consensusHint &&
+                (consensusHint.validatorCount != null || consensusHint.model) && (
+                  <p className="text-xs text-[var(--text-muted)]">
+                    This node&apos;s validator set size:{" "}
+                    <span className="font-mono text-[var(--text-secondary)]">
+                      {consensusHint.validatorCount ?? "—"}
+                    </span>
+                    {consensusHint.model ? (
+                      <>
+                        {" "}
+                        · <span className="font-mono">{consensusHint.model}</span>
+                      </>
+                    ) : null}
+                  </p>
+                )}
             </dd>
           </div>
           <div className="flex flex-wrap gap-x-2">
