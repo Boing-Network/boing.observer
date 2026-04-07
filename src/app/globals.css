@@ -22,18 +22,72 @@
   --network-gold: #fbbf24;
   --border-color: rgba(124, 58, 237, 0.18);
   --border-hover: rgba(124, 58, 237, 0.45);
+  /* Stone + engraving backdrop (see AppStoneBackground) */
+  --stone-base: #060910;
+  --stone-mid: #0b121f;
+  --stone-vein: rgba(148, 163, 184, 0.04);
 }
 
-body {
+/* Stone slab + grain + etch on body so every route and scroll position matches (see AppStoneBackground for neon layer). */
+body.app-page-canvas {
   color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   min-height: 100vh;
-  background-color: var(--boing-black);
+  background-color: var(--stone-base);
   background-image:
-    radial-gradient(ellipse 120% 70% at 50% -25%, rgba(124, 58, 237, 0.14), transparent 55%),
-    radial-gradient(ellipse 90% 60% at 100% 0%, rgba(6, 182, 212, 0.08), transparent 50%),
-    radial-gradient(ellipse 70% 45% at 0% 100%, rgba(192, 38, 211, 0.06), transparent 45%);
+    repeating-linear-gradient(
+      105deg,
+      transparent,
+      transparent 2px,
+      var(--stone-vein) 2px,
+      var(--stone-vein) 3px
+    ),
+    repeating-linear-gradient(
+      -18deg,
+      transparent,
+      transparent 64px,
+      rgba(6, 182, 212, 0.022) 64px,
+      rgba(6, 182, 212, 0.022) 65px
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.14'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse 130% 55% at 50% -20%, rgba(124, 58, 237, 0.1), transparent 52%),
+    radial-gradient(ellipse 85% 50% at 100% 8%, rgba(6, 182, 212, 0.06), transparent 48%),
+    radial-gradient(ellipse 75% 40% at 0% 92%, rgba(192, 38, 211, 0.05), transparent 46%),
+    linear-gradient(165deg, var(--stone-mid) 0%, var(--stone-base) 45%, #05080e 100%);
   background-attachment: fixed;
+}
+
+.app-stone-vignette {
+  background: radial-gradient(ellipse 85% 70% at 50% 45%, transparent 30%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+}
+
+.app-bg-path-groove {
+  stroke: rgba(148, 163, 184, 0.11);
+}
+
+.app-bg-branch-opacity {
+  opacity: 0.72;
+}
+
+.app-bg-node-fill {
+  fill: rgba(34, 211, 238, 0.35);
+  stroke: rgba(167, 139, 250, 0.45);
+  stroke-width: 0.6;
+}
+
+@keyframes app-bg-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.88;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.app-bg-glow-pulse {
+  animation: app-bg-glow-pulse 10s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -45,7 +99,12 @@ body {
     transition-duration: 0.01ms !important;
   }
 
-  body {
+  .app-bg-glow-pulse {
+    animation: none;
+    opacity: 0.92;
+  }
+
+  body.app-page-canvas {
     background-attachment: scroll;
   }
 }
