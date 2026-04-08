@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
 import { SearchBar } from "@/components/search-bar";
+import { SiteLogo } from "@/components/site-logo";
 import { NetworkStats } from "@/components/network-stats";
 import { NetworkChainContext } from "@/components/network-chain-context";
 import { NetworkCharts } from "@/components/network-charts";
@@ -55,12 +56,7 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       <section aria-labelledby="home-intro-heading">
-        <h1
-          id="home-intro-heading"
-          className="font-display text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl"
-        >
-          Boing Observer
-        </h1>
+        <SiteLogo variant="hero" headingId="home-intro-heading" />
         <p className="mt-1 max-w-2xl text-[var(--text-secondary)]">
           Blocks, accounts, and transactions on Boing.{" "}
           <Link href="/tools" className="text-network-cyan hover:underline">

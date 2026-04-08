@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { NETWORK_FAUCET_URL, WALLET_URL } from "@/lib/constants";
 import { MobileMenu } from "@/components/mobile-menu";
+import { SiteLogo } from "@/components/site-logo";
 import { NetworkSelector } from "./network-selector";
 import { SearchBar } from "./search-bar";
 
@@ -13,15 +14,7 @@ export function Header() {
       role="banner"
     >
       <div className="mx-auto flex min-h-14 w-full max-w-7xl flex-wrap items-center gap-x-2 gap-y-2 px-4 py-2 sm:gap-x-3 sm:px-6 lg:h-14 lg:flex-nowrap lg:py-0">
-        <Link
-          href="/"
-          className="min-w-0 shrink-0 font-display text-base font-bold tracking-tight text-[var(--text-primary)] hover:text-network-cyan transition-colors sm:text-lg"
-          aria-label="Boing Observer - Home"
-        >
-          <span aria-hidden>⬡ </span>
-          <span className="hidden min-[360px]:inline">Boing </span>
-          Observer
-        </Link>
+        <SiteLogo className="shrink-0" />
 
         <nav
           className="hidden shrink-0 items-center gap-x-2 lg:flex xl:gap-x-4"

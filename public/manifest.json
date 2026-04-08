@@ -4,8 +4,8 @@
   "description": "Blockchain explorer for Boing Network. Browse blocks, transactions, and accounts.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a12",
-  "theme_color": "#00d4ff",
+  "background_color": "#050c18",
+  "theme_color": "#00e8c8",
   "icons": [
     {
       "src": "/favicon.svg",
