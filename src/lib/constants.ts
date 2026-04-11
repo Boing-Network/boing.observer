@@ -44,6 +44,9 @@ export const THREE_CODEBASE_ALIGNMENT_URL = `${DOCS_BASE}/THREE-CODEBASE-ALIGNME
 /** Dependent-project backlog: Express, Observer, partners. */
 export const HANDOFF_DEPENDENT_PROJECTS_URL = `${DOCS_BASE}/HANDOFF-DEPENDENT-PROJECTS.md`;
 
+/** Native DEX directory Worker (D1/R2), `GET /v1/directory/meta` / `pools`, snapshot caveats — optional consumer for pool/LP UI. */
+export const NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL = `${DOCS_BASE}/HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md`;
+
 /** Hosted indexer / durable read path (OBS-1); not implemented in this explorer repo by default. */
 export const OBSERVER_HOSTED_SERVICE_URL = `${DOCS_BASE}/OBSERVER-HOSTED-SERVICE.md`;
 

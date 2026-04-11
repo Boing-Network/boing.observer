@@ -6,6 +6,15 @@ It has been updated to reflect the current `boing.network` state, including the 
 
 Cross-repo backlog and consumer alignment for **boing.express**, **boing.observer**, and partner dApps now also live in the network monorepo as [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md), alongside [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md). This file remains the observer-local view; treat the network doc as the shared checklist and verification entry point.
 
+### QA registry RPC, public RPC vs local node, native DEX directory API
+
+- Read-only **`boing_getQaRegistry`** is a **node** capability; **boing.observer** uses **`NEXT_PUBLIC_TESTNET_RPC`**, defaulting to **public testnet** (`https://testnet-rpc.boing.network`), not a user’s VibeMiner or local `8545`. Upgrading **public** RPC is infra; local-only upgrades do not change explorer behavior. UI copy and README link **[THREE-CODEBASE-ALIGNMENT.md §2.1](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md#21-qa-registry-rpc-boing_getqaregistry--two-different-surfaces)** (same anchor as in-app `QA_RPC_TWO_SURFACES_DOC_URL`).
+- There is **no** second-RPC failover on **`Method not found`**; the QA page surfaces **canonical JSON/docs** when the registry RPC call fails.
+- **Native DEX directory** can also be served by a **Cloudflare Worker** (`GET /v1/directory/meta`, `/v1/directory/pools`, …) with documented snapshot and shallow-reorg limits — see **[HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md)**. Observer **`/dex/pools`** still uses **`boing-sdk`** + RPC; consuming the Worker is optional if we add large-scale pool/LP surfaces later.
+- **Post–operator-upgrade audit:** From a clean shell, `POST` **`boing_chainHeight`** and **`boing_getQaRegistry`** to the public URL and compare to **`QaRegistryResult`** in `src/lib/rpc-types.ts` / SDK expectations; open an issue if shapes diverge.
+
+**Last public-RPC smoke (handwritten in repo):** 2026-04-10 — `boing_chainHeight` **9**; `boing_getQaRegistry` returned `max_bytecode_size: 32768` and empty `blocklist` / `scam_patterns` / `always_review_categories` / `content_blocklist` arrays (matches explorer types). Re-run after tunnel or node upgrades.
+
 ## Current Status
 
 `boing.observer` is a functioning read-only blockchain explorer for Boing Network built with `Next.js 15`, `React 18`, `TypeScript`, `Tailwind CSS`, and deployed toward `Cloudflare Workers` via the `OpenNext` Cloudflare adapter.

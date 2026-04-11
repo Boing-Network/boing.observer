@@ -71,6 +71,13 @@ No API keys required for read-only RPC. Do not hardcode production RPC URLs in t
 
 Important: if `NEXT_PUBLIC_MAINNET_RPC` is unset or equals the testnet URL, the explorer keeps users on testnet and does not treat “mainnet” as live.
 
+### RPC URL, retries, and “Method not found”
+
+- **Default:** When `NEXT_PUBLIC_TESTNET_RPC` is unset, the app uses **`https://testnet-rpc.boing.network`** (see `src/lib/rpc-client.ts`). The browser calls **`POST /api/rpc`**, which forwards to that configured base URL server-side.
+- **Retries:** The JSON-RPC client retries **once** after a short delay only for **transient** cases (network errors, HTTP 429, 5xx). It does **not** switch to a second RPC hostname or alternate URL.
+- **`Method not found` / missing methods:** There is **no** automatic failover to another node. Surfaces such as **QA transparency** (`/qa`) still show **canonical QA JSON and doc links** when `boing_getQaRegistry` (or related calls) fail — see [THREE-CODEBASE-ALIGNMENT.md §2.1](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md#21-qa-registry-rpc-boing_getqaregistry--two-different-surfaces) (*local VibeMiner / `127.0.0.1:8545` vs public testnet RPC*). Upgrading the **public** RPC backend is an infra task; updating only a local node does not change what the explorer calls.
+- **Native DEX directory (optional future):** A Cloudflare Worker can serve cursor-paginated **`GET /v1/directory/meta`** and **`/v1/directory/pools`** (materialized indexer view, not a full subgraph). See [HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md) in the protocol repo; this explorer’s **`/dex/pools`** path still uses **`boing-sdk`** against RPC today.
+
 ## Testnet launch readiness
 
 For the Boing incentivized testnet launch, the following must be in place for the explorer (and other apps) to work:
@@ -185,7 +192,8 @@ NEXT_PUBLIC_BING_SITE_VERIFICATION=your-bing-code
 ## Reference
 
 - **RPC spec / QA docs:** linked from the app using `NEXT_PUBLIC_BOING_PROTOCOL_DOCS_REPO` (default `Boing-Network/boing.network` on `main` under `docs/`).
-- **Cross-repo handoff (Express, Observer, partners):** [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md) and [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md) in the canonical `boing.network` repo.
+- **Cross-repo handoff (Express, Observer, partners):** [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md) and [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md) in the canonical `boing.network` repo (RPC defaults in **§2**; **§2.1** explains public testnet vs local node for methods such as `boing_getQaRegistry`).
+- **Native DEX directory Worker (D1, pagination, snapshot limits):** [HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md).
 - **Wallet/auth alignment:** See [HANDOFF.md](HANDOFF.md) (sync review and wallet integration notes).
 - **Design system / explorer prompt:** under `docs/` in the same GitHub repo as above (see boing.network monorepo).
 

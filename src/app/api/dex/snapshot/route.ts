@@ -13,6 +13,8 @@ function parseNetwork(v: string | null): NetworkId | null {
 /**
  * Native DEX directory snapshot (boing-sdk). Query: network, logs=none|recent|full
  * — see HANDOFF-DEPENDENT-PROJECTS / BOING-OBSERVER-AND-EXPRESS §4.3.
+ * Optional alternative: Worker `GET /v1/directory/meta` + `/v1/directory/pools` (indexer D1;
+ * snapshot semantics) — docs/HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md in boing.network.
  */
 export async function GET(req: NextRequest) {
   const network = parseNetwork(req.nextUrl.searchParams.get("network"));

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
 import { explorerAssetHref } from "@/lib/explorer-href";
 import { shortenHash, normalizeHex64 } from "@/lib/rpc-types";
-import { THREE_CODEBASE_ALIGNMENT_URL } from "@/lib/constants";
+import { NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL, QA_RPC_TWO_SURFACES_DOC_URL } from "@/lib/constants";
 
 type LogsMode = "none" | "recent" | "full";
 
@@ -71,14 +71,23 @@ export function PoolsPanel() {
           ). &quot;Recent&quot; scans up to 128 blocks ending at chain tip. &quot;Full&quot; walks the whole chain in bounded
           chunks — slower; use sparingly on public RPC (
           <a
-            href={`${THREE_CODEBASE_ALIGNMENT_URL}#21-qa-registry-rpc-boing_getqaregistry--two-different-surfaces`}
+            href={QA_RPC_TWO_SURFACES_DOC_URL}
             className="text-network-cyan hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >
-            RPC load
+            alignment §2.1 (public vs local RPC)
           </a>
-          ).
+          ). For a separate cursor-paginated directory backed by indexer D1 (not a subgraph), see{" "}
+          <a
+            href={NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL}
+            className="text-network-cyan hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN
+          </a>
+          .
         </p>
         <div className="flex flex-wrap gap-2">
           {(
