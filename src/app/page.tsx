@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { explorerAssetHref } from "@/lib/explorer-href";
 import { useNetwork } from "@/context/network-context";
@@ -16,43 +16,42 @@ import type { Block } from "@/lib/rpc-types";
 import { shortenHash, hexForLink } from "@/lib/rpc-types";
 import { NETWORK_FAUCET_URL } from "@/lib/constants";
 
+/** Between 30s–1m: midpoint keeps the list fresh without stacking on the 15s stats poll. */
+const LATEST_BLOCKS_REFRESH_MS = 45_000;
+
 export default function HomePage() {
   const { network } = useNetwork();
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
+  const loadLatestBlocks = useCallback(async () => {
     setError(null);
-    fetchChainHeight(network)
-      .then((h) => {
-        if (cancelled) return [];
-        return Promise.all(
-          Array.from({ length: 12 }, (_, i) =>
-            fetchBlockByHeight(network, Math.max(0, h - i))
-          )
-        );
-      })
-      .then((results) => {
-        if (cancelled || !results) return;
-        setBlocks(
-          results
-            .filter((b): b is Block => b != null && "hash" in b && "header" in b)
-            .slice(0, 12)
-        );
-      })
-      .catch((e) => {
-        if (!cancelled) setError(getFriendlyRpcErrorMessage(e, network, "general"));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+    try {
+      const h = await fetchChainHeight(network);
+      const results = await Promise.all(
+        Array.from({ length: 12 }, (_, i) =>
+          fetchBlockByHeight(network, Math.max(0, h - i))
+        )
+      );
+      setBlocks(
+        results
+          .filter((b): b is Block => b != null && "hash" in b && "header" in b)
+          .slice(0, 12)
+      );
+    } catch (e) {
+      setError(getFriendlyRpcErrorMessage(e, network, "general"));
+    } finally {
+      setLoading(false);
+    }
   }, [network]);
+
+  useEffect(() => {
+    setLoading(true);
+    void loadLatestBlocks();
+    const id = setInterval(() => void loadLatestBlocks(), LATEST_BLOCKS_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [loadLatestBlocks]);
 
   return (
     <div className="space-y-8">
