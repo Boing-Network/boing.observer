@@ -18,4 +18,4 @@ service = "boing-observer"
 # You can instead override in the dashboard: Worker → Settings → Variables and secrets → Add variable
 # (use type "plain text", not "secret") — same name: BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS = 1
 [vars]
-BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS = "0"
+BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS = "1"
