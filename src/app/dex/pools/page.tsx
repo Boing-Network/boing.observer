@@ -36,6 +36,8 @@ export default function DexPoolsPage() {
           Native DEX directory
         </h1>
         <p className="max-w-2xl text-[var(--text-secondary)] leading-relaxed">
+          Includes cursor-paginated <code className="rounded bg-white/10 px-1 text-sm">boing_listDexPools</code> rows
+          (reserves, fee, decimals) using the canonical factory from network info, plus the older snapshot view below.
           Bounded, read-only view aligned with{" "}
           <a
             href={HANDOFF_DEPENDENT_PROJECTS_URL}
@@ -63,6 +65,10 @@ export default function DexPoolsPage() {
         <p className="text-sm">
           <Link href="/tokens" className="text-network-cyan hover:underline">
             Token &amp; asset index
+          </Link>
+          {" · "}
+          <Link href="/dex/tokens" className="text-network-cyan hover:underline">
+            DEX token directory
           </Link>
           {" · "}
           <Link href="/dex/quote" className="text-network-cyan hover:underline">

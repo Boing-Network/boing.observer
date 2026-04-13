@@ -121,7 +121,7 @@ This project is set up to deploy to **Cloudflare Workers** using the [OpenNext C
    npm run deploy
    ```
 
-   This runs `opennextjs-cloudflare build` then deploys the Worker. The first time, Wrangler will create a new Worker named **boing-observer** (see `wrangler.jsonc`).
+   This runs `opennextjs-cloudflare build` then deploys the Worker. The first time, Wrangler will create a new Worker named **boing-observer** (see `wrangler.toml`).
 
 4. Attach the custom domain **boing.observer**:
    - In **Cloudflare Dashboard** go to **Workers & Pages** → **boing-observer** → **Settings** → **Domains & Routes**.

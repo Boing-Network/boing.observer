@@ -1,0 +1,21 @@
+# Boing Observer — Cloudflare Worker (OpenNext). https://developers.cloudflare.com/workers/wrangler/configuration/
+name = "boing-observer"
+main = ".open-next/worker.js"
+compatibility_date = "2025-02-01"
+compatibility_flags = [ "nodejs_compat", "global_fetch_strictly_public" ]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[[services]]
+binding = "WORKER_SELF_REFERENCE"
+service = "boing-observer"
+
+# --- DEX discovery (ops) ---
+# Plain environment variable (not a Workers "secret"). Read by API routes at runtime on Cloudflare.
+# Set to "1" here to enable the diagnostics checkbox + boing_listDexPools / boing_listDexTokens includeDiagnostics.
+# You can instead override in the dashboard: Worker → Settings → Variables and secrets → Add variable
+# (use type "plain text", not "secret") — same name: BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS = 1
+[vars]
+BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS = "0"

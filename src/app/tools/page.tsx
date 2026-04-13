@@ -5,7 +5,7 @@ import { SITE_URL, NETWORK_FAUCET_URL } from "@/lib/constants";
 export const metadata: Metadata = {
   title: "Developer tools",
   description:
-    "Boing Observer developer utilities: token index, faucet, QA pre-flight, RPC catalog, native DEX directory, node health, and more.",
+    "Boing Observer developer utilities: token index, DEX token directory (boing_listDexTokens), native DEX pools, faucet, QA pre-flight, RPC catalog, node health, and more.",
   alternates: { canonical: `${SITE_URL}/tools` },
 };
 
@@ -111,13 +111,27 @@ export default function ToolsPage() {
         </li>
         <li>
           <Link
+            href="/dex/tokens"
+            className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+          >
+            <h2 className="font-display text-lg font-semibold text-network-cyan">DEX token directory (RPC)</h2>
+            <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+              <code className="rounded bg-white/10 px-1 text-xs">boing_listDexTokens</code> via{" "}
+              <code className="rounded bg-white/10 px-1 text-xs">boing-sdk</code> — pool counts, first-seen height,
+              metadata source, decimals (canonical factory).
+            </p>
+          </Link>
+        </li>
+        <li>
+          <Link
             href="/dex/pools"
             className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
           >
             <h2 className="font-display text-lg font-semibold text-network-cyan">Native DEX directory</h2>
             <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-              Factory hints, pair counts, optional bounded <code className="rounded bg-white/10 px-1 text-xs">register_pair</code>{" "}
-              logs via <code className="rounded bg-white/10 px-1 text-xs">boing-sdk</code>.
+              <code className="rounded bg-white/10 px-1 text-xs">boing_listDexPools</code>, factory hints, pair counts,
+              optional bounded <code className="rounded bg-white/10 px-1 text-xs">register_pair</code> logs via{" "}
+              <code className="rounded bg-white/10 px-1 text-xs">boing-sdk</code>.
             </p>
           </Link>
         </li>

@@ -6,6 +6,7 @@ import { useNetwork } from "@/context/network-context";
 import { explorerAssetHref } from "@/lib/explorer-href";
 import { shortenHash, normalizeHex64 } from "@/lib/rpc-types";
 import { NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL, QA_RPC_TWO_SURFACES_DOC_URL } from "@/lib/constants";
+import { DexRpcPoolsSection } from "./dex-rpc-pools-section";
 
 type LogsMode = "none" | "recent" | "full";
 
@@ -224,6 +225,8 @@ export function PoolsPanel() {
           )}
         </div>
       )}
+
+      <DexRpcPoolsSection />
     </div>
   );
 }

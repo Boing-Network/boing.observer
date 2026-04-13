@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: "/qa", label: "QA transparency" },
   { href: "/tools", label: "Tools" },
   { href: "/tokens", label: "Token index" },
+  { href: "/dex/tokens", label: "DEX token directory" },
   { href: "/dex/pools", label: "DEX directory" },
   { href: "/dex/quote", label: "DEX quotes" },
   { href: "/tools/node-health", label: "Node health" },

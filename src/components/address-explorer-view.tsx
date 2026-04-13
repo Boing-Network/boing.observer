@@ -22,6 +22,8 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
   const [account, setAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dexLookupLoading, setDexLookupLoading] = useState(true);
+  const [inDexUniverse, setInDexUniverse] = useState(false);
 
   useEffect(() => {
     if (!isHex64(address)) {
@@ -42,6 +44,35 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [network, address]);
+
+  useEffect(() => {
+    if (!isHex64(address)) {
+      setDexLookupLoading(false);
+      setInDexUniverse(false);
+      return;
+    }
+    let cancelled = false;
+    setDexLookupLoading(true);
+    const hexId = encodeURIComponent(toPrefixedHex64(address));
+    fetch(`/api/dex/token?network=${encodeURIComponent(network)}&id=${hexId}`, { headers: { Accept: "application/json" } })
+      .then(async (res) => {
+        const j = (await res.json()) as { supported?: boolean; inDexUniverse?: boolean };
+        if (!cancelled && res.ok && j.supported !== false) {
+          setInDexUniverse(Boolean(j.inDexUniverse));
+        } else if (!cancelled) {
+          setInDexUniverse(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setInDexUniverse(false);
+      })
+      .finally(() => {
+        if (!cancelled) setDexLookupLoading(false);
       });
     return () => {
       cancelled = true;
@@ -112,6 +143,25 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
             0x{address}
           </p>
           <CopyButton value={toPrefixedHex64(address)} label="Copy address" />
+          {!dexLookupLoading && inDexUniverse && (
+            <span className="inline-flex flex-wrap items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-200">
+              In DEX universe
+              <Link href={`/dex/tokens?network=${encodeURIComponent(network)}`} className="text-network-cyan hover:underline">
+                Token directory
+              </Link>
+              <span className="text-[var(--text-muted)]">·</span>
+              <Link
+                href={`/dex/pools?network=${encodeURIComponent(network)}#rpc-dex-pools`}
+                className="text-network-cyan hover:underline"
+              >
+                RPC pools
+              </Link>
+              <span className="text-[var(--text-muted)]">·</span>
+              <Link href={explorerAssetHref(address, network)} className="text-network-cyan hover:underline">
+                Asset view
+              </Link>
+            </span>
+          )}
         </div>
         <p className="text-xs">
           <Link href={alternateHref} className="text-network-cyan hover:underline">

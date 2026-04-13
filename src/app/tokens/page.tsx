@@ -40,6 +40,10 @@ export default function TokensIndexPage() {
           still not OBS-1: use a dedicated indexer for reorg-safe, planet-scale history.
         </p>
         <p className="text-sm">
+          <Link href="/dex/tokens" className="text-network-cyan hover:underline">
+            DEX token directory (RPC)
+          </Link>
+          {" · "}
           <Link href="/dex/pools" className="text-network-cyan hover:underline">
             DEX directory
           </Link>
