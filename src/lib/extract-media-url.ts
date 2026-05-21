@@ -10,10 +10,12 @@ function ipfsUriToGateway(uri: string): string | null {
   return `https://ipfs.io/ipfs/${path}`;
 }
 
-/**
- * Best-effort: pull the first http(s) or ipfs:// URL from deploy metadata / free text.
- * Only returns http(s) gateway URLs (ipfs:// is rewritten to ipfs.io).
- */
+function readMetadataImageField(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  return extractHttpOrIpfsUrl(value.trim()) ?? value.trim();
+}
+
+/** @deprecated Prefer `resolveImageUrlFromSources` from boing-sdk when available. */
 export function extractHttpOrIpfsUrl(...sources: (string | null | undefined)[]): string | null {
   for (const raw of sources) {
     if (raw == null) continue;
@@ -31,6 +33,38 @@ export function extractHttpOrIpfsUrl(...sources: (string | null | undefined)[]):
 
     const httpWord = /\bhttp:\/\/[^\s"'<>]{4,2048}/i.exec(text);
     if (httpWord && httpWord[0].length <= MAX_URL) return httpWord[0];
+  }
+  return null;
+}
+
+/** Parse inline JSON metadata and standard `image` / `logoURI` keys. */
+export function resolveImageUrlFromSources(...sources: (string | null | undefined)[]): string | null {
+  for (const raw of sources) {
+    if (raw == null) continue;
+    const text = raw.trim();
+    if (!text) continue;
+
+    if (text.startsWith("{") || text.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(text) as unknown;
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          const o = parsed as Record<string, unknown>;
+          for (const key of ["image", "image_url", "logo", "logoURI", "animation_url"]) {
+            const u = readMetadataImageField(o[key]);
+            if (u) {
+              const g = extractHttpOrIpfsUrl(u);
+              if (g) return g;
+              if (/^https?:\/\//i.test(u) && u.length <= MAX_URL) return u;
+            }
+          }
+        }
+      } catch {
+        /* not JSON */
+      }
+    }
+
+    const direct = extractHttpOrIpfsUrl(text);
+    if (direct) return direct;
   }
   return null;
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNetwork } from "@/context/network-context";
 import { explorerAssetHref } from "@/lib/explorer-href";
+import { resolveImageUrlFromSources } from "@/lib/extract-media-url";
 import { shortenHash } from "@/lib/rpc-types";
 import type { TokenIndexCacheMeta, TokenIndexJsonEntry, TokenIndexResult } from "@/lib/token-index/types";
 
@@ -202,6 +203,7 @@ export function TokensIndexPanel() {
               <table className="mt-4 w-full min-w-[48rem] text-left text-sm">
                 <thead>
                   <tr className="border-b border-[var(--border-color)] text-[var(--text-muted)]">
+                    <th className="pb-2 pr-3 font-medium w-14"> </th>
                     <th className="pb-2 pr-3 font-medium">Asset</th>
                     <th className="pb-2 pr-3 font-medium">Kind</th>
                     <th className="pb-2 pr-3 font-medium">Sources</th>
@@ -235,8 +237,30 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function TokenRow({ row, network }: { row: TokenIndexJsonEntry; network: string }) {
   const title = [row.assetName, row.assetSymbol].filter(Boolean).join(" · ") || "—";
+  const thumbUrl = resolveImageUrlFromSources(row.assetName, row.assetSymbol);
   return (
     <tr className="border-b border-[var(--border-color)]/60">
+      <td className="py-2 pr-2 align-top w-14">
+        {thumbUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- token logo from deploy metadata
+          <img
+            src={thumbUrl}
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 rounded border border-[var(--border-color)] object-contain bg-black/20"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <span
+            className="inline-flex h-10 w-10 items-center justify-center rounded border border-[var(--border-color)] bg-boing-navy-mid/50 text-[10px] uppercase text-[var(--text-muted)]"
+            aria-hidden
+          >
+            {row.kind === "nft" ? "NFT" : "TKN"}
+          </span>
+        )}
+      </td>
       <td className="py-2 pr-3 align-top">
         <div className="space-y-1">
           <Link

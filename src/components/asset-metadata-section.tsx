@@ -17,6 +17,14 @@ type DexTokenProfile = {
   metadataSource?: "deploy" | "abbrev";
 };
 
+export type NftSamplePreview = {
+  tokenIdU64: number;
+  metadataHash: string;
+  imageUrl: string | null;
+  metadataUrl: string | null;
+  metadataName: string | null;
+};
+
 export type ExplorerAssetProfilePayload = {
   supported: true;
   address: string;
@@ -28,6 +36,7 @@ export type ExplorerAssetProfilePayload = {
   tokenIndex: TokenIndexJsonEntry | null;
   tokenIndexScan: { fromHeight: number; toHeight: number } | null;
   imageUrl: string | null;
+  nftSamples?: NftSamplePreview[];
   indexWarnings?: string[];
 };
 
@@ -45,8 +54,8 @@ export function AssetMetadataSection({
   scanUsed: boolean;
 }) {
   const [imgHidden, setImgHidden] = useState(false);
-  const { dexToken, tokenIndex, imageUrl, tokenIndexScan, indexWarnings } = profile;
-  const hasBody = Boolean(dexToken || tokenIndex || (imageUrl && !imgHidden));
+  const { dexToken, tokenIndex, imageUrl, tokenIndexScan, indexWarnings, nftSamples } = profile;
+  const hasBody = Boolean(dexToken || tokenIndex || nftSamples?.length || (imageUrl && !imgHidden));
 
   return (
     <section className="glass-card space-y-4 p-4 sm:p-6" aria-labelledby="asset-metadata-heading">
@@ -128,6 +137,12 @@ export function AssetMetadataSection({
       {tokenIndex && (
         <div className="space-y-2 border-t border-[var(--border-color)] pt-4">
           <h3 className="text-sm font-medium text-[var(--text-primary)]">Deploy index (recent blocks)</h3>
+          {tokenIndex.kind === "nft" && (
+            <p className="text-xs text-[var(--text-muted)]">
+              Reference NFT collections store per-token metadata on-chain. Samples below are read via{" "}
+              <code className="rounded bg-white/10 px-1">boing_getContractStorage</code> for sequential token ids.
+            </p>
+          )}
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Kind</dt>
@@ -164,6 +179,41 @@ export function AssetMetadataSection({
               </div>
             )}
           </dl>
+        </div>
+      )}
+
+      {nftSamples && nftSamples.length > 0 && (
+        <div className="space-y-3 border-t border-[var(--border-color)] pt-4">
+          <h3 className="text-sm font-medium text-[var(--text-primary)]">NFT previews</h3>
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {nftSamples.map((sample) => (
+              <li
+                key={sample.tokenIdU64}
+                className="rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/30 p-3"
+              >
+                <p className="text-xs font-medium text-[var(--text-secondary)]">
+                  Token #{sample.tokenIdU64}
+                  {sample.metadataName ? ` · ${sample.metadataName}` : ""}
+                </p>
+                {sample.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- remote NFT media
+                  <img
+                    src={sample.imageUrl}
+                    alt={sample.metadataName ?? `NFT #${sample.tokenIdU64}`}
+                    width={120}
+                    height={120}
+                    className="mt-2 max-h-28 rounded border border-[var(--border-color)] object-contain bg-black/20"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <p className="mt-2 text-xs text-[var(--text-muted)] font-mono break-all">
+                    metadata: {shortenHash(sample.metadataHash.replace(/^0x/i, ""), 12, 10)}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

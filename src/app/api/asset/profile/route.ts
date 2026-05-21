@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { BoingRpcError, validateHex32 } from "boing-sdk";
 import { createServerBoingClient } from "@/lib/server-boing-client";
 import { resolveNativeDexFactoryForExplorer } from "@/lib/resolve-native-dex-factory";
-import { extractHttpOrIpfsUrl } from "@/lib/extract-media-url";
+import { extractHttpOrIpfsUrl, resolveImageUrlFromSources } from "@/lib/extract-media-url";
 import { buildTokenIndexForHeightRange } from "@/lib/token-index/build-token-index";
+import { probeReferenceNftCollectionSamples } from "@/lib/reference-nft-probe";
 import { getRpcBaseUrl, isMainnetConfigured } from "@/lib/rpc-client";
 import { normalizeHex64 } from "@/lib/rpc-types";
 import type { NetworkId } from "@/lib/rpc-types";
@@ -86,12 +87,24 @@ export async function GET(req: NextRequest) {
       tokenIndex = indexResult.entries.find((e) => e.address === address64) ?? null;
     }
 
-    const imageUrl = extractHttpOrIpfsUrl(
+    const imageUrl = resolveImageUrlFromSources(
       typeof dexToken?.name === "string" ? dexToken.name : null,
       typeof dexToken?.symbol === "string" ? dexToken.symbol : null,
       tokenIndex?.assetName,
       tokenIndex?.assetSymbol,
     );
+
+    const isNftCollection =
+      tokenIndex?.kind === "nft" ||
+      (tokenIndex?.purposeCategory ?? "").toLowerCase().includes("nft");
+
+    let nftSamples: Awaited<ReturnType<typeof probeReferenceNftCollectionSamples>> = [];
+    if (isNftCollection) {
+      nftSamples = await probeReferenceNftCollectionSamples(client, idPrefixed, { maxProbe: 8 });
+    }
+
+    const nftPreviewImage =
+      imageUrl ?? nftSamples.find((s) => s.imageUrl)?.imageUrl ?? null;
 
     return NextResponse.json({
       supported: true as const,
@@ -103,7 +116,8 @@ export async function GET(req: NextRequest) {
       dexToken,
       tokenIndex,
       tokenIndexScan,
-      imageUrl,
+      imageUrl: nftPreviewImage,
+      nftSamples: nftSamples.length ? nftSamples : undefined,
       ...(indexWarnings && indexWarnings.length ? { indexWarnings } : {}),
     });
   } catch (e) {
