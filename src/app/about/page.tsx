@@ -86,7 +86,7 @@ export default function AboutPage() {
               3. Decentralization
             </h3>
             <p className="text-[var(--text-secondary)] leading-relaxed">
-              Permissionless participation. No whitelist; anyone with stake can validate. P2P (libp2p), bootnodes, DHT (roadmap). No central gatekeeper for consensus, governance, or QA.
+              Permissionless participation. No whitelist; anyone with stake can validate. P2P (libp2p) with live public bootnodes on testnet (<code className="px-1.5 py-0.5 rounded bg-white/10 text-xs">/ip4/73.84.106.121/tcp/4001</code>); DHT on roadmap. No central gatekeeper for consensus, governance, or QA.
             </p>
           </div>
 
@@ -118,7 +118,7 @@ export default function AboutPage() {
               Protocol-enforced QA: only assets meeting rules and security bar are allowed. Meme leniency; no malice. Every deployment is classified as{" "}
               <strong className="text-[var(--text-primary)]">allow</strong>, <strong className="text-[var(--text-primary)]">reject</strong>, or{" "}
               <strong className="text-[var(--text-primary)]">unsure</strong>. Unsure cases are routed to the{" "}
-              <strong className="text-[var(--text-primary)]">community QA pool</strong> for review. Opcode whitelist, well-formedness, blocklist, scam patterns, and purpose declaration are part of the check. See{" "}
+              <strong className="text-[var(--text-primary)]">community QA pool</strong> for review. Opcode whitelist, well-formedness, bytecode blocklist, deploy metadata content policy, scam patterns, and purpose declaration are part of the check. See{" "}
               <a
                 href={QA_DOC_URL}
                 target="_blank"
