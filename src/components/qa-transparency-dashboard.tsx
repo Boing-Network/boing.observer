@@ -144,7 +144,7 @@ export function QaTransparencyDashboard() {
       </nav>
 
       <header>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl">
+        <h1 className="page-title font-display">
           QA transparency
         </h1>
         <p className="mt-3 max-w-2xl text-[var(--text-secondary)] leading-relaxed">
@@ -260,7 +260,7 @@ export function QaTransparencyDashboard() {
 
         {registry ? (
           <>
-            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <dl className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
               <ConfigStat label="Max bytecode" value={`${(registry.max_bytecode_size / 1024).toFixed(0)} KiB`} />
               <ConfigStat label="Bytecode blocklist" value={registry.blocklist?.length ?? 0} hint="32-byte hashes." />
               <ConfigStat label="Scam patterns" value={registry.scam_patterns?.length ?? 0} />
@@ -376,61 +376,112 @@ export function QaTransparencyDashboard() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto glass-card">
-            <table className="w-full min-w-[720px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border-color)] text-left text-[var(--text-muted)]">
-                  <th className="p-3 font-medium">Transaction hash</th>
-                  <th className="p-3 font-medium">Bytecode hash</th>
-                  <th className="p-3 font-medium">Deployer</th>
-                  <th className="p-3 font-medium">Votes (allow / reject)</th>
-                  <th className="p-3 font-medium">Age</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((row) => {
-                  const deployerPath = hexForLink(row.deployer);
-                  const txPath = normalizeHex64(row.tx_hash.replace(/^0x/i, ""));
-                  return (
-                    <tr key={row.tx_hash} className="border-b border-[var(--border-color)]/60 hover:bg-white/5">
-                      <td className="p-3 align-top">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {txPath ? (
-                            <Link
-                              href={`/tx/${txPath}?network=${network}`}
-                              className="hash text-xs text-network-cyan hover:underline break-all"
-                            >
-                              {shortenHash(row.tx_hash, 12, 10)}
-                            </Link>
-                          ) : (
-                            <span className="hash text-xs text-[var(--text-secondary)] break-all">
-                              {shortenHash(row.tx_hash, 12, 10)}
-                            </span>
-                          )}
-                          <CopyButton value={row.tx_hash} label="Copy tx hash" />
-                        </div>
-                      </td>
-                      <td className="p-3 align-top">
-                        <span className="hash text-xs text-[var(--text-muted)] break-all">{shortenHash(row.bytecode_hash, 10, 8)}</span>
-                      </td>
-                      <td className="p-3 align-top">
+          <>
+            <div className="data-card-list md:hidden">
+              {items.map((row) => {
+                const deployerPath = hexForLink(row.deployer);
+                const txPath = normalizeHex64(row.tx_hash.replace(/^0x/i, ""));
+                return (
+                  <div key={row.tx_hash} className="data-card space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-medium text-[var(--text-muted)]">Transaction</span>
+                      {txPath ? (
                         <Link
-                          href={explorerAssetHref(deployerPath, network)}
-                          className="address-link text-xs"
+                          href={`/tx/${txPath}?network=${network}`}
+                          className="hash text-xs text-network-cyan hover:underline break-all"
                         >
+                          {shortenHash(row.tx_hash, 12, 10)}
+                        </Link>
+                      ) : (
+                        <span className="hash text-xs text-[var(--text-secondary)] break-all">
+                          {shortenHash(row.tx_hash, 12, 10)}
+                        </span>
+                      )}
+                      <CopyButton value={row.tx_hash} label="Copy tx hash" />
+                    </div>
+                    <div className="data-card__row">
+                      <span className="data-card__label">Bytecode</span>
+                      <span className="data-card__value hash text-xs break-all">{shortenHash(row.bytecode_hash, 10, 8)}</span>
+                    </div>
+                    <div className="data-card__row">
+                      <span className="data-card__label">Deployer</span>
+                      <span className="data-card__value">
+                        <Link href={explorerAssetHref(deployerPath, network)} className="address-link text-xs">
                           {shortenHash(deployerPath)}
                         </Link>
-                      </td>
-                      <td className="p-3 align-top font-mono text-[var(--text-primary)]">
+                      </span>
+                    </div>
+                    <div className="data-card__row">
+                      <span className="data-card__label">Votes (allow / reject)</span>
+                      <span className="data-card__value font-mono">
                         {row.allow_votes} / {row.reject_votes}
-                      </td>
-                      <td className="p-3 align-top text-[var(--text-muted)]">{formatDuration(row.age_secs)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </span>
+                    </div>
+                    <div className="data-card__row">
+                      <span className="data-card__label">Age</span>
+                      <span className="data-card__value">{formatDuration(row.age_secs)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="glass-card table-scroll-wrap hidden md:block">
+              <p className="table-scroll-hint px-3 pt-3">Swipe horizontally to see all columns</p>
+              <table className="w-full min-w-[720px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border-color)] text-left text-[var(--text-muted)]">
+                    <th className="p-3 font-medium">Transaction hash</th>
+                    <th className="p-3 font-medium">Bytecode hash</th>
+                    <th className="p-3 font-medium">Deployer</th>
+                    <th className="p-3 font-medium">Votes (allow / reject)</th>
+                    <th className="p-3 font-medium">Age</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((row) => {
+                    const deployerPath = hexForLink(row.deployer);
+                    const txPath = normalizeHex64(row.tx_hash.replace(/^0x/i, ""));
+                    return (
+                      <tr key={row.tx_hash} className="border-b border-[var(--border-color)]/60 hover:bg-white/5">
+                        <td className="p-3 align-top">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {txPath ? (
+                              <Link
+                                href={`/tx/${txPath}?network=${network}`}
+                                className="hash text-xs text-network-cyan hover:underline break-all"
+                              >
+                                {shortenHash(row.tx_hash, 12, 10)}
+                              </Link>
+                            ) : (
+                              <span className="hash text-xs text-[var(--text-secondary)] break-all">
+                                {shortenHash(row.tx_hash, 12, 10)}
+                              </span>
+                            )}
+                            <CopyButton value={row.tx_hash} label="Copy tx hash" />
+                          </div>
+                        </td>
+                        <td className="p-3 align-top">
+                          <span className="hash text-xs text-[var(--text-muted)] break-all">{shortenHash(row.bytecode_hash, 10, 8)}</span>
+                        </td>
+                        <td className="p-3 align-top">
+                          <Link
+                            href={explorerAssetHref(deployerPath, network)}
+                            className="address-link text-xs"
+                          >
+                            {shortenHash(deployerPath)}
+                          </Link>
+                        </td>
+                        <td className="p-3 align-top font-mono text-[var(--text-primary)]">
+                          {row.allow_votes} / {row.reject_votes}
+                        </td>
+                        <td className="p-3 align-top text-[var(--text-muted)]">{formatDuration(row.age_secs)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
 

@@ -64,7 +64,7 @@ export default function FaucetPage() {
       </nav>
 
       <header>
-        <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">
+        <h1 className="page-title font-display">
           Testnet faucet helper
         </h1>
         <p className="mt-2 text-[var(--text-secondary)]">

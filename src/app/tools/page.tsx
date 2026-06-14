@@ -13,7 +13,7 @@ export default function ToolsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-10">
       <nav aria-label="Breadcrumb" className="text-sm">
-        <ol className="flex items-center gap-2 text-[var(--text-muted)]">
+        <ol className="breadcrumb-list text-[var(--text-muted)]">
           <li>
             <Link href="/" className="text-network-cyan hover:underline">
               Home
@@ -25,7 +25,7 @@ export default function ToolsPage() {
       </nav>
 
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--text-primary)]">
+        <h1 className="page-title font-display">
           Developer tools
         </h1>
         <p className="mt-2 max-w-2xl text-[var(--text-secondary)]">

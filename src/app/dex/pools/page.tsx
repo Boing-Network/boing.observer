@@ -32,7 +32,7 @@ export default function DexPoolsPage() {
       </nav>
 
       <header className="space-y-2">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--text-primary)]">
+        <h1 className="page-title font-display">
           Native DEX directory
         </h1>
         <p className="max-w-2xl text-[var(--text-secondary)] leading-relaxed">

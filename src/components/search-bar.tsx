@@ -58,7 +58,7 @@ export function SearchBar({ layout = "inline", className = "max-w-xl" }: SearchB
 
   return (
     <div className={`w-full ${className}`}>
-      <div className={stacked ? "flex flex-col gap-2" : "flex gap-2"}>
+      <div className={stacked ? "flex flex-col gap-2" : "flex flex-col gap-2 sm:flex-row"}>
         <input
           type="text"
           value={value}
@@ -80,7 +80,7 @@ export function SearchBar({ layout = "inline", className = "max-w-xl" }: SearchB
           aria-label={loading ? "Searching…" : "Search"}
           data-testid="explorer-search-submit"
           className={`min-h-11 shrink-0 rounded-lg bg-network-primary px-4 py-2.5 font-display text-sm font-semibold text-white hover:bg-network-primary-light transition-colors focus:outline-none focus:ring-2 focus:ring-network-cyan disabled:opacity-60 ${
-            stacked ? "w-full" : ""
+            stacked ? "w-full" : "w-full sm:w-auto"
           }`}
         >
           {loading ? "…" : "Search"}

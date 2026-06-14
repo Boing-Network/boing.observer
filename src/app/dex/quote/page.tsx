@@ -32,7 +32,7 @@ export default function DexQuotePage() {
       </nav>
 
       <header className="space-y-2">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--text-primary)]">
+        <h1 className="page-title font-display">
           Native DEX route quotes
         </h1>
         <p className="text-[var(--text-secondary)] leading-relaxed">

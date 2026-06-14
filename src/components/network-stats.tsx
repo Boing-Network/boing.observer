@@ -24,7 +24,7 @@ interface StatCardProps {
 function StatCard({ label, value, sub, loading }: StatCardProps) {
   return (
     <div
-      className="glass-card p-4 flex flex-col gap-1 min-w-[120px]"
+      className="glass-card flex min-w-0 flex-col gap-1 p-4"
       role="group"
       aria-label={`${label}: ${loading ? "Loading" : value}`}
     >
@@ -94,7 +94,7 @@ export function NetworkStats() {
 
   return (
     <div className="py-2" role="region" aria-label="Summary statistics">
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard
           label="Block height"
           value={stats?.blockHeight != null ? stats.blockHeight.toLocaleString() : "—"}

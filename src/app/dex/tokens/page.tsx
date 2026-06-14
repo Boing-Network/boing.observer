@@ -32,7 +32,7 @@ export default function DexTokensPage() {
       </nav>
 
       <header className="space-y-2">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--text-primary)]">DEX token directory</h1>
+        <h1 className="page-title font-display">DEX token directory</h1>
         <p className="max-w-3xl text-[var(--text-secondary)] leading-relaxed">
           Tokens that appear in at least one pool under the canonical factory from{" "}
           <code className="rounded bg-white/10 px-1 text-sm">boing_getNetworkInfo.end_user.canonical_native_dex_factory</code>

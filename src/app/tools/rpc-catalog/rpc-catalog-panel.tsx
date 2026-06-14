@@ -97,7 +97,15 @@ export function RpcCatalogPanel() {
           <p className="text-sm text-[var(--text-muted)]">
             Showing {filtered.length} of {methods.length} methods.
           </p>
-          <div className="overflow-x-auto rounded-lg border border-[var(--border-color)]">
+          <div className="data-card-list sm:hidden">
+            {filtered.map((m) => (
+              <div key={m.name} className="data-card space-y-1">
+                <p className="font-mono text-xs text-network-cyan break-all">{m.name}</p>
+                <p className="text-sm text-[var(--text-secondary)]">{m.summary ?? "—"}</p>
+              </div>
+            ))}
+          </div>
+          <div className="table-scroll-wrap hidden rounded-lg border border-[var(--border-color)] sm:block">
             <table className="w-full min-w-[36rem] text-left text-sm">
               <thead>
                 <tr className="border-b border-[var(--border-color)] bg-white/[0.03] text-[var(--text-muted)]">

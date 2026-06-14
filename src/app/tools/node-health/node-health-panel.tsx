@@ -164,9 +164,9 @@ export function NodeHealthPanel() {
             </div>
           </dl>
           {data.health.rpc_surface && (
-            <div className="overflow-x-auto pt-2">
+            <div className="table-scroll-wrap pt-2">
               <h3 className="mb-2 text-sm font-medium text-[var(--text-primary)]">rpc_surface</h3>
-              <table className="w-full min-w-[28rem] text-left text-xs">
+              <table className="w-full text-left text-xs">
                 <tbody>
                   {Object.entries(data.health.rpc_surface).map(([k, v]) => (
                     <tr key={k} className="border-b border-[var(--border-color)]/50">
@@ -179,9 +179,9 @@ export function NodeHealthPanel() {
             </div>
           )}
           {data.health.rpc_metrics && (
-            <div className="overflow-x-auto pt-2">
+            <div className="table-scroll-wrap pt-2">
               <h3 className="mb-2 text-sm font-medium text-[var(--text-primary)]">rpc_metrics (cumulative)</h3>
-              <table className="w-full min-w-[28rem] text-left text-xs">
+              <table className="w-full text-left text-xs">
                 <tbody>
                   {Object.entries(data.health.rpc_metrics).map(([k, v]) => (
                     <tr key={k} className="border-b border-[var(--border-color)]/50">

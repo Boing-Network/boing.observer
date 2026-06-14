@@ -216,7 +216,7 @@ export function DexRpcPoolsSection() {
               </dl>
             </div>
           )}
-          <section className="glass-card overflow-x-auto p-4 sm:p-6">
+          <section className="glass-card p-4 sm:p-6">
             <h3 className="font-display mb-4 text-base font-semibold text-[var(--text-primary)]">
               Pools ({rows.length}
               {nextCursor ? "+" : ""})
@@ -253,48 +253,103 @@ export function DexRpcPoolsSection() {
                 )}
               </div>
             ) : (
-              <table className="w-full min-w-[56rem] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border-color)] text-[var(--text-muted)]">
-                    <th className="pb-2 pr-2 font-medium">Pool</th>
-                    <th className="pb-2 pr-2 font-medium">Token A</th>
-                    <th className="pb-2 pr-2 font-medium">Token B</th>
-                    <th className="pb-2 pr-2 font-medium">Reserves A / B</th>
-                    <th className="pb-2 pr-2 font-medium">dec A / B</th>
-                    <th className="pb-2 pr-2 font-medium">Fee (bps)</th>
-                    <th className="pb-2 font-medium">createdAt</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <>
+                <div className="data-card-list md:hidden">
                   {rows.map((row) => (
-                    <tr key={row.poolHex} className="border-b border-[var(--border-color)]/60 align-top">
-                      <td className="py-2 pr-2 font-mono text-xs">
-                        <Link href={assetPath(row.poolHex, network)} className="text-network-cyan hover:underline break-all">
-                          {shortenHash(row.poolHex, 10, 8)}
-                        </Link>
-                      </td>
-                      <td className="py-2 pr-2 font-mono text-xs">
-                        <Link href={assetPath(row.tokenAHex, network)} className="text-network-cyan hover:underline break-all">
-                          {shortenHash(row.tokenAHex, 10, 8)}
-                        </Link>
-                      </td>
-                      <td className="py-2 pr-2 font-mono text-xs">
-                        <Link href={assetPath(row.tokenBHex, network)} className="text-network-cyan hover:underline break-all">
-                          {shortenHash(row.tokenBHex, 10, 8)}
-                        </Link>
-                      </td>
-                      <td className="py-2 pr-2 font-mono text-xs break-all">
-                        {row.reserveA} / {row.reserveB}
-                      </td>
-                      <td className="py-2 pr-2 font-mono text-xs">
-                        {row.tokenADecimals} / {row.tokenBDecimals}
-                      </td>
-                      <td className="py-2 pr-2 font-mono">{row.feeBps}</td>
-                      <td className="py-2 font-mono text-xs">{row.createdAtHeight ?? "—"}</td>
-                    </tr>
+                    <div key={row.poolHex} className="data-card space-y-2">
+                      <div className="data-card__row">
+                        <span className="data-card__label">Pool</span>
+                        <span className="data-card__value">
+                          <Link href={assetPath(row.poolHex, network)} className="font-mono text-network-cyan hover:underline break-all">
+                            {shortenHash(row.poolHex, 10, 8)}
+                          </Link>
+                        </span>
+                      </div>
+                      <div className="data-card__row">
+                        <span className="data-card__label">Token A</span>
+                        <span className="data-card__value">
+                          <Link href={assetPath(row.tokenAHex, network)} className="font-mono text-network-cyan hover:underline break-all">
+                            {shortenHash(row.tokenAHex, 10, 8)}
+                          </Link>
+                        </span>
+                      </div>
+                      <div className="data-card__row">
+                        <span className="data-card__label">Token B</span>
+                        <span className="data-card__value">
+                          <Link href={assetPath(row.tokenBHex, network)} className="font-mono text-network-cyan hover:underline break-all">
+                            {shortenHash(row.tokenBHex, 10, 8)}
+                          </Link>
+                        </span>
+                      </div>
+                      <div className="data-card__row">
+                        <span className="data-card__label">Reserves</span>
+                        <span className="data-card__value font-mono text-xs break-all">
+                          {row.reserveA} / {row.reserveB}
+                        </span>
+                      </div>
+                      <div className="data-card__row">
+                        <span className="data-card__label">Decimals</span>
+                        <span className="data-card__value font-mono text-xs">
+                          {row.tokenADecimals} / {row.tokenBDecimals}
+                        </span>
+                      </div>
+                      <div className="data-card__row">
+                        <span className="data-card__label">Fee (bps)</span>
+                        <span className="data-card__value font-mono">{row.feeBps}</span>
+                      </div>
+                      <div className="data-card__row">
+                        <span className="data-card__label">Created at</span>
+                        <span className="data-card__value font-mono">{row.createdAtHeight ?? "—"}</span>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+                <div className="table-scroll-wrap hidden md:block">
+                  <p className="table-scroll-hint">Swipe horizontally to see all columns</p>
+                  <table className="w-full min-w-[56rem] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--border-color)] text-[var(--text-muted)]">
+                        <th className="pb-2 pr-2 font-medium">Pool</th>
+                        <th className="pb-2 pr-2 font-medium">Token A</th>
+                        <th className="pb-2 pr-2 font-medium">Token B</th>
+                        <th className="pb-2 pr-2 font-medium">Reserves A / B</th>
+                        <th className="pb-2 pr-2 font-medium">dec A / B</th>
+                        <th className="pb-2 pr-2 font-medium">Fee (bps)</th>
+                        <th className="pb-2 font-medium">createdAt</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row) => (
+                        <tr key={row.poolHex} className="border-b border-[var(--border-color)]/60 align-top">
+                          <td className="py-2 pr-2 font-mono text-xs">
+                            <Link href={assetPath(row.poolHex, network)} className="text-network-cyan hover:underline break-all">
+                              {shortenHash(row.poolHex, 10, 8)}
+                            </Link>
+                          </td>
+                          <td className="py-2 pr-2 font-mono text-xs">
+                            <Link href={assetPath(row.tokenAHex, network)} className="text-network-cyan hover:underline break-all">
+                              {shortenHash(row.tokenAHex, 10, 8)}
+                            </Link>
+                          </td>
+                          <td className="py-2 pr-2 font-mono text-xs">
+                            <Link href={assetPath(row.tokenBHex, network)} className="text-network-cyan hover:underline break-all">
+                              {shortenHash(row.tokenBHex, 10, 8)}
+                            </Link>
+                          </td>
+                          <td className="py-2 pr-2 font-mono text-xs break-all">
+                            {row.reserveA} / {row.reserveB}
+                          </td>
+                          <td className="py-2 pr-2 font-mono text-xs">
+                            {row.tokenADecimals} / {row.tokenBDecimals}
+                          </td>
+                          <td className="py-2 pr-2 font-mono">{row.feeBps}</td>
+                          <td className="py-2 font-mono text-xs">{row.createdAtHeight ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
             {nextCursor ? (
               <div className="mt-4">

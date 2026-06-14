@@ -185,7 +185,37 @@ export function PoolsPanel() {
               <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
                 Register logs ({data.registerLogs.length})
               </h2>
-              <div className="overflow-x-auto">
+              <div className="data-card-list md:hidden">
+                {data.registerLogs.map((row, i) => (
+                  <div key={`${row.poolHex}-${i}`} className="data-card space-y-2">
+                    <div className="data-card__row">
+                      <span className="data-card__label">Pool</span>
+                      <span className="data-card__value">
+                        <Link href={assetPath(row.poolHex, network)} className="font-mono text-network-cyan hover:underline">
+                          {shortenHash(row.poolHex, 10, 8)}
+                        </Link>
+                      </span>
+                    </div>
+                    <div className="data-card__row">
+                      <span className="data-card__label">Token A</span>
+                      <span className="data-card__value">
+                        <Link href={assetPath(row.tokenAHex, network)} className="font-mono text-network-cyan hover:underline">
+                          {shortenHash(row.tokenAHex, 10, 8)}
+                        </Link>
+                      </span>
+                    </div>
+                    <div className="data-card__row">
+                      <span className="data-card__label">Token B</span>
+                      <span className="data-card__value">
+                        <Link href={assetPath(row.tokenBHex, network)} className="font-mono text-network-cyan hover:underline">
+                          {shortenHash(row.tokenBHex, 10, 8)}
+                        </Link>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="table-scroll-wrap hidden md:block">
                 <table className="w-full min-w-[32rem] text-left text-sm">
                   <thead>
                     <tr className="border-b border-[var(--border-color)] text-[var(--text-muted)]">

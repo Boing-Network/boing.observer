@@ -14,7 +14,7 @@ export default function RpcCatalogPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <nav aria-label="Breadcrumb" className="text-sm">
-        <ol className="flex items-center gap-2 text-[var(--text-muted)]">
+        <ol className="breadcrumb-list text-[var(--text-muted)]">
           <li>
             <Link href="/" className="text-network-cyan hover:underline">
               Home
@@ -32,7 +32,7 @@ export default function RpcCatalogPage() {
       </nav>
 
       <header className="space-y-2">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--text-primary)]">
+        <h1 className="page-title font-display">
           RPC method catalog
         </h1>
         <p className="max-w-2xl text-[var(--text-secondary)] leading-relaxed">

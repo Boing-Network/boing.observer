@@ -14,6 +14,8 @@ const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION;
 
 /** Enables edge-to-edge layout on notched iOS devices; pairs with safe-area env() in CSS. */
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
   viewportFit: "cover",
 };
 

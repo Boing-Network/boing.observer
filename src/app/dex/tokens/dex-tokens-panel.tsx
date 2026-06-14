@@ -223,7 +223,7 @@ export function DexTokensPanel() {
               </dl>
             </div>
           )}
-          <section className="glass-card overflow-x-auto p-4 sm:p-6">
+          <section className="glass-card p-4 sm:p-6">
             <h2 className="font-display mb-4 text-lg font-semibold text-[var(--text-primary)]">
               Tokens ({rows.length}
               {nextCursor ? "+" : ""})
@@ -261,38 +261,77 @@ export function DexTokensPanel() {
                 )}
               </div>
             ) : (
-              <table className="w-full min-w-[52rem] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border-color)] text-[var(--text-muted)]">
-                    <th className="pb-2 pr-3 font-medium">Token</th>
-                    <th className="pb-2 pr-3 font-medium">Symbol</th>
-                    <th className="pb-2 pr-3 font-medium">Name</th>
-                    <th className="pb-2 pr-3 font-medium">Decimals</th>
-                    <th className="pb-2 pr-3 font-medium">poolCount</th>
-                    <th className="pb-2 pr-3 font-medium">firstSeenHeight</th>
-                    <th className="pb-2 font-medium">metadataSource</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <>
+                <div className="data-card-list md:hidden">
                   {rows.map((row) => (
-                    <tr key={row.id} className="border-b border-[var(--border-color)]/60">
-                      <td className="py-2 pr-3 font-mono text-xs">
-                        <Link href={assetPath(row.id, network)} className="text-network-cyan hover:underline break-all">
-                          {shortenHash(row.id, 12, 10)}
-                        </Link>
-                      </td>
-                      <td className="py-2 pr-3">{row.symbol}</td>
-                      <td className="py-2 pr-3 max-w-[12rem] truncate" title={row.name}>
-                        {row.name}
-                      </td>
-                      <td className="py-2 pr-3 font-mono">{row.decimals}</td>
-                      <td className="py-2 pr-3 font-mono">{row.poolCount}</td>
-                      <td className="py-2 pr-3 font-mono">{row.firstSeenHeight ?? "—"}</td>
-                      <td className="py-2 font-mono text-xs">{row.metadataSource ?? "—"}</td>
-                    </tr>
+                    <div key={row.id} className="data-card space-y-2">
+                      <Link
+                        href={assetPath(row.id, network)}
+                        className="hash font-mono text-sm text-network-cyan hover:underline break-all"
+                      >
+                        {shortenHash(row.id, 12, 10)}
+                      </Link>
+                      <p className="font-medium text-[var(--text-primary)]">
+                        {row.symbol}
+                        {row.name ? <span className="font-normal text-[var(--text-secondary)]"> · {row.name}</span> : null}
+                      </p>
+                      <div className="data-card__row">
+                        <span className="data-card__label">Decimals</span>
+                        <span className="data-card__value font-mono">{row.decimals}</span>
+                      </div>
+                      <div className="data-card__row">
+                        <span className="data-card__label">Pools</span>
+                        <span className="data-card__value font-mono">{row.poolCount}</span>
+                      </div>
+                      <div className="data-card__row">
+                        <span className="data-card__label">First seen</span>
+                        <span className="data-card__value font-mono">{row.firstSeenHeight ?? "—"}</span>
+                      </div>
+                      {row.metadataSource ? (
+                        <div className="data-card__row">
+                          <span className="data-card__label">Metadata</span>
+                          <span className="data-card__value font-mono text-xs">{row.metadataSource}</span>
+                        </div>
+                      ) : null}
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+                <div className="table-scroll-wrap hidden md:block">
+                  <p className="table-scroll-hint">Swipe horizontally to see all columns</p>
+                  <table className="w-full min-w-[52rem] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--border-color)] text-[var(--text-muted)]">
+                        <th className="pb-2 pr-3 font-medium">Token</th>
+                        <th className="pb-2 pr-3 font-medium">Symbol</th>
+                        <th className="pb-2 pr-3 font-medium">Name</th>
+                        <th className="pb-2 pr-3 font-medium">Decimals</th>
+                        <th className="pb-2 pr-3 font-medium">poolCount</th>
+                        <th className="pb-2 pr-3 font-medium">firstSeenHeight</th>
+                        <th className="pb-2 font-medium">metadataSource</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row) => (
+                        <tr key={row.id} className="border-b border-[var(--border-color)]/60">
+                          <td className="py-2 pr-3 font-mono text-xs">
+                            <Link href={assetPath(row.id, network)} className="text-network-cyan hover:underline break-all">
+                              {shortenHash(row.id, 12, 10)}
+                            </Link>
+                          </td>
+                          <td className="py-2 pr-3">{row.symbol}</td>
+                          <td className="py-2 pr-3 max-w-[12rem] truncate" title={row.name}>
+                            {row.name}
+                          </td>
+                          <td className="py-2 pr-3 font-mono">{row.decimals}</td>
+                          <td className="py-2 pr-3 font-mono">{row.poolCount}</td>
+                          <td className="py-2 pr-3 font-mono">{row.firstSeenHeight ?? "—"}</td>
+                          <td className="py-2 font-mono text-xs">{row.metadataSource ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
             {nextCursor ? (
               <div className="mt-4">

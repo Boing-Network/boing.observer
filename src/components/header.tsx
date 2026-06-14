@@ -48,7 +48,7 @@ export function Header() {
         </nav>
 
         <div
-          className="order-last hidden min-w-0 flex-1 justify-center px-2 lg:order-none lg:flex lg:min-w-[12rem] lg:max-w-2xl lg:flex-1"
+          className="order-last hidden min-w-0 flex-1 basis-full justify-center px-0 sm:px-2 md:order-none md:flex md:min-w-[10rem] md:max-w-xl md:basis-auto lg:min-w-[12rem] lg:max-w-2xl lg:flex-1"
           role="search"
         >
           <SearchBar className="max-w-none" />

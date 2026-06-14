@@ -190,7 +190,7 @@ export function TokensIndexPanel() {
             />
           </div>
 
-          <section className="glass-card overflow-x-auto p-4 sm:p-6" aria-labelledby="token-table-heading">
+          <section className="glass-card p-4 sm:p-6" aria-labelledby="token-table-heading">
             <h2 id="token-table-heading" className="font-display text-lg font-semibold text-[var(--text-primary)]">
               Assets ({filtered.length}
               {filtered.length !== data.entries.length ? ` of ${data.entries.length}` : ""})
@@ -200,24 +200,34 @@ export function TokensIndexPanel() {
                 No entries in this window. Try a deeper scan or check another network.
               </p>
             ) : (
-              <table className="mt-4 w-full min-w-[48rem] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border-color)] text-[var(--text-muted)]">
-                    <th className="pb-2 pr-3 font-medium w-14"> </th>
-                    <th className="pb-2 pr-3 font-medium">Asset</th>
-                    <th className="pb-2 pr-3 font-medium">Kind</th>
-                    <th className="pb-2 pr-3 font-medium">Sources</th>
-                    <th className="pb-2 pr-3 font-medium">First block</th>
-                    <th className="pb-2 pr-3 font-medium">Deploy tx</th>
-                    <th className="pb-2 font-medium">Deployer</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <>
+                <div className="data-card-list mt-4 md:hidden">
                   {filtered.map((row) => (
-                    <TokenRow key={row.address} row={row} network={network} />
+                    <TokenCard key={row.address} row={row} network={network} />
                   ))}
-                </tbody>
-              </table>
+                </div>
+                <div className="table-scroll-wrap mt-4 hidden md:block">
+                  <p className="table-scroll-hint">Swipe horizontally to see all columns</p>
+                  <table className="w-full min-w-[48rem] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--border-color)] text-[var(--text-muted)]">
+                        <th className="w-14 pb-2 pr-3 font-medium"> </th>
+                        <th className="pb-2 pr-3 font-medium">Asset</th>
+                        <th className="pb-2 pr-3 font-medium">Kind</th>
+                        <th className="pb-2 pr-3 font-medium">Sources</th>
+                        <th className="pb-2 pr-3 font-medium">First block</th>
+                        <th className="pb-2 pr-3 font-medium">Deploy tx</th>
+                        <th className="pb-2 font-medium">Deployer</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((row) => (
+                        <TokenRow key={row.address} row={row} network={network} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </section>
         </>
@@ -231,6 +241,84 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/40 px-3 py-2">
       <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
       <p className="mt-1 font-mono text-[var(--text-primary)]">{value}</p>
+    </div>
+  );
+}
+
+function TokenCard({ row, network }: { row: TokenIndexJsonEntry; network: string }) {
+  const title = [row.assetName, row.assetSymbol].filter(Boolean).join(" · ") || "—";
+  const thumbUrl = resolveImageUrlFromSources(row.assetName, row.assetSymbol);
+  return (
+    <div className="data-card space-y-2">
+      <div className="flex items-start gap-3">
+        {thumbUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- token logo from deploy metadata
+          <img
+            src={thumbUrl}
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 rounded border border-[var(--border-color)] bg-black/20 object-contain"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <span
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded border border-[var(--border-color)] bg-boing-navy-mid/50 text-[10px] uppercase text-[var(--text-muted)]"
+            aria-hidden
+          >
+            {row.kind === "nft" ? "NFT" : "TKN"}
+          </span>
+        )}
+        <div className="min-w-0 flex-1 space-y-1">
+          <Link
+            href={explorerAssetHref(row.address, network)}
+            className="font-medium text-network-cyan hover:underline"
+          >
+            {title}
+          </Link>
+          <p className="hash font-mono text-xs text-[var(--text-muted)]">{shortenHash(row.address, 12, 10)}</p>
+        </div>
+      </div>
+      <div className="data-card__row">
+        <span className="data-card__label">Kind</span>
+        <span className="data-card__value font-mono">{row.kind}</span>
+      </div>
+      <div className="data-card__row">
+        <span className="data-card__label">Sources</span>
+        <span className="data-card__value">{row.sources.join(", ")}</span>
+      </div>
+      <div className="data-card__row">
+        <span className="data-card__label">First block</span>
+        <span className="data-card__value">
+          <Link href={`/block/${row.firstSeenBlock}?network=${network}`} className="font-mono text-network-cyan hover:underline">
+            #{row.firstSeenBlock.toLocaleString()}
+          </Link>
+        </span>
+      </div>
+      {row.deployTxId ? (
+        <div className="data-card__row">
+          <span className="data-card__label">Deploy tx</span>
+          <span className="data-card__value">
+            <Link
+              href={`/tx/${row.deployTxId}?network=${network}`}
+              className="hash font-mono text-network-cyan hover:underline"
+            >
+              {shortenHash(row.deployTxId, 10, 8)}
+            </Link>
+          </span>
+        </div>
+      ) : null}
+      {row.deployer ? (
+        <div className="data-card__row">
+          <span className="data-card__label">Deployer</span>
+          <span className="data-card__value">
+            <Link href={explorerAssetHref(row.deployer, network)} className="address-link text-xs">
+              {shortenHash(row.deployer)}
+            </Link>
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }

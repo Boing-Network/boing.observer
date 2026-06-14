@@ -21,7 +21,7 @@ export default function AboutPage() {
     <article className="mx-auto max-w-3xl space-y-10">
       <nav aria-label="Breadcrumb" className="text-sm">
         <ol
-          className="flex items-center gap-2 text-[var(--text-muted)]"
+          className="breadcrumb-list text-[var(--text-muted)]"
           itemScope
           itemType="https://schema.org/BreadcrumbList"
         >
@@ -40,7 +40,7 @@ export default function AboutPage() {
       </nav>
 
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--text-primary)]">
+        <h1 className="page-title font-display">
           About Boing Network
         </h1>
         <p className="mt-2 text-[var(--text-secondary)]">

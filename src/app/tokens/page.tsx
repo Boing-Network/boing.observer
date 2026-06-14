@@ -14,7 +14,7 @@ export default function TokensIndexPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <nav aria-label="Breadcrumb" className="text-sm">
-        <ol className="flex items-center gap-2 text-[var(--text-muted)]">
+        <ol className="breadcrumb-list text-[var(--text-muted)]">
           <li>
             <Link href="/" className="text-network-cyan hover:underline">
               Home
@@ -26,7 +26,7 @@ export default function TokensIndexPage() {
       </nav>
 
       <header className="space-y-3">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--text-primary)]">
+        <h1 className="page-title font-display">
           Token &amp; asset index
         </h1>
         <p className="max-w-3xl text-[var(--text-secondary)] leading-relaxed">

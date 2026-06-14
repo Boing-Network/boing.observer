@@ -167,7 +167,7 @@ export default function HomePage() {
                 );
               })}
             </div>
-            <div className="mt-4 hidden overflow-x-auto md:block">
+            <div className="table-scroll-wrap mt-4 hidden md:block">
               <table className="w-full min-w-[600px] border-collapse">
                 <caption className="sr-only">Latest blocks, newest first</caption>
                 <thead>
