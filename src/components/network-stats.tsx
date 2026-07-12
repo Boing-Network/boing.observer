@@ -1,18 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useNetwork } from "@/context/network-context";
-import { fetchChainHeight, fetchBlockByHeight } from "@/lib/rpc-methods";
-import type { Block } from "@/lib/rpc-types";
+import { useMemo } from "react";
+import { useHomeChainData } from "@/context/home-chain-data";
 import {
   computeNetworkStats,
   formatStatValue,
-  type NetworkStats,
+  type NetworkStats as NetworkStatsData,
 } from "@/lib/network-stats";
-import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 
 const BLOCKS_TO_SAMPLE = 20;
-const REFRESH_INTERVAL_MS = 15_000;
 
 interface StatCardProps {
   label: string;
@@ -48,41 +44,14 @@ function StatCard({ label, value, sub, loading }: StatCardProps) {
 }
 
 export function NetworkStats() {
-  const { network } = useNetwork();
-  const [stats, setStats] = useState<NetworkStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { tipHeight, sliceBlocks, loading, error } = useHomeChainData();
 
-  const fetchStats = useCallback(async () => {
-    setError(null);
-    try {
-      const h = await fetchChainHeight(network);
-      const heights = Array.from(
-        { length: BLOCKS_TO_SAMPLE },
-        (_, i) => Math.max(0, h - i)
-      );
-      const blocks = await Promise.all(
-        heights.map((height) => fetchBlockByHeight(network, height))
-      );
-      const valid = blocks.filter(
-        (b): b is Block => b != null && "hash" in b && "header" in b
-      );
-      setStats(computeNetworkStats(h, valid));
-    } catch (e) {
-      setError(getFriendlyRpcErrorMessage(e, network, "stats"));
-      setStats(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [network]);
+  const stats = useMemo((): NetworkStatsData | null => {
+    if (tipHeight == null) return null;
+    return computeNetworkStats(tipHeight, sliceBlocks(BLOCKS_TO_SAMPLE));
+  }, [tipHeight, sliceBlocks]);
 
-  useEffect(() => {
-    fetchStats();
-    const id = setInterval(fetchStats, REFRESH_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [fetchStats]);
-
-  if (error) {
+  if (error && !stats) {
     return (
       <div className="py-2" role="region" aria-label="Network statistics">
         <div className="glass-card border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-200" role="alert">

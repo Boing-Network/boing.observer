@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useNetwork } from "@/context/network-context";
+import { useVisibleInterval } from "@/hooks/use-visible-interval";
 import { CopyButton } from "@/components/copy-button";
 import {
   CANONICAL_QA_DOC_URL,
@@ -123,11 +124,7 @@ export function QaTransparencyDashboard() {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    if (!autoRefresh) return;
-    const t = setInterval(() => void load(), 45_000);
-    return () => clearInterval(t);
-  }, [autoRefresh, load]);
+  useVisibleInterval(() => void load(), autoRefresh ? 45_000 : null);
 
   return (
     <div className="space-y-10">

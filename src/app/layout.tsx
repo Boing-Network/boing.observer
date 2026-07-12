@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Comfortaa, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { NetworkProvider } from "@/context/network-context";
 import { AppEngraveBackground } from "@/components/app-engrave-background";
@@ -6,6 +7,20 @@ import { Header } from "@/components/header";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
 import Link from "next/link";
 import { SITE_URL, WEBSITE_URL, WALLET_URL } from "@/lib/constants";
+
+const comfortaa = Comfortaa({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-comfortaa",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-jetbrains-mono",
+  display: "swap",
+});
 
 // Verification codes from Google Search Console, Bing Webmaster Tools, etc.
 // Set in env: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION, NEXT_PUBLIC_BING_SITE_VERIFICATION
@@ -115,7 +130,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className="min-h-full font-sans">
+    <html lang="en" className={`min-h-full font-sans ${comfortaa.variable} ${jetbrainsMono.variable}`}>
       <body className="app-page-canvas min-h-full antialiased">
         <script
           type="application/ld+json"

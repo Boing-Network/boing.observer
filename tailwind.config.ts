@@ -25,9 +25,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["Comfortaa", "system-ui", "sans-serif"],
-        display: ["Comfortaa", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
+        sans: ["var(--font-comfortaa)", "system-ui", "sans-serif"],
+        display: ["var(--font-comfortaa)", "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", "monospace"],
       },
       boxShadow: {
         glow: "0 0 24px rgba(124, 58, 237, 0.22)",

@@ -48,10 +48,13 @@ export function AssetMetadataSection({
   network,
   profile,
   scanUsed,
+  onRequestScan,
 }: {
   network: NetworkId;
   profile: ExplorerAssetProfilePayload;
   scanUsed: boolean;
+  /** When set, shows a control to run the bounded deploy/receipt scan. */
+  onRequestScan?: () => void;
 }) {
   const [imgHidden, setImgHidden] = useState(false);
   const { dexToken, tokenIndex, imageUrl, tokenIndexScan, indexWarnings, nftSamples } = profile;
@@ -64,19 +67,32 @@ export function AssetMetadataSection({
       </h2>
       <p className="text-xs text-[var(--text-muted)] leading-relaxed">
         DEX fields come from <code className="rounded bg-white/10 px-1">boing_getDexToken</code>. Deploy name / symbol
-        are merged from a bounded receipt scan (last {tokenIndexScan ? `${tokenIndexScan.toHeight - tokenIndexScan.fromHeight + 1}` : "—"}{" "}
-        blocks at tip) when the asset page loads — older deploys may only appear on the{" "}
+        can be merged from a bounded receipt scan
+        {scanUsed && tokenIndexScan
+          ? ` (last ${tokenIndexScan.toHeight - tokenIndexScan.fromHeight + 1} blocks at tip)`
+          : ""}
+        . Older deploys may only appear on the{" "}
         <Link href={`/tokens?network=${encodeURIComponent(network)}`} className="text-network-cyan hover:underline">
           token index
         </Link>
         .
       </p>
 
+      {onRequestScan && (
+        <button
+          type="button"
+          onClick={onRequestScan}
+          className="rounded-lg border border-[var(--border-color)] bg-white/5 px-3 py-2 text-sm text-network-cyan transition-colors hover:border-[var(--border-hover)] hover:bg-white/10"
+        >
+          Scan recent blocks for deploy metadata
+        </button>
+      )}
+
       {!hasBody && (
         <p className="text-sm text-[var(--text-muted)]">
           {scanUsed
             ? "No DEX listing and no deploy metadata in the scanned window for this address."
-            : "No DEX listing for this address on the resolved factory. Open the asset view to scan recent blocks for deploy metadata, or use the token index."}
+            : "No DEX listing for this address on the resolved factory. Scan recent blocks for deploy metadata, or use the token index."}
         </p>
       )}
 

@@ -36,14 +36,19 @@ export function SearchBar({ layout = "inline", className = "max-w-xl" }: SearchB
       const hex = normalizeHex64(q);
       setLoading(true);
       try {
-        const txReceipt = await fetchTransactionReceipt(network as NetworkId, hex);
-        if (txReceipt) {
+        const [txSettled, blockSettled] = await Promise.allSettled([
+          fetchTransactionReceipt(network as NetworkId, hex),
+          fetchBlockByHash(network as NetworkId, hex),
+        ]);
+        if (txSettled.status === "fulfilled" && txSettled.value) {
           router.push(`/tx/${hex}?network=${network}`);
           return;
         }
-        const block = await fetchBlockByHash(network as NetworkId, hex);
-        if (block) router.push(`/block/hash/${hex}?network=${network}`);
-        else router.push(explorerAssetHref(hex, network));
+        if (blockSettled.status === "fulfilled" && blockSettled.value) {
+          router.push(`/block/hash/${hex}?network=${network}`);
+          return;
+        }
+        router.push(explorerAssetHref(hex, network));
       } catch {
         router.push(explorerAssetHref(hex, network));
       } finally {

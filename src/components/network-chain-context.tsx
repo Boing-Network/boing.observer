@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useNetwork } from "@/context/network-context";
+import { useVisibleInterval } from "@/hooks/use-visible-interval";
 import { RPC_SPEC_URL, WEBSITE_URL } from "@/lib/constants";
 import { fetchSyncState } from "@/lib/rpc-methods";
 import type { BoingSyncState } from "@/lib/rpc-types";
@@ -32,9 +33,9 @@ export function NetworkChainContext() {
 
   useEffect(() => {
     void load();
-    const id = setInterval(() => void load(), REFRESH_INTERVAL_MS);
-    return () => clearInterval(id);
   }, [load]);
+
+  useVisibleInterval(() => void load(), REFRESH_INTERVAL_MS);
 
   const hashLink = sync?.latest_block_hash
     ? hexForLink(sync.latest_block_hash)

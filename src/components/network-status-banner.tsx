@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useNetwork } from "@/context/network-context";
+import { useVisibleInterval } from "@/hooks/use-visible-interval";
 import { fetchChainHeight } from "@/lib/rpc-methods";
 import { isRpcUnreachableError } from "@/lib/rpc-status";
 import { QA_RPC_TWO_SURFACES_DOC_URL } from "@/lib/constants";
@@ -22,10 +23,10 @@ export function NetworkStatusBanner() {
   }, [network]);
 
   useEffect(() => {
-    check();
-    const id = setInterval(check, CHECK_INTERVAL_MS);
-    return () => clearInterval(id);
+    void check();
   }, [check]);
+
+  useVisibleInterval(() => void check(), CHECK_INTERVAL_MS);
 
   if (unreachable !== true) return null;
 

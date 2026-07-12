@@ -70,6 +70,11 @@ export async function tryFetchBoingHealth(network: NetworkId): Promise<BoingHeal
   }
 }
 
+/** Tip / near-tip blocks stay short-lived; deeper heights are treated as immutable. */
+const TIP_BLOCK_TTL_MS = 8_000;
+const HISTORICAL_BLOCK_TTL_MS = 120_000;
+const RECEIPT_BLOCK_TTL_MS = 10_000;
+
 export async function fetchBlockByHeight(
   network: NetworkId,
   height: number,
@@ -78,7 +83,16 @@ export async function fetchBlockByHeight(
   const base = getRpcBaseUrl(network);
   const cacheKey = `${base}:boing_getBlockByHeight:${height}:r${includeReceipts ? 1 : 0}`;
   const params = includeReceipts ? [height, true] : [height];
-  return cachedRpc(cacheKey, 10_000, () =>
+  let ttlMs = RECEIPT_BLOCK_TTL_MS;
+  if (!includeReceipts) {
+    try {
+      const tip = await fetchChainHeight(network);
+      ttlMs = height < tip - 1 ? HISTORICAL_BLOCK_TTL_MS : TIP_BLOCK_TTL_MS;
+    } catch {
+      ttlMs = TIP_BLOCK_TTL_MS;
+    }
+  }
+  return cachedRpc(cacheKey, ttlMs, () =>
     rpcCall<Block | null>(network, base, "boing_getBlockByHeight", params)
   );
 }
@@ -92,9 +106,28 @@ export async function fetchBlockByHash(
   const hash = hexBlockHash.startsWith("0x") ? hexBlockHash : `0x${hexBlockHash}`;
   const cacheKey = `${base}:boing_getBlockByHash:${hash}:r${includeReceipts ? 1 : 0}`;
   const params = includeReceipts ? [hash, true] : [hash];
-  return cachedRpc(cacheKey, 10_000, () =>
+  // Block hashes are immutable once known; keep a longer TTL even with receipts.
+  const ttlMs = includeReceipts ? RECEIPT_BLOCK_TTL_MS : HISTORICAL_BLOCK_TTL_MS;
+  return cachedRpc(cacheKey, ttlMs, () =>
     rpcCall<Block | null>(network, base, "boing_getBlockByHash", params)
   );
+}
+
+/** Newest-first window of recent blocks for home / dashboard widgets. */
+export async function fetchRecentBlocks(
+  network: NetworkId,
+  count: number
+): Promise<{ height: number; blocks: Block[] }> {
+  const height = await fetchChainHeight(network);
+  const results = await Promise.all(
+    Array.from({ length: Math.max(0, count) }, (_, i) =>
+      fetchBlockByHeight(network, Math.max(0, height - i))
+    )
+  );
+  const blocks = results.filter(
+    (b): b is Block => b != null && "hash" in b && "header" in b
+  );
+  return { height, blocks };
 }
 
 /** 32-byte transaction id (signable payload hash); same param as `boing_getTransactionReceipt`. */

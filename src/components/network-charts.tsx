@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -12,13 +12,9 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { useNetwork } from "@/context/network-context";
-import { fetchChainHeight, fetchBlockByHeight } from "@/lib/rpc-methods";
-import type { Block } from "@/lib/rpc-types";
-import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
+import { useHomeChainData } from "@/context/home-chain-data";
 
 const BLOCKS_TO_SAMPLE = 30;
-const REFRESH_INTERVAL_MS = 30_000;
 
 interface ChartPoint {
   height: number;
@@ -27,58 +23,29 @@ interface ChartPoint {
 }
 
 export function NetworkCharts() {
-  const { network } = useNetwork();
-  const [data, setData] = useState<ChartPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { sliceBlocks, loading, error } = useHomeChainData();
 
-  const fetchData = useCallback(async () => {
-    setError(null);
-    try {
-      const h = await fetchChainHeight(network);
-      const heights = Array.from(
-        { length: BLOCKS_TO_SAMPLE },
-        (_, i) => Math.max(0, h - i)
-      );
-      const blocks = await Promise.all(
-        heights.map((height) => fetchBlockByHeight(network, height))
-      );
-      const valid = blocks.filter(
-        (b): b is Block => b != null && "hash" in b && "header" in b
-      );
-      const sorted = [...valid].sort(
-        (a, b) => (a.header?.height ?? 0) - (b.header?.height ?? 0)
-      );
+  const data = useMemo((): ChartPoint[] => {
+    const valid = sliceBlocks(BLOCKS_TO_SAMPLE);
+    const sorted = [...valid].sort(
+      (a, b) => (a.header?.height ?? 0) - (b.header?.height ?? 0)
+    );
 
-      const points: ChartPoint[] = sorted.map((b, i) => {
-        const ts = b.header?.timestamp != null ? Number(b.header.timestamp) : 0;
-        const prev = sorted[i - 1];
-        const prevTs = prev?.header?.timestamp != null ? Number(prev.header.timestamp) : 0;
-        const blockTimeSec =
-          i > 0 && ts > 0 && prevTs > 0 ? ts - prevTs : null;
-        return {
-          height: b.header?.height ?? 0,
-          blockTimeSec,
-          txCount: b.transactions?.length ?? 0,
-        };
-      });
+    return sorted.map((b, i) => {
+      const ts = b.header?.timestamp != null ? Number(b.header.timestamp) : 0;
+      const prev = sorted[i - 1];
+      const prevTs = prev?.header?.timestamp != null ? Number(prev.header.timestamp) : 0;
+      const blockTimeSec =
+        i > 0 && ts > 0 && prevTs > 0 ? ts - prevTs : null;
+      return {
+        height: b.header?.height ?? 0,
+        blockTimeSec,
+        txCount: b.transactions?.length ?? 0,
+      };
+    });
+  }, [sliceBlocks]);
 
-      setData(points);
-    } catch (e) {
-      setError(getFriendlyRpcErrorMessage(e, network, "stats"));
-      setData([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [network]);
-
-  useEffect(() => {
-    fetchData();
-    const id = setInterval(fetchData, REFRESH_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [fetchData]);
-
-  if (error) {
+  if (error && data.length === 0 && !loading) {
     return (
       <div className="py-2" role="region" aria-label="Network charts">
         <div className="glass-card border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-200" role="alert">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Bar,
   BarChart,
@@ -16,19 +16,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useNetwork } from "@/context/network-context";
-import { fetchChainHeight, fetchBlockByHeight } from "@/lib/rpc-methods";
-import type { Block } from "@/lib/rpc-types";
+import { HOME_BLOCK_WINDOW, useHomeChainData } from "@/context/home-chain-data";
 import {
   analyzeBlockEconomics,
   bigIntToChartNumber,
   cumulativeNetStakeSeries,
 } from "@/lib/block-economics";
 import { formatBoingAmount } from "@/lib/tx-payload";
-import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 
-const BLOCKS_TO_SAMPLE = 40;
-const REFRESH_INTERVAL_MS = 45_000;
+const BLOCKS_TO_SAMPLE = HOME_BLOCK_WINDOW;
 
 function InsightStat({
   label,
@@ -88,33 +84,8 @@ function volumePieWeights(bond: bigint, unbond: bigint, transfer: bigint): VolPi
 }
 
 export function NetworkEconomyInsights() {
-  const { network } = useNetwork();
-  const [blocks, setBlocks] = useState<Block[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      const h = await fetchChainHeight(network);
-      const heights = Array.from({ length: BLOCKS_TO_SAMPLE }, (_, i) => Math.max(0, h - i));
-      const fetched = await Promise.all(heights.map((height) => fetchBlockByHeight(network, height)));
-      const valid = fetched.filter((b): b is Block => b != null && "hash" in b && "header" in b);
-      setBlocks(valid);
-    } catch (e) {
-      setError(getFriendlyRpcErrorMessage(e, network, "stats"));
-      setBlocks([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [network]);
-
-  useEffect(() => {
-    setLoading(true);
-    void load();
-    const id = setInterval(() => void load(), REFRESH_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [load]);
+  const { sliceBlocks, loading, error } = useHomeChainData();
+  const blocks = sliceBlocks(BLOCKS_TO_SAMPLE);
 
   const { rows, totals } = useMemo(() => analyzeBlockEconomics(blocks), [blocks]);
   const cumulative = useMemo(() => cumulativeNetStakeSeries(rows), [rows]);
@@ -156,7 +127,7 @@ export function NetworkEconomyInsights() {
     [totals.bond, totals.unbond, totals.transferVolume]
   );
 
-  if (error) {
+  if (error && blocks.length === 0 && !loading) {
     return (
       <div className="py-2" role="region" aria-label="Network economy insights">
         <div className="glass-card border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-200" role="alert">

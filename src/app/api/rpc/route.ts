@@ -6,6 +6,28 @@ function isValidNetwork(v: string | null): v is NetworkId {
   return v === "testnet" || v === "mainnet";
 }
 
+/** Methods the explorer browser client may invoke via the same-origin proxy. */
+const ALLOWED_RPC_METHODS = new Set([
+  "boing_chainHeight",
+  "boing_getSyncState",
+  "boing_health",
+  "boing_getBlockByHeight",
+  "boing_getBlockByHash",
+  "boing_getTransactionReceipt",
+  "boing_getAccount",
+  "boing_getNetworkInfo",
+  "boing_getContractStorage",
+  "boing_getQaRegistry",
+  "boing_qaPoolList",
+  "boing_qaPoolConfig",
+  "boing_getRpcMethodCatalog",
+  "boing_qaCheck",
+  "boing_faucetRequest",
+]);
+
+const UPSTREAM_TIMEOUT_MS = 30_000;
+const MAX_BODY_BYTES = 1_048_576; // 1 MiB (qaCheck bytecode payloads)
+
 /**
  * Same-origin JSON-RPC proxy so the browser never calls the Boing node directly.
  * Avoids CORS/preflight failures when the tunnel or an intermediary strips
@@ -28,6 +50,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "Request body too large" }, { status: 413 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -44,10 +71,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON-RPC 2.0 request" }, { status: 400 });
   }
 
-  const upstreamUrl = upstreamBase.endsWith("/") ? upstreamBase : `${upstreamBase}/`;
-
+  const method = (body as { method: string }).method;
   const reqId =
     typeof (body as { id?: unknown }).id === "number" ? (body as { id: number }).id : 0;
+
+  if (!ALLOWED_RPC_METHODS.has(method)) {
+    return NextResponse.json(
+      {
+        jsonrpc: "2.0",
+        id: reqId,
+        error: { code: -32_601, message: `Method not allowed via explorer proxy: ${method}` },
+      },
+      { status: 200 }
+    );
+  }
+
+  const serialized = JSON.stringify(body);
+  if (serialized.length > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "Request body too large" }, { status: 413 });
+  }
+
+  const upstreamUrl = upstreamBase.endsWith("/") ? upstreamBase : `${upstreamBase}/`;
 
   try {
     const upstream = await fetch(upstreamUrl, {
@@ -56,7 +100,8 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(body),
+      body: serialized,
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
 
     const text = await upstream.text();
@@ -86,12 +131,20 @@ export async function POST(req: NextRequest) {
       status: upstream.status,
       headers: { "Content-Type": ct },
     });
-  } catch {
+  } catch (e) {
+    const timedOut =
+      e instanceof Error &&
+      (e.name === "TimeoutError" || e.name === "AbortError" || /aborted|timeout/i.test(e.message));
     return NextResponse.json(
       {
         jsonrpc: "2.0",
         id: reqId,
-        error: { code: -32_000, message: "Upstream RPC unreachable (network error from proxy)." },
+        error: {
+          code: -32_000,
+          message: timedOut
+            ? `Upstream RPC timed out after ${UPSTREAM_TIMEOUT_MS / 1000}s.`
+            : "Upstream RPC unreachable (network error from proxy).",
+        },
       },
       { status: 200 }
     );

@@ -26,6 +26,12 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
   const [profileLoading, setProfileLoading] = useState(true);
   const [assetProfile, setAssetProfile] = useState<ExplorerAssetProfilePayload | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [wantDeployScan, setWantDeployScan] = useState(false);
+  const [profileScope, setProfileScope] = useState({ network, address });
+  if (profileScope.network !== network || profileScope.address !== address) {
+    setProfileScope({ network, address });
+    if (wantDeployScan) setWantDeployScan(false);
+  }
 
   useEffect(() => {
     if (!isHex64(address)) {
@@ -63,7 +69,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
     setProfileLoading(true);
     setProfileError(null);
     const hexId = encodeURIComponent(toPrefixedHex64(address));
-    const scan = variant === "asset" ? "1" : "0";
+    const scan = variant === "asset" && wantDeployScan ? "1" : "0";
     fetch(`/api/asset/profile?network=${encodeURIComponent(network)}&id=${hexId}&scan=${scan}`, {
       headers: { Accept: "application/json" },
     })
@@ -95,7 +101,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
     return () => {
       cancelled = true;
     };
-  }, [network, address, variant]);
+  }, [network, address, variant, wantDeployScan]);
 
   const inDexUniverse = Boolean(assetProfile?.dexToken);
 
@@ -199,7 +205,16 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
         <div className="glass-card h-32 animate-pulse rounded-lg bg-white/5" aria-busy="true" />
       )}
       {assetProfile && (
-        <AssetMetadataSection network={network} profile={assetProfile} scanUsed={variant === "asset"} />
+        <AssetMetadataSection
+          network={network}
+          profile={assetProfile}
+          scanUsed={wantDeployScan}
+          onRequestScan={
+            variant === "asset" && !wantDeployScan
+              ? () => setWantDeployScan(true)
+              : undefined
+          }
+        />
       )}
 
       {loading && (
