@@ -36,13 +36,14 @@ export default function DexTokensPage() {
         <p className="max-w-3xl text-[var(--text-secondary)] leading-relaxed">
           Tokens that appear in at least one pool under the canonical factory from{" "}
           <code className="rounded bg-white/10 px-1 text-sm">boing_getNetworkInfo.end_user.canonical_native_dex_factory</code>
-          . Data is served by <code className="rounded bg-white/10 px-1 text-sm">boing_listDexTokens</code> via{" "}
-          <code className="rounded bg-white/10 px-1 text-sm">boing-sdk</code> on the server (same RPC as the rest of the
-          explorer). This is the trade-relevant universe — distinct from the block-scan{" "}
+          . Hosted testnet currently publishes no factory, so this page is empty until ops bootstraps the native DEX.
+          Deploying a token on boing.finance does not list it here; after the deploy is included in a block, use the{" "}
           <Link href="/tokens" className="text-network-cyan hover:underline">
             token index
           </Link>
-          .
+          . Data is served by <code className="rounded bg-white/10 px-1 text-sm">boing_listDexTokens</code> via{" "}
+          <code className="rounded bg-white/10 px-1 text-sm">boing-sdk</code> on the server (same RPC as the rest of the
+          explorer).
         </p>
         <p className="text-sm">
           <Link href="/dex/pools" className="text-network-cyan hover:underline">

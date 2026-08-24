@@ -19,7 +19,7 @@ export const runtime = "nodejs";
 const MAX_BLOCKS_PER_REQUEST = 2048;
 
 const INDEX_NOTE =
-  "Snapshots merge successful contract deploys (return_data when present, otherwise CREATE2 / nonce-derived AccountId matching the node) and native DEX register_pair tokens for the scanned heights. Durable copies are written under TOKEN_INDEX_CACHE_DIR (default .cache/token-index) with TTL — use ?refresh=1 to force a new RPC scan. This is not OBS-1: pruned nodes and receipt gaps can still miss assets.";
+  "Snapshots merge included contract deploys (return_data when present, otherwise CREATE2 / nonce-derived AccountId matching the node) and native DEX register_pair tokens when a live canonical factory is published. A finance Deploy submitted toast is mempool accept, not explorer listing. Durable copies are written under TOKEN_INDEX_CACHE_DIR (default .cache/token-index) with TTL — use ?refresh=1 to force a new RPC scan. This is not OBS-1: pruned nodes and receipt gaps can still miss assets.";
 
 function parseNetwork(v: string | null): NetworkId | null {
   if (v === "testnet" || v === "mainnet") return v;

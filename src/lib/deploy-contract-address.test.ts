@@ -13,4 +13,15 @@ describe("tryPredictDeployedContractAddressFromDeployTx", () => {
     );
     expect(addr).toBe(want);
   });
+
+  it("accepts nonce as a decimal string (JSON-RPC u64 encoding)", () => {
+    const sender = validateHex32(`0x${"11".repeat(32)}`);
+    const want = predictNonceDerivedContractAddress(sender, 7n).replace(/^0x/i, "").toLowerCase();
+    const payload = { ContractDeploy: { bytecode: [1, 2, 3], create2_salt: null } };
+    const addr = tryPredictDeployedContractAddressFromDeployTx(
+      { sender, nonce: "7", payload },
+      payload,
+    );
+    expect(addr).toBe(want);
+  });
 });

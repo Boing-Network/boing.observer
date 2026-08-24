@@ -30,9 +30,15 @@ export default function TokensIndexPage() {
           Token &amp; asset index
         </h1>
         <p className="max-w-3xl text-[var(--text-secondary)] leading-relaxed">
-          Built from your selected RPC: successful contract deployments (parseable new account id in receipt return data)
-          plus token accounts from native DEX{" "}
-          <code className="rounded bg-white/10 px-1 text-sm">register_pair</code> logs. Each{" "}
+          Built from your selected RPC: successful contract deployments included in blocks (new account id from receipt
+          return data when present, otherwise CREATE2 / nonce-derived) plus token accounts from native DEX{" "}
+          <code className="rounded bg-white/10 px-1 text-sm">register_pair</code> logs when a live canonical factory is
+          published. A <strong className="text-[var(--text-primary)]">Deploy submitted</strong> toast on boing.finance
+          means mempool accept — this page stays empty until that tx is in a block. The{" "}
+          <Link href="/dex/tokens" className="text-network-cyan hover:underline">
+            DEX token directory
+          </Link>{" "}
+          is a different list (registered pools only). Each{" "}
           <code className="rounded bg-white/10 px-1 text-sm">network + block window</code> snapshot is written to disk
           (default <code className="rounded bg-white/10 px-1 text-sm">.cache/token-index</code>, TTL{" "}
           <code className="rounded bg-white/10 px-1 text-sm">TOKEN_INDEX_CACHE_TTL_SEC</code>, default 600s) so repeat loads

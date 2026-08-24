@@ -197,7 +197,18 @@ export function TokensIndexPanel() {
             </h2>
             {filtered.length === 0 ? (
               <p className="mt-4 text-sm text-[var(--text-muted)]">
-                No entries in this window. Try a deeper scan or check another network.
+                {data.entries.length === 0 ? (
+                  <>
+                    No included contract deploys in this window. Mempool accept on boing.finance is not enough — wait for
+                    a block, then Rescan. DEX-listed tokens need a published factory; see{" "}
+                    <Link href="/dex/tokens" className="text-network-cyan hover:underline">
+                      DEX token directory
+                    </Link>
+                    .
+                  </>
+                ) : (
+                  "No entries match this filter."
+                )}
               </p>
             ) : (
               <>

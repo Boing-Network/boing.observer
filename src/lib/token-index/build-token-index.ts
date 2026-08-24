@@ -8,6 +8,7 @@ import {
 } from "boing-sdk";
 import { tryPredictDeployedContractAddressFromDeployTx } from "@/lib/deploy-contract-address";
 import { receiptReturnDataHex, tryParseCreatedAccountIdFromDeployReturnData } from "@/lib/deploy-receipt";
+import { resolveNativeDexFactoryForExplorer } from "@/lib/resolve-native-dex-factory";
 import { hexForLink, normalizeHex64 } from "@/lib/rpc-types";
 import {
   getTxPayloadInner,
@@ -117,18 +118,25 @@ export async function buildTokenIndexForHeightRange(
 
   const maxConcurrent = Math.min(12, Math.max(1, options?.maxConcurrent ?? 6));
 
+  const factory = await resolveNativeDexFactoryForExplorer(client);
   const dexOverridesRaw = buildNativeDexIntegrationOverridesFromProcessEnv();
-  const dexOverrides = Object.keys(dexOverridesRaw).length ? dexOverridesRaw : undefined;
+  const dexOverrides = {
+    ...dexOverridesRaw,
+    ...(factory ? { nativeDexFactoryAccountHex: factory } : {}),
+  };
+  const dexOverridesArg = Object.keys(dexOverrides).length ? dexOverrides : undefined;
 
   const [bundles, dexSnap] = await Promise.all([
     fetchBlocksWithReceiptsForHeightRange(client, fromHeight, toHeight, {
       maxConcurrent,
       onMissingBlock: "omit",
     }),
-    fetchNativeDexDirectorySnapshot(client, {
-      registerLogs: { fromBlock: fromHeight, toBlock: toHeight },
-      overrides: dexOverrides,
-    }),
+    factory
+      ? fetchNativeDexDirectorySnapshot(client, {
+          registerLogs: { fromBlock: fromHeight, toBlock: toHeight },
+          overrides: dexOverridesArg,
+        })
+      : Promise.resolve(null),
   ]);
 
   const indexWarnings: string[] = [];
@@ -136,11 +144,11 @@ export async function buildTokenIndexForHeightRange(
     "Boing deploy receipts use empty return_data today; new contract ids are inferred with the same CREATE2 / nonce-derived rules as the node.",
   );
 
-  if (dexSnap.defaults.nativeDexFactoryAccountHex == null) {
+  if (!factory) {
     indexWarnings.push(
-      "No native DEX factory address could be resolved (RPC chain_id / end_user hints missing and no BOING_NATIVE_VM_DEX_FACTORY-style env override). register_pair tokens were not merged — only deploy receipts count.",
+      "No live canonical native DEX factory (RPC end_user hint or host env override). register_pair tokens were not merged — only included contract deploys appear here. The DEX token directory (/dex/tokens) stays empty until a factory is published on this chain.",
     );
-  } else if (dexSnap.registerLogs == null) {
+  } else if (dexSnap?.registerLogs == null) {
     indexWarnings.push("register_pair log fetch was skipped despite a factory hint — check RPC getLogs limits.");
   } else if (dexSnap.registerLogs.length === 0) {
     indexWarnings.push(
@@ -149,6 +157,8 @@ export async function buildTokenIndexForHeightRange(
   }
 
   const map = new Map<string, MutableEntry>();
+  let deployTxSeen = 0;
+  let deployIndexed = 0;
 
   for (const bundle of bundles) {
     const block = bundle.block;
@@ -161,19 +171,21 @@ export async function buildTokenIndexForHeightRange(
       if (!tx || tx.payload === undefined) continue;
       const kind = getTxPayloadKind(tx.payload);
       if (!isContractDeployPayloadKind(kind)) continue;
-      const receipt = receipts[i];
-      if (receipt == null || receipt.success === false) continue;
+      deployTxSeen += 1;
+      const receipt = receipts[i] ?? null;
+      if (receipt && receipt.success === false) continue;
       const addr =
         tryParseCreatedAccountIdFromDeployReturnData(receiptReturnDataHex(receipt)) ??
         tryPredictDeployedContractAddressFromDeployTx(tx, tx.payload);
       if (!addr) continue;
+      deployIndexed += 1;
       const inner = getTxPayloadInner(tx.payload);
       const purpose =
         typeof inner.purpose_category === "string" ? inner.purpose_category : null;
       const assetName = typeof inner.asset_name === "string" ? inner.asset_name : null;
       const assetSymbol = typeof inner.asset_symbol === "string" ? inner.asset_symbol : null;
       const deployer = hexForLink(tx.sender) || null;
-      const txId = normalizeTxId(receipt.tx_id);
+      const txId = receipt ? normalizeTxId(receipt.tx_id) : null;
 
       applyDeployRow(map, {
         address: addr,
@@ -187,7 +199,17 @@ export async function buildTokenIndexForHeightRange(
     }
   }
 
-  const dexRows = dexSnap.registerLogs ?? [];
+  if (deployTxSeen === 0) {
+    indexWarnings.push(
+      "No ContractDeploy transactions in this window. boing.finance shows Deploy submitted when the mempool accepts a tx; this index only lists tokens after that tx is included in a block.",
+    );
+  } else if (deployIndexed === 0) {
+    indexWarnings.push(
+      `Found ${deployTxSeen} deploy transaction(s) but could not derive a contract id (failed receipt, or missing sender/nonce for CREATE2 / nonce prediction).`,
+    );
+  }
+
+  const dexRows = dexSnap?.registerLogs ?? [];
   for (const row of dexRows) {
     const bh = row.block_height;
     applyDexToken(map, row.tokenAHex, bh);

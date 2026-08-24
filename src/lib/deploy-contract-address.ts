@@ -23,6 +23,21 @@ function bytecodeToBytes(raw: unknown): Uint8Array | null {
   return null;
 }
 
+function parseTxNonce(raw: unknown): bigint | null {
+  if (typeof raw === "bigint" && raw >= BigInt(0)) return raw;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw >= 0 && Number.isSafeInteger(raw)) {
+    return BigInt(raw);
+  }
+  if (typeof raw === "string" && /^\d+$/.test(raw.trim())) {
+    try {
+      return BigInt(raw.trim());
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 function parseCreate2Salt(inner: Record<string, unknown>): Uint8Array | null {
   const s = inner.create2_salt;
   if (s == null) return null;
@@ -59,15 +74,15 @@ export function tryPredictDeployedContractAddressFromDeployTx(
 
   const sender64 = hexForLink(tx.sender);
   if (!sender64 || sender64.length !== 64) return null;
-  const nonceRaw = tx.nonce;
-  if (typeof nonceRaw !== "number" || !Number.isFinite(nonceRaw) || nonceRaw < 0) return null;
+  const nonce = parseTxNonce(tx.nonce);
+  if (nonce == null) return null;
 
   try {
     const senderHex = validateHex32(`0x${sender64}`);
     const salt = parseCreate2Salt(inner);
     const predicted = salt
       ? predictCreate2ContractAddress(senderHex, salt, bc)
-      : predictNonceDerivedContractAddress(senderHex, BigInt(nonceRaw));
+      : predictNonceDerivedContractAddress(senderHex, nonce);
     const raw = predicted.replace(/^0x/i, "");
     return normalizeHex64(raw);
   } catch {
