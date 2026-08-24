@@ -155,6 +155,8 @@ export function DexRpcPoolsSection() {
         <div className="flex flex-wrap gap-4 text-sm">
           <label className="flex cursor-pointer items-center gap-2 text-[var(--text-secondary)]">
             <input
+              id="dex-pools-light"
+              name="dex-pools-light"
               type="checkbox"
               checked={light}
               onChange={(e) => setLight(e.target.checked)}
@@ -165,6 +167,8 @@ export function DexRpcPoolsSection() {
           {diagnosticsAllowed ? (
             <label className="flex cursor-pointer items-center gap-2 text-[var(--text-secondary)]">
               <input
+                id="dex-pools-diagnostics"
+                name="dex-pools-diagnostics"
                 type="checkbox"
                 checked={showDiagnostics}
                 onChange={(e) => setShowDiagnostics(e.target.checked)}

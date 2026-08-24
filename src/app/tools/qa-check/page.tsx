@@ -97,6 +97,7 @@ export default function QaCheckPage() {
           </label>
           <textarea
             id="bytecode"
+            name="bytecode"
             value={bytecode}
             onChange={(e) => setBytecode(e.target.value)}
             placeholder="0x600160005260206000f3"
@@ -110,6 +111,7 @@ export default function QaCheckPage() {
           </label>
           <select
             id="purpose"
+            name="purpose"
             value={purpose}
             onChange={(e) => setPurpose(e.target.value)}
             className="w-full max-w-xs p-2 rounded-lg bg-boing-navy-mid border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-network-cyan/50"
@@ -128,6 +130,7 @@ export default function QaCheckPage() {
           </label>
           <input
             id="description-hash"
+            name="description-hash"
             type="text"
             value={descriptionHash}
             onChange={(e) => setDescriptionHash(e.target.value)}
@@ -142,6 +145,7 @@ export default function QaCheckPage() {
             </label>
             <input
               id="asset-name"
+              name="asset-name"
               type="text"
               value={assetName}
               onChange={(e) => setAssetName(e.target.value)}
@@ -155,6 +159,7 @@ export default function QaCheckPage() {
             </label>
             <input
               id="asset-symbol"
+              name="asset-symbol"
               type="text"
               value={assetSymbol}
               onChange={(e) => setAssetSymbol(e.target.value)}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import { useNetwork } from "@/context/network-context";
 import { fetchBlockByHash, fetchTransactionReceipt } from "@/lib/rpc-methods";
 import { explorerAssetHref } from "@/lib/explorer-href";
@@ -19,6 +19,8 @@ type SearchBarProps = {
 export function SearchBar({ layout = "inline", className = "max-w-xl" }: SearchBarProps) {
   const router = useRouter();
   const { network } = useNetwork();
+  const uid = useId();
+  const fieldId = `explorer-search-${uid.replace(/:/g, "")}`;
   const [value, setValue] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -63,12 +65,20 @@ export function SearchBar({ layout = "inline", className = "max-w-xl" }: SearchB
 
   return (
     <div className={`w-full ${className}`}>
-      <div className={stacked ? "flex flex-col gap-2" : "flex flex-col gap-2 sm:flex-row"}>
+      <form
+        role="search"
+        className={stacked ? "flex flex-col gap-2" : "flex flex-col gap-2 sm:flex-row"}
+        onSubmit={(e) => {
+          e.preventDefault();
+          void search();
+        }}
+      >
         <input
-          type="text"
+          id={fieldId}
+          name="q"
+          type="search"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && search()}
           placeholder={
             stacked
               ? "Height or 64-char hex (tx / block / asset address)"
@@ -76,11 +86,11 @@ export function SearchBar({ layout = "inline", className = "max-w-xl" }: SearchB
           }
           className="hash min-h-11 w-full flex-1 rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/80 px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-network-primary focus:outline-none focus:ring-1 focus:ring-network-primary sm:px-4"
           aria-label="Search by block height, transaction id, block hash, or asset address"
+          autoComplete="off"
           data-testid="explorer-search-input"
         />
         <button
-          type="button"
-          onClick={() => search()}
+          type="submit"
           disabled={loading}
           aria-label={loading ? "Searching…" : "Search"}
           data-testid="explorer-search-submit"
@@ -90,7 +100,7 @@ export function SearchBar({ layout = "inline", className = "max-w-xl" }: SearchB
         >
           {loading ? "…" : "Search"}
         </button>
-      </div>
+      </form>
       {error && <p className="mt-1.5 text-sm text-red-400">{error}</p>}
     </div>
   );

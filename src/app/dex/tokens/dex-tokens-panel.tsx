@@ -148,6 +148,8 @@ export function DexTokensPanel() {
         <div className="flex flex-wrap gap-4 text-sm">
           <label className="flex cursor-pointer items-center gap-2 text-[var(--text-secondary)]">
             <input
+              id="dex-tokens-light"
+              name="dex-tokens-light"
               type="checkbox"
               checked={light}
               onChange={(e) => setLight(e.target.checked)}
@@ -159,6 +161,8 @@ export function DexTokensPanel() {
           {diagnosticsAllowed ? (
             <label className="flex cursor-pointer items-center gap-2 text-[var(--text-secondary)]">
               <input
+                id="dex-tokens-diagnostics"
+                name="dex-tokens-diagnostics"
                 type="checkbox"
                 checked={showDiagnostics}
                 onChange={(e) => setShowDiagnostics(e.target.checked)}

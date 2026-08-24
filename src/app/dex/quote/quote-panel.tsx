@@ -81,9 +81,11 @@ export function QuotePanel() {
         <p className="text-sm text-[var(--text-secondary)]">
           32-byte Boing AccountIds (0x + 64 hex). Amount is smallest units (decimal string, e.g. u128).
         </p>
-        <label className="block space-y-1">
+        <label htmlFor="quote-token-in" className="block space-y-1">
           <span className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Token in</span>
           <input
+            id="quote-token-in"
+            name="token-in"
             value={tokenIn}
             onChange={(e) => setTokenIn(e.target.value)}
             className="hash w-full rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/80 px-3 py-2 text-sm"
@@ -91,9 +93,11 @@ export function QuotePanel() {
             autoComplete="off"
           />
         </label>
-        <label className="block space-y-1">
+        <label htmlFor="quote-token-out" className="block space-y-1">
           <span className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Token out</span>
           <input
+            id="quote-token-out"
+            name="token-out"
             value={tokenOut}
             onChange={(e) => setTokenOut(e.target.value)}
             className="hash w-full rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/80 px-3 py-2 text-sm"
@@ -101,9 +105,11 @@ export function QuotePanel() {
             autoComplete="off"
           />
         </label>
-        <label className="block space-y-1">
+        <label htmlFor="quote-amount-in" className="block space-y-1">
           <span className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Amount in</span>
           <input
+            id="quote-amount-in"
+            name="amount-in"
             value={amountIn}
             onChange={(e) => setAmountIn(e.target.value)}
             className="hash w-full rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/80 px-3 py-2 text-sm"
@@ -116,8 +122,9 @@ export function QuotePanel() {
           <legend className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
             Pool discovery range
           </legend>
-          <label className="flex items-center gap-2 text-sm">
+          <label htmlFor="quote-logs-recent" className="flex items-center gap-2 text-sm">
             <input
+              id="quote-logs-recent"
               type="radio"
               name="logs"
               checked={logsMode === "recent"}
@@ -125,8 +132,14 @@ export function QuotePanel() {
             />
             Recent 128 blocks (default)
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="radio" name="logs" checked={logsMode === "full"} onChange={() => setLogsMode("full")} />
+          <label htmlFor="quote-logs-full" className="flex items-center gap-2 text-sm">
+            <input
+              id="quote-logs-full"
+              type="radio"
+              name="logs"
+              checked={logsMode === "full"}
+              onChange={() => setLogsMode("full")}
+            />
             Full chain (chunked getLogs — slower)
           </label>
         </fieldset>

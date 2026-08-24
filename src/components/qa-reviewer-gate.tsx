@@ -164,9 +164,11 @@ export function QaReviewerSessionPanel({
           : null}
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm">
+        <label className="block text-sm" htmlFor="qa-reviewer-token">
           <span className="text-[var(--text-muted)]">Reviewer token</span>
           <input
+            id="qa-reviewer-token"
+            name="qa-reviewer-token"
             type="password"
             autoComplete="off"
             value={token}
@@ -175,9 +177,11 @@ export function QaReviewerSessionPanel({
             required
           />
         </label>
-        <label className="block text-sm">
+        <label className="block text-sm" htmlFor="qa-voter-account">
           <span className="text-[var(--text-muted)]">Voter account (32-byte hex)</span>
           <input
+            id="qa-voter-account"
+            name="qa-voter-account"
             type="text"
             autoComplete="off"
             spellCheck={false}

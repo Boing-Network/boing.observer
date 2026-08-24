@@ -42,13 +42,16 @@ export function RpcCatalogPanel() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <label className="block max-w-md flex-1 space-y-1">
+        <label htmlFor="rpc-method-filter" className="block max-w-md flex-1 space-y-1">
           <span className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Filter methods</span>
           <input
+            id="rpc-method-filter"
+            name="rpc-method-filter"
             type="search"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="e.g. boing_getLogs, qa, faucet"
+            autoComplete="off"
             className="w-full rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/80 px-3 py-2 text-sm text-[var(--text-primary)]"
           />
         </label>

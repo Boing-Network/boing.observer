@@ -174,6 +174,8 @@ export function QaTransparencyDashboard() {
           </button>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--text-secondary)]">
             <input
+              id="qa-auto-refresh"
+              name="qa-auto-refresh"
               type="checkbox"
               checked={autoRefresh}
               onChange={(e) => setAutoRefresh(e.target.checked)}

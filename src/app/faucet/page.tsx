@@ -94,6 +94,7 @@ export default function FaucetPage() {
           </label>
           <input
             id="account-id"
+            name="account-id"
             type="text"
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}

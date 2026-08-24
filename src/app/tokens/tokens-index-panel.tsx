@@ -182,7 +182,9 @@ export function TokensIndexPanel() {
             </label>
             <input
               id="token-filter"
+              name="token-filter"
               type="search"
+              autoComplete="off"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               placeholder="Search this result set…"
