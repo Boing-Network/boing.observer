@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PdfDocument } from "@/components/pdf-document";
 import { SITE_URL, QA_DOC_URL } from "@/lib/constants";
+import { publicPdfSrc } from "@/lib/public-pdf";
 
 export const metadata: Metadata = {
   title: "About",
@@ -63,7 +64,7 @@ export default function AboutPage() {
           </a>
           .
         </p>
-        <PdfDocument src="/pdfs/SIX-PILLARS.pdf" title="Six pillars" fileName="SIX-PILLARS.pdf" />
+        <PdfDocument src={publicPdfSrc("SIX-PILLARS.pdf")} title="Six pillars" fileName="SIX-PILLARS.pdf" />
       </section>
 
       <section className="space-y-4" aria-labelledby="docs-heading">

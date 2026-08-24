@@ -4,17 +4,18 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { PdfDocument } from "./pdf-document";
 
 describe("PdfDocument", () => {
-  it("embeds the PDF and offers download/open links", () => {
+  it("offers download/open links while pages render on the client", () => {
     const html = renderToStaticMarkup(
       createElement(PdfDocument, {
-        src: "/pdfs/SIX-PILLARS.pdf",
+        src: "/pdfs/SIX-PILLARS.pdf?v=test",
         title: "Six pillars",
         fileName: "SIX-PILLARS.pdf",
       })
     );
-    expect(html).toContain("/pdfs/SIX-PILLARS.pdf");
+    expect(html).toContain("/pdfs/SIX-PILLARS.pdf?v=test");
     expect(html).toContain("Download PDF");
-    expect(html).toContain('type="application/pdf"');
+    expect(html).toContain("Open");
     expect(html).toContain("SIX-PILLARS.pdf");
+    expect(html).toContain("Loading Six pillars");
   });
 });

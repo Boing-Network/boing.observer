@@ -36,8 +36,8 @@ next-env.d.ts
 cloudflare-env.d.ts
 tsconfig.tsbuildinfo
 
-# Testing
-coverage
+# Generated pdf.js worker (copied from pdfjs-dist on postinstall)
+public/pdfjs/pdf.worker.min.mjs
 .nyc_output
 test-results/
 playwright-report/
