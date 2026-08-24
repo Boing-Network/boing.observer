@@ -4,6 +4,7 @@ import "./globals.css";
 import { NetworkProvider } from "@/context/network-context";
 import { AppEngraveBackground } from "@/components/app-engrave-background";
 import { Header } from "@/components/header";
+import { SidebarNav } from "@/components/sidebar-nav";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
 import Link from "next/link";
 import { SITE_URL, WEBSITE_URL, WALLET_URL } from "@/lib/constants";
@@ -141,10 +142,12 @@ export default function RootLayout({
         <NetworkProvider>
           <div className="app-shell-root min-h-full">
             <AppEngraveBackground />
-            <div className="relative z-10 flex min-h-screen flex-col">
+            <div className="relative z-10 flex min-h-screen">
+              <SidebarNav />
+              <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
               <a
                 href="#main-content"
-                className="absolute left-[-9999px] top-4 z-[100] rounded-lg px-4 py-2 font-semibold text-boing-black outline-none focus:left-4 focus:bg-network-cyan"
+                className="absolute left-[-9999px] top-4 z-[100] rounded-lg px-4 py-2 font-semibold text-boing-black outline-none focus:left-4 focus:bg-network-cyan lg:focus:left-[17rem]"
               >
                 Skip to main content
               </a>
@@ -179,6 +182,7 @@ export default function RootLayout({
                   </Link>
                 </nav>
               </footer>
+              </div>
             </div>
           </div>
         </NetworkProvider>

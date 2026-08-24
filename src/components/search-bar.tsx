@@ -14,9 +14,11 @@ type SearchBarProps = {
   layout?: "inline" | "stacked";
   /** Outer width classes (default `max-w-xl`; header passes `max-w-none` to use flex space). */
   className?: string;
+  /** Header search uses a taller, larger type size. */
+  size?: "md" | "lg";
 };
 
-export function SearchBar({ layout = "inline", className = "max-w-xl" }: SearchBarProps) {
+export function SearchBar({ layout = "inline", className = "max-w-xl", size = "md" }: SearchBarProps) {
   const router = useRouter();
   const { network } = useNetwork();
   const uid = useId();
@@ -67,7 +69,13 @@ export function SearchBar({ layout = "inline", className = "max-w-xl" }: SearchB
     <div className={`w-full ${className}`}>
       <form
         role="search"
-        className={stacked ? "flex flex-col gap-2" : "flex flex-col gap-2 sm:flex-row"}
+        className={
+          stacked
+            ? "flex w-full flex-col gap-2"
+            : size === "lg"
+              ? "flex w-full min-w-0 flex-row gap-2"
+              : "flex w-full min-w-0 flex-col gap-2 sm:flex-row"
+        }
         onSubmit={(e) => {
           e.preventDefault();
           void search();
@@ -82,9 +90,15 @@ export function SearchBar({ layout = "inline", className = "max-w-xl" }: SearchB
           placeholder={
             stacked
               ? "Height or 64-char hex (tx / block / asset address)"
-              : "Block height, or 64 hex (tx id, block hash, asset)"
+              : size === "lg"
+                ? "Search by block height, transaction id, block hash, or asset address"
+                : "Block height, or 64 hex (tx id, block hash, asset)"
           }
-          className="hash min-h-11 w-full flex-1 rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/80 px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-network-primary focus:outline-none focus:ring-1 focus:ring-network-primary sm:px-4"
+          className={
+            size === "lg"
+              ? "min-h-12 w-full flex-1 rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/80 px-4 py-3 font-mono text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-network-primary focus:outline-none focus:ring-1 focus:ring-network-primary"
+              : "hash min-h-11 w-full flex-1 rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/80 px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-network-primary focus:outline-none focus:ring-1 focus:ring-network-primary sm:px-4"
+          }
           aria-label="Search by block height, transaction id, block hash, or asset address"
           autoComplete="off"
           data-testid="explorer-search-input"
@@ -94,9 +108,9 @@ export function SearchBar({ layout = "inline", className = "max-w-xl" }: SearchB
           disabled={loading}
           aria-label={loading ? "Searching…" : "Search"}
           data-testid="explorer-search-submit"
-          className={`min-h-11 shrink-0 rounded-lg bg-network-primary px-4 py-2.5 font-display text-sm font-semibold text-white hover:bg-network-primary-light transition-colors focus:outline-none focus:ring-2 focus:ring-network-cyan disabled:opacity-60 ${
-            stacked ? "w-full" : "w-full sm:w-auto"
-          }`}
+          className={`shrink-0 rounded-lg bg-network-primary font-display font-semibold text-white hover:bg-network-primary-light transition-colors focus:outline-none focus:ring-2 focus:ring-network-cyan disabled:opacity-60 ${
+            size === "lg" ? "min-h-12 px-5 py-3 text-base" : "min-h-11 px-4 py-2.5 text-sm"
+          } ${stacked ? "w-full" : size === "lg" ? "w-auto" : "w-full sm:w-auto"}`}
         >
           {loading ? "…" : "Search"}
         </button>

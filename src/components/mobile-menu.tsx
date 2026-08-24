@@ -1,26 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NETWORK_FAUCET_URL, WALLET_URL } from "@/lib/constants";
 import { SearchBar } from "@/components/search-bar";
-
-const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
-  { href: "/qa", label: "QA" },
-  { href: "/tools", label: "Tools" },
-  { href: "/tokens", label: "Token index" },
-  { href: "/dex/tokens", label: "DEX token directory" },
-  { href: "/dex/pools", label: "DEX directory" },
-  { href: "/dex/quote", label: "DEX quotes" },
-  { href: "/tools/node-health", label: "Node health" },
-] as const;
+import { NAV_GROUPS, navItemIsActive } from "@/lib/nav";
 
 export function MobileMenu() {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
+  const pathname = usePathname() || "/";
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const wasOpenRef = useRef(false);
@@ -81,8 +70,9 @@ export function MobileMenu() {
         )}
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-[100] lg:hidden">
+      {open
+        ? createPortal(
+            <div className="fixed inset-0 z-[100] h-dvh lg:hidden">
           <button
             type="button"
             className="absolute inset-0 bg-black/65 backdrop-blur-[2px]"
@@ -94,7 +84,7 @@ export function MobileMenu() {
             role="dialog"
             aria-modal="true"
             aria-label="Site navigation and search"
-            className="absolute inset-y-0 right-0 flex w-[min(100vw,22rem)] max-w-full flex-col border-l border-[var(--nav-border)] bg-[color-mix(in_srgb,var(--card-bg)_96%,transparent)] shadow-2xl backdrop-blur-xl"
+            className="absolute inset-y-0 right-0 flex h-full w-[min(100vw,22rem)] max-w-full flex-col border-l border-[var(--nav-border)] bg-[color-mix(in_srgb,var(--card-bg)_96%,transparent)] shadow-2xl backdrop-blur-xl"
             style={{
               paddingTop: "max(0.75rem, env(safe-area-inset-top))",
               paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
@@ -123,59 +113,56 @@ export function MobileMenu() {
                   <SearchBar layout="stacked" />
                 </div>
 
-                <nav aria-label="Primary pages" className="flex flex-col border-t border-[var(--border-color)] pt-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                    Explore
-                  </p>
-                  <ul className="flex flex-col gap-1">
-                    {NAV_LINKS.map(({ href, label }) => (
-                      <li key={href}>
-                        <Link
-                          href={href}
-                          className="flex min-h-12 items-center rounded-lg px-3 text-base text-[var(--text-primary)] hover:bg-white/5 active:bg-white/10"
-                          onClick={() => setOpen(false)}
-                        >
-                          {label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
-
-                <nav aria-label="External" className="flex flex-col border-t border-[var(--border-color)] pt-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                    Ecosystem
-                  </p>
-                  <ul className="flex flex-col gap-1">
-                    <li>
-                      <a
-                        href={WALLET_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex min-h-12 items-center rounded-lg px-3 text-base text-[var(--text-primary)] hover:bg-white/5"
-                        onClick={() => setOpen(false)}
-                      >
-                        Wallet (boing.express)
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href={NETWORK_FAUCET_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex min-h-12 items-center rounded-lg px-3 text-base text-[var(--text-primary)] hover:bg-white/5"
-                        onClick={() => setOpen(false)}
-                      >
-                        Get testnet BOING
-                      </a>
-                    </li>
-                  </ul>
-                </nav>
+                {NAV_GROUPS.map((group) => (
+                  <nav
+                    key={group.id}
+                    aria-label={group.label}
+                    className="flex flex-col border-t border-[var(--border-color)] pt-4"
+                  >
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                      {group.label}
+                    </p>
+                    <ul className="flex flex-col gap-1">
+                      {group.items.map((item) => {
+                        const active = navItemIsActive(pathname, item);
+                        const className = `flex min-h-12 items-center rounded-lg px-3 text-base hover:bg-white/5 active:bg-white/10 ${
+                          active ? "font-semibold text-network-cyan" : "text-[var(--text-primary)]"
+                        }`;
+                        return (
+                          <li key={item.href}>
+                            {item.external ? (
+                              <a
+                                href={item.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={className}
+                                onClick={() => setOpen(false)}
+                              >
+                                {item.label}
+                              </a>
+                            ) : (
+                              <Link
+                                href={item.href}
+                                className={className}
+                                aria-current={active ? "page" : undefined}
+                                onClick={() => setOpen(false)}
+                              >
+                                {item.label}
+                              </Link>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </nav>
+                ))}
               </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }
