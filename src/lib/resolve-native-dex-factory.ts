@@ -11,7 +11,8 @@ const factoryCache = new Map<string, CacheEntry>();
 
 /**
  * Native DEX factory for explorer RPC calls — same merge order as boing-sdk
- * (`end_user` hints → embedded testnet constants when chain id matches → process env overrides).
+ * (overrides → `end_user` hints). Live RPC with null canonical fields means the
+ * hosted chain has not published a factory; do not treat historical SDK hexes as live.
  * Cached briefly; factory addresses rarely change mid-session.
  */
 export async function resolveNativeDexFactoryForExplorer(client: BoingClient): Promise<string | null> {
@@ -22,7 +23,9 @@ export async function resolveNativeDexFactoryForExplorer(client: BoingClient): P
 
   const ov = buildNativeDexIntegrationOverridesFromProcessEnv();
   const defaults = await fetchNativeDexIntegrationDefaults(client, Object.keys(ov).length ? ov : undefined);
-  const value = defaults.nativeDexFactoryAccountHex;
+  const fromLive =
+    defaults.factorySource === "rpc_end_user" || defaults.factorySource === "override";
+  const value = fromLive ? defaults.nativeDexFactoryAccountHex : null;
   factoryCache.set(cacheKey, { expiresAt: now + FACTORY_CACHE_TTL_MS, value });
   return value;
 }

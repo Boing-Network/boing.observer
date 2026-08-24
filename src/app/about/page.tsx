@@ -86,7 +86,7 @@ export default function AboutPage() {
               3. Decentralization
             </h3>
             <p className="text-[var(--text-secondary)] leading-relaxed">
-              Permissionless participation. No whitelist; anyone with stake can validate. P2P (libp2p) with live public bootnodes on testnet (<code className="px-1.5 py-0.5 rounded bg-white/10 text-xs">/ip4/73.84.106.121/tcp/4001</code>); DHT on roadmap. No central gatekeeper for consensus, governance, or QA.
+              Permissionless participation. No whitelist; anyone with stake can validate. P2P (libp2p) with live public bootnodes on testnet (<code className="px-1.5 py-0.5 rounded bg-white/10 text-xs">/ip4/169.155.48.188/tcp/4001</code>, <code className="px-1.5 py-0.5 rounded bg-white/10 text-xs">/ip4/109.105.220.118/tcp/4001</code>); DHT on roadmap. No central gatekeeper for consensus, governance, or QA.
             </p>
           </div>
 

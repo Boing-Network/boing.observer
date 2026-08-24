@@ -18,7 +18,8 @@ service = "boing-observer"
 # You can instead override in the dashboard: Worker → Settings → Variables and secrets → Add variable
 # (use type "plain text", not "secret") — same name: BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS = 1
 #
-# Optional factory hints (plain text, same dashboard path) if your RPC omits chain_id or canonical_native_dex_factory:
+# Optional factory hints (plain text, same dashboard path) only after the hosted chain publishes a factory.
+# Do not set historical tunnel-ledger hexes. Live source of truth: boing_getNetworkInfo.end_user.canonical_native_dex_factory.
 #   BOING_NATIVE_VM_DEX_FACTORY or BOING_DEX_FACTORY_HEX = 0x + 64 hex (see boing-sdk mergeNativeDexIntegrationDefaults).
 [vars]
 BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS = "1"
