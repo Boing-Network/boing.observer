@@ -10,6 +10,7 @@ Blockchain explorer for **Boing Network** at **boing.observer**. Browse blocks, 
 - **Account page** — Balance, nonce, and stake for a 32-byte hex address (`/account/:address`); optional **contract hints** from `boing_getNetworkInfo` (canonical pool/factory) and a zero-slot `boing_getContractStorage` probe.
 - **Search** — By block height (number), block hash (64 hex), or account address (64 hex). Dispatches to the appropriate page (64-hex tries block-by-hash first, then account).
 - **QA Check** — Pre-flight `boing_qaCheck` with optional purpose category, description hash, and advanced asset metadata fields, aligned to the canonical QA docs in `boing.network`.
+- **QA gate** — [`/qa`](https://boing.observer/qa) shows live pool status. Reviewers with `QA_REVIEWER_TOKEN` can Allow / Reject Unsure deploys (server-side `boing_qaPoolVote`).
 - **Faucet helper** — Direct testnet RPC helper for `boing_faucetRequest`; the canonical public faucet landing page lives on `boing.network/faucet`, and the site navigation now points there first.
 - **Native DEX (read-only)** — [`/dex/pools`](https://boing.observer/dex/pools) uses `boing-sdk` on the server for `fetchNativeDexDirectorySnapshot` with optional bounded `register_pair` logs; [`/dex/quote`](https://boing.observer/dex/quote) runs `fetchCpRoutingFromDirectoryLogs` / `findBestCpRoutes` for exploratory CP quotes (execution remains in wallets and dApps).
 - **RPC catalog** — [`/tools/rpc-catalog`](https://boing.observer/tools/rpc-catalog) calls `boing_getRpcMethodCatalog` on the selected network to list methods the endpoint exposes (with links to the spec and alignment §2.1 when the catalog is missing).
@@ -67,6 +68,10 @@ Blockchain explorer for **Boing Network** at **boing.observer**. Browse blocks, 
 | `NEXT_PUBLIC_TESTNET_RPC` | Testnet RPC base URL (e.g. `https://testnet-rpc.boing.network/`). |
 | `NEXT_PUBLIC_TESTNET_RPC_FALLBACKS` | Optional extra testnet origins (comma-separated). The explorer proxy already failsover to the hosted Fly nodes. |
 | `NEXT_PUBLIC_MAINNET_RPC` | Mainnet RPC base URL. **Leave unset** until a distinct mainnet endpoint is published — never set this to the testnet URL ([THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md)). |
+| `QA_REVIEWER_TOKEN` | Server-only shared secret (8+ chars) that unlocks Allow/Reject on `/qa`. Voting stays disabled until set. |
+| `QA_REVIEWER_ADDRESSES` | Optional comma-separated 32-byte voter accounts allowed to use the explorer vote proxy. |
+| `BOING_OPERATOR_RPC_TOKEN` | Server-only; must match the validator `X-Boing-Operator` token. Never `NEXT_PUBLIC_`. |
+| `BOING_QA_VOTE_RPC` | Validator JSON-RPC for `boing_qaPoolVote` (defaults to `https://boing-testnet-1.fly.dev`). |
 
 No API keys required for read-only RPC. Do not hardcode production RPC URLs in the repo; use `.env.local` or hosting env.
 

@@ -156,6 +156,9 @@ export interface QaPoolItemSummary {
   allow_votes: number;
   reject_votes: number;
   age_secs: number;
+  purpose_category?: string;
+  asset_name?: string;
+  asset_symbol?: string;
 }
 
 export interface QaPoolListResult {

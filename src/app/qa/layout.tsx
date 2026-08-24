@@ -4,7 +4,7 @@ import { SITE_URL } from "@/lib/constants";
 export const metadata: Metadata = {
   title: "QA transparency",
   description:
-    "Public governance QA pool status on Boing Network: live queue, vote tallies, and pool parameters from the node. Protocol QA (allow / reject / unsure) explained with links to specs.",
+    "Protocol QA pool, pending Unsure deploys, and a reviewer gate to Allow or Reject assets before they enter a block.",
   openGraph: {
     title: "QA transparency | Boing Observer",
     description:

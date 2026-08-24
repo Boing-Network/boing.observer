@@ -57,6 +57,8 @@ Current state:
   - DEX token directory via `boing_listDexTokens` (unsupported until a canonical factory is published).
 - `/dex/pools`, `/dex/quote`
   - Server-backed `boing-sdk` views (directory + quotes); respect header network selector.
+- `/qa`
+  - QA transparency plus a **reviewer gate**: pending Unsure deploys with asset name/symbol/purpose; Allow / Reject / Abstain via server-side `boing_qaPoolVote` when `QA_REVIEWER_TOKEN` is set.
 - `/tools/qa-check`
   - Calls the protocol QA RPC to evaluate deployment bytecode before submission.
 - `/tools/rpc-catalog`
@@ -80,6 +82,9 @@ Current state:
 - `boing_health` (optional; `/tools/node-health`)
 - `boing_getSyncState` (sync panel, network stats, node health)
 - `boing_qaCheck`
+- `boing_qaPoolList`
+- `boing_qaPoolConfig`
+- `boing_getQaRegistry`
 - `boing_faucetRequest`
 
 ### Core behavior
@@ -125,7 +130,7 @@ Normative specs for ingestion, SQL storage, reorgs, and a read API live in **`bo
 
 ### Current cross-project reality
 
-The explorer is still read-only, but the broader Boing ecosystem is no longer just static docs plus RPC:
+The explorer is still mostly read-only. The `/qa` reviewer gate is the exception: assigned reviewers can vote Allow/Reject on Unsure deploys through a server proxy (operator token never reaches the browser).
 
 - `boing.network` now has a live testnet portal sign-in page at `/testnet/sign-in`.
 - The portal supports nonce-backed wallet authentication using Ed25519 signatures verified in backend functions.
@@ -137,7 +142,7 @@ The explorer is still read-only, but the broader Boing ecosystem is no longer ju
 - Compatibility fallback to `eth_requestAccounts`, `personal_sign`, `eth_chainId`, and `wallet_switchEthereumChain` is documented for wallets that expose Ethereum-style aliases.
 - The portal currently attempts Boing testnet chain ID `0x1b01` before wallet-based sign-in.
 
-This matters even though the explorer does not require authentication today. Any future authenticated explorer features, wallet connect affordances, faucet shortcuts, or cross-app account actions should reuse the same provider and signing contract already documented in `boing.network`.
+This matters for wallet-aware explorer features: reuse the same provider and signing contract already documented in `boing.network`. The QA reviewer gate uses a shared token plus voter account rather than that wallet session today.
 
 ## Constraints and Gaps
 

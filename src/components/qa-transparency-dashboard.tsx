@@ -18,6 +18,11 @@ import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import type { QaPoolConfigResult, QaPoolItemSummary, QaRegistryResult } from "@/lib/rpc-types";
 import { explorerAssetHref } from "@/lib/explorer-href";
 import { hexForLink, normalizeHex64, shortenHash } from "@/lib/rpc-types";
+import {
+  QaReviewerSessionPanel,
+  QaReviewerVoteButtons,
+  useQaReviewerSession,
+} from "@/components/qa-reviewer-gate";
 
 function formatDuration(secs: number): string {
   if (secs < 60) return `${secs}s`;
@@ -73,6 +78,7 @@ export function QaTransparencyDashboard() {
   const [registryError, setRegistryError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const { session, signIn, signOut } = useQaReviewerSession();
 
   const load = useCallback(async () => {
     setError(null);
@@ -146,6 +152,7 @@ export function QaTransparencyDashboard() {
         </h1>
         <p className="mt-3 max-w-2xl text-[var(--text-secondary)] leading-relaxed">
           Live pool config, pending queue, and rule registry from public RPC — same methods the explorer uses elsewhere.
+          Reviewers with the assigned role can Allow or Reject Unsure deploys in the QA gate below.
         </p>
         <p className="mt-2 text-sm text-[var(--text-muted)]">
           <Link href="/tools/qa-check" className="text-network-cyan hover:underline">
@@ -352,17 +359,23 @@ export function QaTransparencyDashboard() {
         ) : null}
       </section>
 
-      <section aria-labelledby="pending-heading">
-        <h2 id="pending-heading" className="mb-2 font-display text-xl font-semibold text-[var(--text-primary)]">
-          Pending queue
+      <section aria-labelledby="qa-gate-heading">
+        <h2 id="qa-gate-heading" className="mb-2 font-display text-xl font-semibold text-[var(--text-primary)]">
+          QA gate
         </h2>
-        <p className="mb-4 text-sm text-[var(--text-muted)]">
-          <strong className="text-[var(--text-secondary)]">Unsure</strong> deploys awaiting governance. Votes:{" "}
+        <p className="mb-4 max-w-3xl text-sm text-[var(--text-muted)]">
+          Automated QA already Allow/Rejects most deploys. Items here are{" "}
+          <strong className="text-[var(--text-secondary)]">Unsure</strong> — reviewers given the role vote
+          Allow or Reject based on the asset (name, symbol, purpose, bytecode) before it can enter a
+          block.{" "}
           <a href={RPC_SPEC_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
             RPC spec
           </a>
           .
         </p>
+        <div className="mb-6">
+          <QaReviewerSessionPanel session={session} onSignIn={signIn} onSignOut={signOut} />
+        </div>
         {loading && items.length === 0 && !error ? (
           <div className="h-32 glass-card animate-pulse bg-white/5" aria-busy="true" />
         ) : items.length === 0 ? (
@@ -380,6 +393,19 @@ export function QaTransparencyDashboard() {
                 const txPath = normalizeHex64(row.tx_hash.replace(/^0x/i, ""));
                 return (
                   <div key={row.tx_hash} className="data-card space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-medium text-[var(--text-muted)]">Asset</span>
+                      <span className="text-sm text-[var(--text-primary)]">
+                        {row.asset_name || "Unnamed"}
+                        {row.asset_symbol ? (
+                          <span className="ml-2 font-mono text-network-cyan">{row.asset_symbol}</span>
+                        ) : null}
+                      </span>
+                    </div>
+                    <div className="data-card__row">
+                      <span className="data-card__label">Purpose</span>
+                      <span className="data-card__value">{row.purpose_category || "—"}</span>
+                    </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-medium text-[var(--text-muted)]">Transaction</span>
                       {txPath ? (
@@ -418,20 +444,28 @@ export function QaTransparencyDashboard() {
                       <span className="data-card__label">Age</span>
                       <span className="data-card__value">{formatDuration(row.age_secs)}</span>
                     </div>
+                    <QaReviewerVoteButtons
+                      network={network}
+                      txHash={row.tx_hash}
+                      session={session}
+                      onVoted={() => void load()}
+                    />
                   </div>
                 );
               })}
             </div>
             <div className="glass-card table-scroll-wrap hidden md:block">
               <p className="table-scroll-hint px-3 pt-3">Swipe horizontally to see all columns</p>
-              <table className="w-full min-w-[720px] border-collapse text-sm">
+              <table className="w-full min-w-[960px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-[var(--border-color)] text-left text-[var(--text-muted)]">
+                    <th className="p-3 font-medium">Asset</th>
+                    <th className="p-3 font-medium">Purpose</th>
                     <th className="p-3 font-medium">Transaction hash</th>
-                    <th className="p-3 font-medium">Bytecode hash</th>
                     <th className="p-3 font-medium">Deployer</th>
-                    <th className="p-3 font-medium">Votes (allow / reject)</th>
+                    <th className="p-3 font-medium">Votes</th>
                     <th className="p-3 font-medium">Age</th>
+                    <th className="p-3 font-medium">Review</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -440,6 +474,11 @@ export function QaTransparencyDashboard() {
                     const txPath = normalizeHex64(row.tx_hash.replace(/^0x/i, ""));
                     return (
                       <tr key={row.tx_hash} className="border-b border-[var(--border-color)]/60 hover:bg-white/5">
+                        <td className="p-3 align-top">
+                          <div className="text-[var(--text-primary)]">{row.asset_name || "Unnamed"}</div>
+                          <div className="font-mono text-xs text-network-cyan">{row.asset_symbol || "—"}</div>
+                        </td>
+                        <td className="p-3 align-top text-[var(--text-secondary)]">{row.purpose_category || "—"}</td>
                         <td className="p-3 align-top">
                           <div className="flex flex-wrap items-center gap-2">
                             {txPath ? (
@@ -456,9 +495,9 @@ export function QaTransparencyDashboard() {
                             )}
                             <CopyButton value={row.tx_hash} label="Copy tx hash" />
                           </div>
-                        </td>
-                        <td className="p-3 align-top">
-                          <span className="hash text-xs text-[var(--text-muted)] break-all">{shortenHash(row.bytecode_hash, 10, 8)}</span>
+                          <div className="mt-1 hash text-xs text-[var(--text-muted)]">
+                            {shortenHash(row.bytecode_hash, 10, 8)}
+                          </div>
                         </td>
                         <td className="p-3 align-top">
                           <Link
@@ -472,6 +511,14 @@ export function QaTransparencyDashboard() {
                           {row.allow_votes} / {row.reject_votes}
                         </td>
                         <td className="p-3 align-top text-[var(--text-muted)]">{formatDuration(row.age_secs)}</td>
+                        <td className="p-3 align-top">
+                          <QaReviewerVoteButtons
+                            network={network}
+                            txHash={row.tx_hash}
+                            session={session}
+                            onVoted={() => void load()}
+                          />
+                        </td>
                       </tr>
                     );
                   })}

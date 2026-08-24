@@ -9,7 +9,7 @@ import { SearchBar } from "@/components/search-bar";
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/qa", label: "QA transparency" },
+  { href: "/qa", label: "QA" },
   { href: "/tools", label: "Tools" },
   { href: "/tokens", label: "Token index" },
   { href: "/dex/tokens", label: "DEX token directory" },

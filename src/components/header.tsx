@@ -11,7 +11,7 @@ import { SearchBar } from "./search-bar";
 const EXPLORE_LINKS = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/qa", label: "QA transparency" },
+  { href: "/qa", label: "QA" },
 ] as const;
 
 const INDEX_LINKS = [
