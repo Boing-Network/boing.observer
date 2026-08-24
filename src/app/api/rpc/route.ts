@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRpcBaseUrl } from "@/lib/rpc-client";
+import { getRpcBaseUrl, getTestnetRpcCandidates } from "@/lib/rpc-client";
 import type { NetworkId } from "@/lib/rpc-types";
 
 function isValidNetwork(v: string | null): v is NetworkId {
@@ -42,9 +42,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let upstreamBase: string;
+  let upstreamBases: string[];
   try {
-    upstreamBase = getRpcBaseUrl(network);
+    upstreamBases =
+      network === "testnet" ? getTestnetRpcCandidates() : [getRpcBaseUrl(network)];
   } catch (e) {
     const message = e instanceof Error ? e.message : "RPC not configured";
     return NextResponse.json({ error: message }, { status: 400 });
@@ -91,62 +92,93 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Request body too large" }, { status: 413 });
   }
 
-  const upstreamUrl = upstreamBase.endsWith("/") ? upstreamBase : `${upstreamBase}/`;
+  const failoverStatuses = new Set([502, 503, 504, 521, 522, 523, 524, 525, 526, 530]);
+  let lastStatus = 0;
+  let lastText = "";
+  let lastError = "";
 
-  try {
-    const upstream = await fetch(upstreamUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: serialized,
-      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
-    });
+  for (let i = 0; i < upstreamBases.length; i += 1) {
+    const upstreamBase = upstreamBases[i];
+    const upstreamUrl = upstreamBase.endsWith("/") ? upstreamBase : `${upstreamBase}/`;
+    try {
+      const upstream = await fetch(upstreamUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "User-Agent": "boing-observer/rpc-proxy",
+        },
+        body: serialized,
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      });
 
-    const text = await upstream.text();
+      const text = await upstream.text();
 
-    // Upstream often returns 530 + plain text (e.g. Cloudflare tunnel error 1033). Forwarding
-    // that status breaks the browser client (non-OK + non-JSON). Map to JSON-RPC error over HTTP 200.
-    if (!upstream.ok) {
-      const tunnelHint =
-        upstream.status === 530 || /\b1033\b/i.test(text)
-          ? " Tunnel or origin is likely down—verify the node and Cloudflare Tunnel for the public RPC hostname."
-          : "";
+      if (!upstream.ok && failoverStatuses.has(upstream.status) && i < upstreamBases.length - 1) {
+        lastStatus = upstream.status;
+        lastText = text;
+        continue;
+      }
+
+      // Upstream 5xx/530 + plain text (e.g. Cloudflare tunnel error 1033) must not be
+      // forwarded as a non-JSON HTTP error — the browser client expects JSON-RPC.
+      if (!upstream.ok) {
+        const edgeHint =
+          upstream.status === 530 || /\b1033\b/i.test(text)
+            ? " Public hostname did not reach a hosted node—verify Fly backends and the RPC gateway."
+            : "";
+        return NextResponse.json(
+          {
+            jsonrpc: "2.0",
+            id: reqId,
+            error: {
+              code: -32_000,
+              message: `Boing RPC endpoint returned HTTP ${upstream.status}.${edgeHint}`.trim(),
+            },
+          },
+          { status: 200 }
+        );
+      }
+
+      const ct = upstream.headers.get("Content-Type") ?? "application/json";
+      return new NextResponse(text, {
+        status: upstream.status,
+        headers: { "Content-Type": ct },
+      });
+    } catch (e) {
+      const timedOut =
+        e instanceof Error &&
+        (e.name === "TimeoutError" || e.name === "AbortError" || /aborted|timeout/i.test(e.message));
+      lastError = timedOut
+        ? `Upstream RPC timed out after ${UPSTREAM_TIMEOUT_MS / 1000}s.`
+        : "Upstream RPC unreachable (network error from proxy).";
+      if (i < upstreamBases.length - 1) continue;
       return NextResponse.json(
         {
           jsonrpc: "2.0",
           id: reqId,
-          error: {
-            code: -32_000,
-            message: `Boing RPC endpoint returned HTTP ${upstream.status}.${tunnelHint}`.trim(),
-          },
+          error: { code: -32_000, message: lastError },
         },
         { status: 200 }
       );
     }
-
-    const ct = upstream.headers.get("Content-Type") ?? "application/json";
-    return new NextResponse(text, {
-      status: upstream.status,
-      headers: { "Content-Type": ct },
-    });
-  } catch (e) {
-    const timedOut =
-      e instanceof Error &&
-      (e.name === "TimeoutError" || e.name === "AbortError" || /aborted|timeout/i.test(e.message));
-    return NextResponse.json(
-      {
-        jsonrpc: "2.0",
-        id: reqId,
-        error: {
-          code: -32_000,
-          message: timedOut
-            ? `Upstream RPC timed out after ${UPSTREAM_TIMEOUT_MS / 1000}s.`
-            : "Upstream RPC unreachable (network error from proxy).",
-        },
-      },
-      { status: 200 }
-    );
   }
+
+  const tunnelHint =
+    lastStatus === 530 || /\b1033\b/i.test(lastText)
+      ? " Public hostname did not reach a hosted node—verify Fly backends and the RPC gateway."
+      : "";
+  return NextResponse.json(
+    {
+      jsonrpc: "2.0",
+      id: reqId,
+      error: {
+        code: -32_000,
+        message: lastError
+          ? lastError
+          : `Boing RPC endpoint returned HTTP ${lastStatus || 502}.${tunnelHint}`.trim(),
+      },
+    },
+    { status: 200 }
+  );
 }

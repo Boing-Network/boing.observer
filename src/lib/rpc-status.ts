@@ -22,6 +22,7 @@ export function isRpcUnreachableError(error: unknown): boolean {
     lower.includes("rpc http 502") ||
     lower.includes("rpc http 503") ||
     lower.includes("rpc http 504") ||
+    lower.includes("rpc http 530") ||
     lower.includes("rpc http 0")
   );
 }

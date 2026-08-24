@@ -3,11 +3,18 @@
  * Base URL from config (e.g. NEXT_PUBLIC_TESTNET_RPC).
  * Defaults to public testnet when env is not set.
  * Transient failures (network error, 5xx, 429) are retried once after a short delay.
+ * The same-origin `/api/rpc` proxy also failsover across hosted testnet backends.
  */
 
 import type { JsonRpcRequest, JsonRpcResponse, NetworkId } from "./rpc-types";
 
 const PUBLIC_TESTNET_RPC = "https://testnet-rpc.boing.network";
+
+/** Hosted Fly origins used when the public hostname (or tunnel) is down. */
+export const HOSTED_TESTNET_RPC_FALLBACKS = [
+  "https://boing-testnet-1.fly.dev",
+  "https://boing-testnet-2.fly.dev",
+] as const;
 
 const RPC_RETRY_DELAY_MS = 600;
 
@@ -77,14 +84,38 @@ export async function rpcCall<T>(
   return data.result;
 }
 
+function stripSlash(url: string): string {
+  return url.replace(/\/$/, "");
+}
+
 export function getConfiguredRpcUrls() {
   const testnet = process.env.NEXT_PUBLIC_TESTNET_RPC || PUBLIC_TESTNET_RPC;
   const mainnet = process.env.NEXT_PUBLIC_MAINNET_RPC || "";
 
   return {
-    testnet: testnet.replace(/\/$/, ""),
-    mainnet: mainnet.replace(/\/$/, ""),
+    testnet: stripSlash(testnet),
+    mainnet: stripSlash(mainnet),
   };
+}
+
+/**
+ * Testnet RPC origins to try in order: configured primary, optional env fallbacks,
+ * then the hosted Fly cluster. Deduped. Used by the same-origin proxy.
+ */
+export function getTestnetRpcCandidates(): string[] {
+  const primary = getConfiguredRpcUrls().testnet;
+  const extra = (process.env.NEXT_PUBLIC_TESTNET_RPC_FALLBACKS || "")
+    .split(",")
+    .map((s) => stripSlash(s.trim()))
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const url of [primary, ...extra, ...HOSTED_TESTNET_RPC_FALLBACKS]) {
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    out.push(url);
+  }
+  return out;
 }
 
 export function isMainnetConfigured(): boolean {
