@@ -1,212 +1,107 @@
-# Boing Observer — Blockchain Explorer
+# 🔭 Boing Observer — Blockchain Explorer
 
-Blockchain explorer for **Boing Network** at **boing.observer**. Browse blocks, transactions, and accounts on testnet today, with mainnet support enabled when a distinct mainnet RPC is configured.
+Browse blocks, transactions, accounts, QA, and native DEX on **Boing Network**. Live at **[boing.observer](https://boing.observer)**.
 
-## Features
+> 👋 **Everyday users:** paste a block height, block hash, or 64-character account into search. Testnet is the default. Get coins at [boing.network/faucet](https://boing.network/faucet).  
+> 🛠️ **Developers:** Next.js 15 App Router. Browser traffic goes through same-origin `POST /api/rpc` (CORS-safe). Direct node calls happen only on the server.  
+> 🛰️ **Operators:** `NEXT_PUBLIC_TESTNET_RPC` defaults to `https://testnet-rpc.boing.network/`. Upgrading a laptop node does **not** change production explorer RPC.
 
-- **Network selector** — Testnet by default; Mainnet only appears as active when a distinct mainnet RPC is configured.
-- **Home** — Current chain height and list of latest blocks.
-- **Block page** — By height (`/block/:height`) or hash (`/block/hash/:hash`): header (hash, height, timestamp, proposer, parent hash, roots) and transaction list with type/sender/summary.
-- **Account page** — Balance, nonce, and stake for a 32-byte hex address (`/account/:address`); optional **contract hints** from `boing_getNetworkInfo` (canonical pool/factory) and a zero-slot `boing_getContractStorage` probe.
-- **Search** — By block height (number), block hash (64 hex), or account address (64 hex). Dispatches to the appropriate page (64-hex tries block-by-hash first, then account).
-- **About** — [`/about`](https://boing.observer/about) publishes the six pillars as an embedded PDF (`public/pdfs/SIX-PILLARS.pdf`, canonical `docs/SIX-PILLARS.md` in `boing.network`). After regenerating PDFs on the website (`npm run build:pdfs`), that script copies `SIX-PILLARS.pdf` into this repo when both checkouts are siblings.
-- **QA Check** — Pre-flight `boing_qaCheck` with optional purpose category, description hash, and advanced asset metadata fields, aligned to the canonical QA docs in `boing.network`.
-- **QA gate** — [`/qa`](https://boing.observer/qa) shows live pool status. Reviewers with `QA_REVIEWER_TOKEN` can Allow / Reject Unsure deploys (server-side `boing_qaPoolVote`).
-- **Faucet helper** — Direct testnet RPC helper for `boing_faucetRequest`; the canonical public faucet landing page lives on `boing.network/faucet`, and the site navigation now points there first.
-- **Native DEX (read-only)** — [`/dex/pools`](https://boing.observer/dex/pools) uses `boing-sdk` on the server for `fetchNativeDexDirectorySnapshot` with optional bounded `register_pair` logs; [`/dex/quote`](https://boing.observer/dex/quote) runs `fetchCpRoutingFromDirectoryLogs` / `findBestCpRoutes` for exploratory CP quotes (execution remains in wallets and dApps).
-- **RPC catalog** — [`/tools/rpc-catalog`](https://boing.observer/tools/rpc-catalog) calls `boing_getRpcMethodCatalog` on the selected network to list methods the endpoint exposes (with links to the spec and alignment §2.1 when the catalog is missing).
-- **Node health** — [`/tools/node-health`](https://boing.observer/tools/node-health) compares `boing_chainHeight`, `boing_getSyncState`, and optional `boing_health` (operator-facing limits and metrics).
+```mermaid
+flowchart LR
+  You[You] --> UI[boing.observer]
+  UI --> Proxy[POST /api/rpc]
+  Proxy -->|5xx / 530 failover| Public[testnet-rpc.boing.network]
+  Public --> Fly1[boing-testnet-1]
+  Public --> Fly2[boing-testnet-2]
+```
 
-## Tech stack
+## ✨ What you can do
+
+| Surface | URL | What it is |
+|---------|-----|------------|
+| 🏠 Home | `/` | Chain height, latest blocks, search |
+| 🧱 Block | `/block/:height` or `/block/hash/:hash` | Header + transactions |
+| 👤 Account | `/account/:address` | Balance, nonce, stake (32-byte hex) |
+| 📄 Transaction | `/tx/:txId` | Receipt when the node has one |
+| ✅ QA transparency | [`/qa`](https://boing.observer/qa) | Live pool + registry from public RPC |
+| 🧪 QA check | `/tools/qa-check` | Pre-flight `boing_qaCheck` |
+| 💱 DEX | `/dex/pools`, `/dex/quote` | Read-only directory + CP quotes via `boing-sdk` |
+| 📡 RPC catalog | `/tools/rpc-catalog` | Live `boing_getRpcMethodCatalog` |
+| ❤️ Node health | `/tools/node-health` | Height, sync, optional `boing_health` |
+| 📖 About | [`/about`](https://boing.observer/about) | Six pillars PDF |
+
+Network selector: **Testnet** by default. **Mainnet** only appears as live when `NEXT_PUBLIC_MAINNET_RPC` is set to a **distinct** URL — never the testnet URL.
+
+## 🧰 Tech stack
 
 - **Next.js 15** (App Router), React 18, TypeScript
-- **Tailwind CSS** with Boing design tokens (Cosmic Foundation: dark theme, Orbitron/Inter/JetBrains Mono, glass cards)
-- **RPC** — Browser: same-origin proxy `POST /api/rpc` + JSON-RPC. Server routes: direct HTTP to configured RPC. **DEX tooling** also uses **`boing-sdk`** (vendored from the [`boing.network`](https://github.com/Boing-Network/boing.network) monorepo via `postinstall`; see `scripts/sync-boing-sdk.mjs`).
-- **Cloudflare** — Deploy via [OpenNext Cloudflare adapter](https://opennext.js.org/cloudflare) to Workers; custom domain **boing.observer**
+- **Tailwind CSS** with Boing design tokens (Comfortaa, dark theme, aqua/teal)
+- **RPC** — Browser: same-origin `POST /api/rpc`. Server routes: direct HTTP. DEX tooling uses **`boing-sdk`** (synced from `boing.network` via `postinstall`)
+- **Cloudflare** — OpenNext adapter → Workers; custom domain **boing.observer**
 
-## Setup
+## 🚀 Setup
 
-1. Clone and install:
+```bash
+npm install --legacy-peer-deps
+cp .env.example .env.local
+npm run dev
+```
 
-   ```bash
-   npm install --legacy-peer-deps
-   ```
+Open [http://localhost:3000](http://localhost:3000).
 
-   (Use `--legacy-peer-deps` because the Cloudflare adapter targets Next 15+; see [Hosting on Cloudflare](#hosting-on-cloudflare-boingobserver).)
+```bash
+npm run lint
+npm run test
+npm run build
+npm run test:e2e
+```
 
-   Lint and unit tests (optional locally; **also run in CI** before deploy on `main`):
+(`--legacy-peer-deps` is required because the Cloudflare adapter’s peer range can lag the Next 15 line we actually run.)
 
-   ```bash
-   npm run lint
-   npm run test
-   ```
-
-   End-to-end smoke (Chromium; starts `next` production server automatically):
-
-   ```bash
-   npm run build
-   npm run test:e2e
-   ```
-
-2. Copy env (includes live testnet RPC by default):
-
-   ```bash
-   cp .env.example .env.local
-   ```
-
-3. Run:
-
-   ```bash
-   npm run dev
-   ```
-
-   Open [http://localhost:3000](http://localhost:3000).
-
-## Config
+## ⚙️ Config
 
 | Variable | Description |
 |----------|-------------|
-| `NEXT_PUBLIC_TESTNET_RPC` | Testnet RPC base URL (e.g. `https://testnet-rpc.boing.network/`). |
-| `NEXT_PUBLIC_TESTNET_RPC_FALLBACKS` | Optional extra testnet origins (comma-separated). The explorer proxy already failsover to the hosted Fly nodes. |
-| `NEXT_PUBLIC_MAINNET_RPC` | Mainnet RPC base URL. **Leave unset** until a distinct mainnet endpoint is published — never set this to the testnet URL ([THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md)). |
-| `QA_REVIEWER_TOKEN` | Server-only shared secret (8+ chars) that unlocks Allow/Reject on `/qa`. Voting stays disabled until set. |
-| `QA_REVIEWER_ADDRESSES` | Optional comma-separated 32-byte voter accounts allowed to use the explorer vote proxy. |
-| `BOING_OPERATOR_RPC_TOKEN` | Server-only; must match the validator `X-Boing-Operator` token. Never `NEXT_PUBLIC_`. |
-| `BOING_QA_VOTE_RPC` | Validator JSON-RPC for `boing_qaPoolVote` (defaults to `https://boing-testnet-1.fly.dev`). |
+| `NEXT_PUBLIC_TESTNET_RPC` | Testnet RPC (default `https://testnet-rpc.boing.network/`) |
+| `NEXT_PUBLIC_TESTNET_RPC_FALLBACKS` | Extra testnet origins (comma-separated). The proxy already failsovers to hosted Fly nodes |
+| `NEXT_PUBLIC_MAINNET_RPC` | Mainnet RPC. **Leave unset** until a distinct mainnet endpoint is published |
+| `QA_REVIEWER_TOKEN` | Server-only secret (8+ chars) that unlocks Allow/Reject on `/qa` |
+| `QA_REVIEWER_ADDRESSES` | Optional comma-separated 32-byte voter accounts |
+| `BOING_OPERATOR_RPC_TOKEN` | Server-only; must match validator `X-Boing-Operator`. Never `NEXT_PUBLIC_` |
+| `BOING_QA_VOTE_RPC` | Validator JSON-RPC for `boing_qaPoolVote` (defaults to `https://boing-testnet-1.fly.dev`) |
 
-No API keys required for read-only RPC. Do not hardcode production RPC URLs in the repo; use `.env.local` or hosting env.
+No API keys for read-only RPC. Do not hardcode production RPC URLs.
 
-Important: if `NEXT_PUBLIC_MAINNET_RPC` is unset or equals the testnet URL, the explorer keeps users on testnet and does not treat “mainnet” as live.
+### RPC retries and “Method not found”
 
-### RPC URL, retries, and “Method not found”
+- Browser calls **`POST /api/rpc`**. Client retries **once** on network errors, HTTP 429, and 5xx. The proxy failsovers to Fly origins on **5xx/530**.
+- There is **no** automatic failover on **`Method not found`**. `/qa` still shows **canonical QA JSON and doc links** when `boing_getQaRegistry` fails. See [THREE-CODEBASE-ALIGNMENT.md §2.1](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md#21-qa-registry-rpc-boing_getqaregistry--two-different-surfaces).
+- **`/dex/pools`** uses **`boing-sdk` against RPC** today. Optional Worker directory: [HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md).
 
-- **Default:** When `NEXT_PUBLIC_TESTNET_RPC` is unset, the app uses **`https://testnet-rpc.boing.network`** (see `src/lib/rpc-client.ts`). The browser calls **`POST /api/rpc`**, which forwards to that configured base URL server-side.
-- **Retries:** The JSON-RPC client retries **once** after a short delay only for **transient** cases (network errors, HTTP 429, 5xx). The same-origin **`POST /api/rpc`** proxy also failsover from the public hostname to hosted Fly origins on HTTP **5xx/530**.
-- **`Method not found` / missing methods:** There is **no** automatic failover to another node. Surfaces such as **QA transparency** (`/qa`) still show **canonical QA JSON and doc links** when `boing_getQaRegistry` (or related calls) fail — see [THREE-CODEBASE-ALIGNMENT.md §2.1](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md#21-qa-registry-rpc-boing_getqaregistry--two-different-surfaces) (*local VibeMiner / `127.0.0.1:8545` vs public testnet RPC*). Upgrading the **public** RPC backend is an infra task; updating only a local node does not change what the explorer calls.
-- **Native DEX directory (optional future):** A Cloudflare Worker can serve cursor-paginated **`GET /v1/directory/meta`** and **`/v1/directory/pools`** (materialized indexer view, not a full subgraph). See [HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md) in the protocol repo; this explorer’s **`/dex/pools`** path still uses **`boing-sdk`** against RPC today.
+## ☁️ Hosting on Cloudflare
 
-## Testnet launch readiness
+```bash
+npx wrangler login
+npm run deploy
+```
 
-For the Boing incentivized testnet launch, the following must be in place for the explorer (and other apps) to work:
+Attach **boing.observer** under Workers & Pages → **boing-observer** → Domains & Routes.
 
-| Item | Status | Notes |
-|------|--------|-------|
-| **Public testnet RPC** | Required | At least one stable URL (e.g. `https://testnet-rpc.boing.network`). Set in `NEXT_PUBLIC_TESTNET_RPC`. |
-| **boing-node** | Required | Validators and full nodes must run `boing-node`; RPC on port 8545. |
-| **Genesis / chain ID** | Required | Chain must be live and producing blocks. |
-| **Faucet** | Recommended | Testnet BOING for validators and developers. |
-| **Explorer configured** | Ready | Set `NEXT_PUBLIC_TESTNET_RPC` in Cloudflare Worker variables or GitHub Actions **Variables** / **Secrets** (see [INFRASTRUCTURE-SETUP.md](https://github.com/Boing-Network/boing.network/blob/main/docs/INFRASTRUCTURE-SETUP.md)). |
-
-Until public RPC nodes are available, the explorer shows a friendly message: *"Boing Network nodes are not yet available"* and suggests running `boing-node` locally. When RPC is reachable, the status banner hides automatically.
-
-## Hosting on Cloudflare (boing.observer)
-
-This project is set up to deploy to **Cloudflare Workers** using the [OpenNext Cloudflare adapter](https://opennext.js.org/cloudflare), so you can serve the explorer at **boing.observer**.
-
-### Prerequisites
-
-- [Wrangler](https://developers.cloudflare.com/workers/wrangler/) (included as dev dependency; v4.x).
-- A Cloudflare account.
-- The domain **boing.observer** added to Cloudflare (DNS managed by Cloudflare).
-
-### Deploy from your machine
-
-1. Log in to Cloudflare (first time only):
-
-   ```bash
-   npx wrangler login
-   ```
-
-2. Set production env (for the Worker’s runtime). Either:
-   - Add `NEXT_PUBLIC_TESTNET_RPC` and `NEXT_PUBLIC_MAINNET_RPC` in **Cloudflare Dashboard** → Workers & Pages → your Worker → Settings → Variables, or  
-   - Use [Wrangler secrets](https://developers.cloudflare.com/workers/configuration/secrets/) if you prefer CLI.
-   - Optional: `NEXT_PUBLIC_BOING_PROTOCOL_DOCS_REPO` = `owner/repo` for GitHub links on `/qa` (defaults to `Boing-Network/boing.network` if unset).
-
-3. Build and deploy:
-
-   ```bash
-   npm run deploy
-   ```
-
-   This runs `opennextjs-cloudflare build` then deploys the Worker. The first time, Wrangler will create a new Worker named **boing-observer** (see `wrangler.toml`).
-
-4. Attach the custom domain **boing.observer**:
-   - In **Cloudflare Dashboard** go to **Workers & Pages** → **boing-observer** → **Settings** → **Domains & Routes**.
-   - Click **Add** and add **boing.observer** (and optionally **www.boing.observer**).  
-   Cloudflare will create the DNS record and serve the explorer at **https://boing.observer**.
-
-### Deploy from Git (GitHub Actions)
-
-This repo includes a GitHub Actions workflow that deploys on every push to `main`. One-time setup:
-
-1. **Create a Cloudflare API token** — [Cloudflare Dashboard](https://dash.cloudflare.com/) → **My Profile** → **API Tokens** → **Create Token** (use **Edit Cloudflare Workers** template).
-2. **Get your Account ID** — In Cloudflare Dashboard, select any domain; Account ID is in the right sidebar under **API**.
-3. **Add GitHub credentials** — Repo → **Settings** → **Secrets and variables** → **Actions**:
-   - **Secrets (required):** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
-   - **Variables (recommended for public RPC URLs):** `NEXT_PUBLIC_TESTNET_RPC` = `https://testnet-rpc.boing.network` or `https://testnet-rpc.boing.network/`; optional `NEXT_PUBLIC_MAINNET_RPC` only when mainnet RPC is live (must differ from testnet). The workflow uses **Variables first**, then **Secrets**, for those two `NEXT_PUBLIC_*` keys.
-4. **Attach custom domain** (first deploy) — **Workers & Pages** → **boing-observer** → **Settings** → **Domains & Routes** → add **boing.observer**.
-
-The **CI** workflow (`.github/workflows/ci.yml`) runs lint, unit tests, production build, and Playwright (Chromium) on every push and pull request to `main`. Pushes to `main` **deploy to Cloudflare only after** that quality job succeeds.
-
-### Useful commands
+GitHub Actions deploys on `main` **after** CI (lint, unit tests, production build, Playwright) succeeds. Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`. Variables: `NEXT_PUBLIC_TESTNET_RPC`.
 
 | Command | Description |
 |--------|-------------|
-| `npm run dev` | Local Next.js dev server. |
-| `npm run build` | Next.js production build only. |
-| `npm run test:e2e` | Playwright smoke tests (run `build` first; auto-starts `next start`). |
-| `npm run preview` | Build with OpenNext and run locally in Workers runtime. |
-| `npm run deploy` | Build and deploy to Cloudflare. |
-| `npm run upload` | Build and upload a new version (for gradual deployments). |
-| `npm run cf-typegen` | Generate Cloudflare env types into `cloudflare-env.d.ts`. |
+| `npm run dev` | Local Next.js |
+| `npm run build` | Production Next build |
+| `npm run test:e2e` | Playwright (run `build` first) |
+| `npm run preview` | OpenNext in Workers runtime |
+| `npm run deploy` | Build and deploy to Cloudflare |
 
-### Worker size
+## 📚 Reference
 
-Workers have a [size limit](https://developers.cloudflare.com/workers/platform/limits/#worker-size) (e.g. 3 MiB compressed on Free, 10 MiB on Paid). After `npm run deploy`, Wrangler prints the compressed size; if you hit the limit, consider moving to a Paid plan or trimming dependencies.
-
-### Note on Next.js 14 and install
-
-This app uses **Next.js 14**. The OpenNext Cloudflare adapter’s current release targets Next 15/16, so:
-
-- Install with **`npm install --legacy-peer-deps`** to resolve peer dependency conflicts.
-- Deploy scripts pass **`--dangerouslyUseUnsupportedNextVersion`** to the OpenNext build so the adapter accepts Next 14. When you upgrade to Next 15+, you can remove that flag and re-evaluate `--legacy-peer-deps`.
-
-## SEO
-
-The explorer is optimized for search engines and social sharing:
-
-- **Metadata** — Title, description, keywords, Open Graph, and Twitter cards in the root layout.
-- **Dynamic metadata** — Block and account pages get unique titles and descriptions from route params.
-- **robots.txt** — Generated at `/robots.txt` (allows all, points to sitemap).
-- **Sitemap** — Generated at `/sitemap.xml` (home page).
-- **Structured data** — JSON-LD WebSite and Organization schema for rich search results.
-- **Manifest** — PWA manifest at `/manifest.json`.
-- **Icons** — Uses the checked-in `public/favicon.svg` plus the manifest.
-
-### Optional richer assets
-
-If you later want richer social cards or platform-specific icon assets, add them explicitly under `public/` and update `src/app/layout.tsx` to reference them. The current repo only relies on assets that are already checked in.
-
-### Search engine verification
-
-Add verification codes from [Google Search Console](https://search.google.com/search-console) or [Bing Webmaster Tools](https://www.bing.com/webmasters) via environment variables:
-
-```
-NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=your-google-code
-NEXT_PUBLIC_BING_SITE_VERIFICATION=your-bing-code
-```
-
-## Reference
-
-- **RPC spec / QA docs:** linked from the app using `NEXT_PUBLIC_BOING_PROTOCOL_DOCS_REPO` (default `Boing-Network/boing.network` on `main` under `docs/`).
-- **Cross-repo handoff (Express, Observer, partners):** [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md) and [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md) in the canonical `boing.network` repo (RPC defaults in **§2**; **§2.1** explains public testnet vs local node for methods such as `boing_getQaRegistry`).
-- **Native DEX directory Worker (D1, pagination, snapshot limits):** [HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md).
-- **Wallet/auth alignment:** See [HANDOFF.md](HANDOFF.md) (sync review and wallet integration notes).
-- **Design system / explorer prompt:** under `docs/` in the same GitHub repo as above (see boing.network monorepo).
-
-### Verification (from `boing.network` clone)
-
-Cross-check public RPC and SDK the same way operators do: `boing-sdk` **`npm run build`** / **`npm test`**, tutorial **`preflight-rpc`**, and **`print-native-dex-routes`** — see [HANDOFF-DEPENDENT-PROJECTS.md §5](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md#5-verification-commands-from-boingnetwork-clone) and [PRE-VIBEMINER-NODE-COMMANDS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/PRE-VIBEMINER-NODE-COMMANDS.md).
+- Protocol docs: `Boing-Network/boing.network` on `main` under `docs/`
+- Alignment: [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md)
+- Local handoff: [HANDOFF.md](HANDOFF.md)
 
 ---
 

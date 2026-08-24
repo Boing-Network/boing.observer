@@ -1,10 +1,20 @@
 # Boing Observer Handoff
 
+> 👋 **Everyday users:** the live explorer is [boing.observer](https://boing.observer). This file is for contributors.  
+> 🛠️ **Developers:** current routes, RPC methods, and cross-repo gotchas (public RPC vs laptop node).  
+> 🛰️ **Operators:** `/qa` and DEX listing follow `NEXT_PUBLIC_TESTNET_RPC`. Env-only node changes need a **process restart**.
+
 This document is intended for agents or contributors working in the `boing.network` website repo and the `boing.express` wallet repo. It describes where `boing.observer` currently stands, what it depends on, and which cross-project improvements would most benefit the broader Boing ecosystem.
 
-It has been updated to reflect the current `boing.network` state, including the testnet portal sign-in flow, the nonce-backed wallet-auth rollout, and the need to keep explorer, website, and wallet behavior synchronized.
+Cross-repo backlog: [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md), [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md). This file remains the observer-local view.
 
-Cross-repo backlog and consumer alignment for **boing.express**, **boing.observer**, and partner dApps now also live in the network monorepo as [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md), alongside [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md). This file remains the observer-local view; treat the network doc as the shared checklist and verification entry point.
+```mermaid
+flowchart LR
+  UI[boing.observer] --> Proxy[/api/rpc]
+  Proxy --> Public[testnet-rpc.boing.network]
+  Public --> Fly[Fly testnet-1 / 2]
+  Local[Laptop VibeMiner :8545] -.->|does not feed production UI| UI
+```
 
 ### QA registry RPC, public RPC vs local node, native DEX directory API
 
