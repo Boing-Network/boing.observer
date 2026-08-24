@@ -16,3 +16,9 @@
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
+
+# Same-origin PDF embeds on /about (object/iframe). Last matching rule wins.
+/pdfs/*
+  X-Frame-Options: SAMEORIGIN
+  Content-Disposition: inline
+  Cache-Control: public, max-age=86400

@@ -68,7 +68,7 @@ Current state:
 - `/faucet`
   - Testnet faucet request flow.
 - `/about`
-  - Network positioning, six pillars, and links to canonical docs.
+  - Six pillars as an embedded PDF (`/pdfs/SIX-PILLARS.pdf`); related essentials/QA PDFs; explorer chrome.
 
 ### RPC methods currently used by the explorer
 

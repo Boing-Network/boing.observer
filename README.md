@@ -9,6 +9,7 @@ Blockchain explorer for **Boing Network** at **boing.observer**. Browse blocks, 
 - **Block page** — By height (`/block/:height`) or hash (`/block/hash/:hash`): header (hash, height, timestamp, proposer, parent hash, roots) and transaction list with type/sender/summary.
 - **Account page** — Balance, nonce, and stake for a 32-byte hex address (`/account/:address`); optional **contract hints** from `boing_getNetworkInfo` (canonical pool/factory) and a zero-slot `boing_getContractStorage` probe.
 - **Search** — By block height (number), block hash (64 hex), or account address (64 hex). Dispatches to the appropriate page (64-hex tries block-by-hash first, then account).
+- **About** — [`/about`](https://boing.observer/about) publishes the six pillars as an embedded PDF (`public/pdfs/SIX-PILLARS.pdf`, canonical `docs/SIX-PILLARS.md` in `boing.network`). After regenerating PDFs on the website (`npm run build:pdfs`), that script copies `SIX-PILLARS.pdf` into this repo when both checkouts are siblings.
 - **QA Check** — Pre-flight `boing_qaCheck` with optional purpose category, description hash, and advanced asset metadata fields, aligned to the canonical QA docs in `boing.network`.
 - **QA gate** — [`/qa`](https://boing.observer/qa) shows live pool status. Reviewers with `QA_REVIEWER_TOKEN` can Allow / Reject Unsure deploys (server-side `boing_qaPoolVote`).
 - **Faucet helper** — Direct testnet RPC helper for `boing_faucetRequest`; the canonical public faucet landing page lives on `boing.network/faucet`, and the site navigation now points there first.

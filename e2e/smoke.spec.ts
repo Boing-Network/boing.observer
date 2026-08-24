@@ -27,6 +27,11 @@ test.describe("Boing Observer smoke", () => {
   test("About page renders", async ({ page }) => {
     await page.goto("/about");
     await expect(page.getByRole("heading", { name: /About Boing Network/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Download PDF/i })).toBeVisible();
+    await expect(page.locator('object[type="application/pdf"]')).toHaveAttribute(
+      "data",
+      /\/pdfs\/SIX-PILLARS\.pdf/
+    );
   });
 
   test("Tools index lists utilities", async ({ page }) => {
