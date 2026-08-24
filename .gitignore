@@ -9,6 +9,7 @@ node_modules
 # Build / OpenNext (Cloudflare)
 .next
 .open-next
+.wrangler
 out
 
 # Env (do not commit secrets)

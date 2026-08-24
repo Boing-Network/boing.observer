@@ -24,24 +24,46 @@
     "@noble/hashes": "^1.6.0",
     "boing-sdk": "^0.3.0",
     "boing-network-root": "git+https://github.com/Boing-Network/boing.network.git",
-    "next": "15.5.14",
+    "next": "15.5.23",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^3.7.0"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "^1.17.1",
+    "@opennextjs/cloudflare": "^1.20.2",
     "@types/node": "^22.10.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
-    "eslint-config-next": "15.5.14",
-    "postcss": "^8.4.49",
+    "eslint-config-next": "15.5.23",
+    "postcss": "^8.5.26",
     "tailwindcss": "^3.4.15",
     "@playwright/test": "^1.50.1",
     "typescript": "^5.7.2",
-    "vitest": "^3.0.5",
-    "wrangler": "^4.76.0"
+    "vitest": "^3.2.6",
+    "wrangler": "^4.125.0"
+  },
+  "overrides": {
+    "nanoid": "3.3.18",
+    "js-yaml": "4.3.1",
+    "flatted": "3.4.2",
+    "form-data": "4.0.6",
+    "fast-xml-parser": "5.7.0",
+    "ws": "8.21.0",
+    "undici": "7.29.0",
+    "postcss": "$postcss",
+    "vite": {
+      ".": "7.3.5",
+      "esbuild": "0.28.2"
+    },
+    "sharp": "0.35.2",
+    "picomatch@^2.0.0": "2.3.2",
+    "picomatch@^4.0.0": "4.0.4",
+    "minimatch@^3.0.0": "3.1.4",
+    "minimatch@^10.0.0": "10.2.3",
+    "brace-expansion@^1.0.0": "1.1.18",
+    "brace-expansion@^2.0.0": "2.1.4",
+    "brace-expansion@^5.0.0": "5.0.9"
   }
 }
