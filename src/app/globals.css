@@ -420,8 +420,18 @@ body.app-page-canvas {
 @media (min-width: 1024px) {
   .sidebar-nav {
     width: 1rem;
-    overflow: hidden;
+    overflow: visible;
     transition: width 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  /* Invisible hover slop to the right of the rail (below the header). */
+  .sidebar-nav::before {
+    content: "";
+    position: absolute;
+    top: calc(4rem + env(safe-area-inset-top, 0px));
+    bottom: 0;
+    left: 100%;
+    width: 40px;
   }
 
   .sidebar-nav::after {
@@ -436,6 +446,11 @@ body.app-page-canvas {
     background: rgba(0, 232, 200, 0.45);
     pointer-events: none;
     transition: opacity 0.15s ease-out;
+  }
+
+  .sidebar-nav-clip {
+    height: 100%;
+    overflow: hidden;
   }
 
   .sidebar-nav-panel {
