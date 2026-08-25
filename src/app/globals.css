@@ -415,3 +415,58 @@ body.app-page-canvas {
   color: var(--text-primary);
   text-align: right;
 }
+
+/* Desktop sidebar: collapsed rail, expands on hover or keyboard focus. */
+@media (min-width: 1024px) {
+  .sidebar-nav {
+    width: 1rem;
+    overflow: hidden;
+    transition: width 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .sidebar-nav::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 0.3rem;
+    width: 3px;
+    height: 2.75rem;
+    transform: translateY(-50%);
+    border-radius: 999px;
+    background: rgba(0, 232, 200, 0.45);
+    pointer-events: none;
+    transition: opacity 0.15s ease-out;
+  }
+
+  .sidebar-nav-panel {
+    width: 16rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease-out;
+  }
+
+  .sidebar-nav:hover,
+  .sidebar-nav:focus-within {
+    width: 16rem;
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.35);
+  }
+
+  .sidebar-nav:hover::after,
+  .sidebar-nav:focus-within::after {
+    opacity: 0;
+  }
+
+  .sidebar-nav:hover .sidebar-nav-panel,
+  .sidebar-nav:focus-within .sidebar-nav-panel {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .sidebar-nav,
+  .sidebar-nav::after,
+  .sidebar-nav-panel {
+    transition: none;
+  }
+}

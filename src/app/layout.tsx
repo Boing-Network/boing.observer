@@ -144,10 +144,10 @@ export default function RootLayout({
             <AppEngraveBackground />
             <div className="relative z-10 flex min-h-screen">
               <SidebarNav />
-              <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
+              <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-4">
               <a
                 href="#main-content"
-                className="absolute left-[-9999px] top-4 z-[100] rounded-lg px-4 py-2 font-semibold text-boing-black outline-none focus:left-4 focus:bg-network-cyan lg:focus:left-[17rem]"
+                className="absolute left-[-9999px] top-4 z-[100] rounded-lg px-4 py-2 font-semibold text-boing-black outline-none focus:left-4 focus:bg-network-cyan"
               >
                 Skip to main content
               </a>

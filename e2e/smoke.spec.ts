@@ -53,6 +53,8 @@ test.describe("Boing Observer smoke", () => {
   test("desktop sidebar reaches Tools", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/");
+    const sidebar = page.getByRole("complementary", { name: "Primary" });
+    await sidebar.hover();
     await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
     await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Tools", exact: true }).click();
     await expect(page).toHaveURL(/\/tools$/);
