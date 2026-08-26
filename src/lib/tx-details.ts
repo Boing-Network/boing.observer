@@ -5,6 +5,7 @@
 import type { TxPayloadKind } from "./rpc-types";
 import { hexForLink, shortenHash, toSafeHexString } from "./rpc-types";
 import { formatBoingAmount, getTxPayloadKind, getTxPayloadInner } from "./tx-payload";
+import { parseAssetDisplayMetadata } from "./extract-media-url";
 
 export type TxDetailLine = {
   label: string;
@@ -13,6 +14,8 @@ export type TxDetailLine = {
   accountHex64?: string;
   /** Full string for copy-to-clipboard (e.g. full calldata hex). */
   copyValue?: string;
+  /** Remote token/NFT image to render next to the value. */
+  imageUrl?: string;
 };
 
 /** Normalize RPC hex or byte array to lowercase `0x…` and byte length. */
@@ -113,11 +116,22 @@ export function buildPayloadDetailLines(payload: unknown): TxDetailLine[] {
           });
         }
       }
-      if ("asset_name" in p && p.asset_name != null) {
-        lines.push({ label: "Asset name", value: String(p.asset_name) });
-      }
-      if ("asset_symbol" in p && p.asset_symbol != null) {
-        lines.push({ label: "Asset symbol", value: String(p.asset_symbol) });
+      if ("asset_name" in p || "asset_symbol" in p) {
+        const parsed = parseAssetDisplayMetadata(
+          typeof p.asset_name === "string" ? p.asset_name : null,
+          typeof p.asset_symbol === "string" ? p.asset_symbol : null,
+        );
+        lines.push({
+          label: "Asset name",
+          value: parsed.displayName ?? (typeof p.asset_name === "string" && !parsed.imageUrl ? String(p.asset_name) : "—"),
+        });
+        lines.push({
+          label: "Asset symbol",
+          value: parsed.displaySymbol ?? (typeof p.asset_symbol === "string" ? String(p.asset_symbol) : "—"),
+        });
+        if (parsed.imageUrl) {
+          lines.push({ label: "Image", value: parsed.imageUrl, imageUrl: parsed.imageUrl, copyValue: parsed.imageUrl });
+        }
       }
       return lines;
     }

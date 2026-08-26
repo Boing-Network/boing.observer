@@ -12,7 +12,9 @@ import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
 import { AccountBalanceMix } from "@/components/account-balance-mix";
 import { AccountContractHints } from "@/components/account-contract-hints";
+import { AssetMediaThumb } from "@/components/asset-media-thumb";
 import { AssetMetadataSection, type ExplorerAssetProfilePayload } from "@/components/asset-metadata-section";
+import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { ADDRESS_FORMAT_ALIGNMENT_URL, NETWORK_FAUCET_URL } from "@/lib/constants";
 
 export function AddressExplorerView({ variant }: { variant: "account" | "asset" }) {
@@ -26,7 +28,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
   const [profileLoading, setProfileLoading] = useState(true);
   const [assetProfile, setAssetProfile] = useState<ExplorerAssetProfilePayload | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [wantDeployScan, setWantDeployScan] = useState(false);
+  const [wantDeployScan, setWantDeployScan] = useState(variant === "asset");
   const [profileScope, setProfileScope] = useState({ network, address });
   if (profileScope.network !== network || profileScope.address !== address) {
     setProfileScope({ network, address });
@@ -133,6 +135,23 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
   }
 
   const title = variant === "asset" ? "Asset" : "Account";
+  const identity = assetProfile
+    ? (() => {
+        const parsed = parseAssetDisplayMetadata(
+          assetProfile.tokenIndex?.assetName ?? assetProfile.dexToken?.name ?? null,
+          assetProfile.tokenIndex?.assetSymbol ?? assetProfile.dexToken?.symbol ?? null,
+        );
+        return {
+          ...parsed,
+          imageUrl: assetProfile.imageUrl ?? parsed.imageUrl,
+          kind: assetProfile.tokenIndex?.kind ?? null,
+        };
+      })()
+    : null;
+  const showAssetIdentity =
+    Boolean(identity) &&
+    (variant === "asset" || Boolean(identity?.imageUrl || identity?.displayName || identity?.kind));
+  const identityLabel = identity ? formatAssetDisplayLabel(identity, "") : "";
   const alternateHref =
     variant === "asset"
       ? `/account/${address}?network=${encodeURIComponent(network)}`
@@ -145,7 +164,25 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
         <Link href="/" className="text-sm text-network-cyan hover:underline">
           ← Home
         </Link>
-        <h1 className="font-display text-xl font-bold text-[var(--text-primary)] sm:text-2xl">{title}</h1>
+        <div className="flex items-start gap-4">
+          {showAssetIdentity ? (
+            <AssetMediaThumb
+              imageUrl={identity?.imageUrl}
+              alt={identityLabel || title}
+              size="lg"
+              kind={identity?.kind}
+            />
+          ) : null}
+          <div className="min-w-0 space-y-2">
+            <h1 className="font-display text-xl font-bold text-[var(--text-primary)] sm:text-2xl">{title}</h1>
+            {identityLabel ? (
+              <p className="font-display text-lg text-[var(--text-primary)]">{identityLabel}</p>
+            ) : null}
+            {identity?.description ? (
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{identity.description}</p>
+            ) : null}
+          </div>
+        </div>
         {variant === "asset" ? (
           <p className="text-xs text-[var(--text-muted)] leading-relaxed">
             Tokens, NFTs, and other contracts share the same 32-byte AccountId. Search or link here to inspect

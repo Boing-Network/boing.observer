@@ -18,12 +18,14 @@ import { fetchQaPoolConfig, fetchQaPoolList, fetchQaRegistry } from "@/lib/rpc-m
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import type { QaPoolConfigResult, QaPoolItemSummary, QaRegistryResult } from "@/lib/rpc-types";
 import { explorerAssetHref } from "@/lib/explorer-href";
+import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { hexForLink, normalizeHex64, shortenHash } from "@/lib/rpc-types";
 import {
   QaReviewerSessionPanel,
   QaReviewerVoteButtons,
   useQaReviewerSession,
 } from "@/components/qa-reviewer-gate";
+import { AssetMediaThumb } from "@/components/asset-media-thumb";
 
 function formatDuration(secs: number): string {
   if (secs < 60) return `${secs}s`;
@@ -424,12 +426,21 @@ export function QaTransparencyDashboard() {
                   <div key={row.tx_hash} className="data-card space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-medium text-[var(--text-muted)]">Asset</span>
-                      <span className="text-sm text-[var(--text-primary)]">
-                        {row.asset_name || "Unnamed"}
-                        {row.asset_symbol ? (
-                          <span className="ml-2 font-mono text-network-cyan">{row.asset_symbol}</span>
-                        ) : null}
-                      </span>
+                      {(() => {
+                        const display = parseAssetDisplayMetadata(row.asset_name, row.asset_symbol);
+                        const label = formatAssetDisplayLabel(display, "Unnamed");
+                        return (
+                          <span className="inline-flex items-center gap-2 text-sm text-[var(--text-primary)]">
+                            <AssetMediaThumb imageUrl={display.imageUrl} alt={label} size="sm" />
+                            <span>
+                              {display.displayName || "Unnamed"}
+                              {display.displaySymbol ? (
+                                <span className="ml-2 font-mono text-network-cyan">{display.displaySymbol}</span>
+                              ) : null}
+                            </span>
+                          </span>
+                        );
+                      })()}
                     </div>
                     <div className="data-card__row">
                       <span className="data-card__label">Purpose</span>
@@ -504,8 +515,19 @@ export function QaTransparencyDashboard() {
                     return (
                       <tr key={row.tx_hash} className="border-b border-[var(--border-color)]/60 hover:bg-white/5">
                         <td className="p-3 align-top">
-                          <div className="text-[var(--text-primary)]">{row.asset_name || "Unnamed"}</div>
-                          <div className="font-mono text-xs text-network-cyan">{row.asset_symbol || "—"}</div>
+                          {(() => {
+                            const display = parseAssetDisplayMetadata(row.asset_name, row.asset_symbol);
+                            const label = formatAssetDisplayLabel(display, "Unnamed");
+                            return (
+                              <div className="flex items-start gap-2">
+                                <AssetMediaThumb imageUrl={display.imageUrl} alt={label} size="sm" />
+                                <div>
+                                  <div className="text-[var(--text-primary)]">{display.displayName || "Unnamed"}</div>
+                                  <div className="font-mono text-xs text-network-cyan">{display.displaySymbol || "—"}</div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="p-3 align-top text-[var(--text-secondary)]">{row.purpose_category || "—"}</td>
                         <td className="p-3 align-top">

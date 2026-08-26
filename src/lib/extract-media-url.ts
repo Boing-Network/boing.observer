@@ -1,5 +1,16 @@
 const MAX_URL = 2048;
 
+const IMAGE_KEYS = ["image", "image_url", "logo", "logoURI", "animation_url"] as const;
+const NAME_KEYS = ["name", "title", "collection"] as const;
+const SYMBOL_KEYS = ["symbol", "ticker"] as const;
+
+export type AssetDisplayMetadata = {
+  displayName: string | null;
+  displaySymbol: string | null;
+  imageUrl: string | null;
+  description: string | null;
+};
+
 function ipfsUriToGateway(uri: string): string | null {
   const trimmed = uri.trim();
   const m = /^ipfs:\/\/(.+)$/i.exec(trimmed);
@@ -47,24 +58,128 @@ export function resolveImageUrlFromSources(...sources: (string | null | undefine
     if (text.startsWith("{") || text.startsWith("[")) {
       try {
         const parsed = JSON.parse(text) as unknown;
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          const o = parsed as Record<string, unknown>;
-          for (const key of ["image", "image_url", "logo", "logoURI", "animation_url"]) {
-            const u = readMetadataImageField(o[key]);
-            if (u) {
-              const g = extractHttpOrIpfsUrl(u);
-              if (g) return g;
-              if (/^https?:\/\//i.test(u) && u.length <= MAX_URL) return u;
-            }
-          }
-        }
+        const fromJson = imageUrlFromJsonObject(parsed);
+        if (fromJson) return fromJson;
       } catch {
         /* not JSON */
       }
     }
 
-    const direct = extractHttpOrIpfsUrl(text);
-    if (direct) return direct;
+    if (isStandaloneMediaUrl(text)) {
+      const g = extractHttpOrIpfsUrl(text);
+      if (g) return g;
+    }
   }
   return null;
+}
+
+function tryParseJsonObject(text: string): Record<string, unknown> | null {
+  const t = text.trim();
+  if (!t.startsWith("{")) return null;
+  try {
+    const parsed = JSON.parse(t) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    /* not JSON */
+  }
+  return null;
+}
+
+function imageUrlFromJsonObject(parsed: unknown): string | null {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+  const o = parsed as Record<string, unknown>;
+  for (const key of IMAGE_KEYS) {
+    const u = readMetadataImageField(o[key]);
+    if (u) {
+      const g = extractHttpOrIpfsUrl(u);
+      if (g) return g;
+      if (/^https?:\/\//i.test(u) && u.length <= MAX_URL) return u;
+    }
+  }
+  return null;
+}
+
+function readStringField(o: Record<string, unknown>, keys: readonly string[]): string | null {
+  for (const key of keys) {
+    const value = o[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+/** True when the whole field is a media URI, not a human name that happens to mention a URL. */
+export function isStandaloneMediaUrl(text: string): boolean {
+  const t = text.trim();
+  if (!t || t.length > MAX_URL) return false;
+  if (/^ipfs:\/\/\S+$/i.test(t)) return true;
+  if (/^https?:\/\/\S+$/i.test(t)) return true;
+  return false;
+}
+
+function humanizeMetadataField(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const t = raw.trim();
+  if (!t) return null;
+  const json = tryParseJsonObject(t);
+  if (json) {
+    const name = readStringField(json, NAME_KEYS);
+    if (name && !isStandaloneMediaUrl(name)) return name;
+    return null;
+  }
+  if (isStandaloneMediaUrl(t)) return null;
+  return t;
+}
+
+/**
+ * Turn deploy `asset_name` / `asset_symbol` (plain text, image URL, or inline JSON)
+ * into the fields UIs should show next to the asset identity.
+ */
+export function parseAssetDisplayMetadata(
+  assetName?: string | null,
+  assetSymbol?: string | null,
+): AssetDisplayMetadata {
+  const sources = [assetName, assetSymbol];
+  let displayName: string | null = null;
+  let displaySymbol: string | null = null;
+  let description: string | null = null;
+
+  for (const raw of sources) {
+    if (raw == null) continue;
+    const json = tryParseJsonObject(raw);
+    if (!json) continue;
+    if (!displayName) {
+      const name = readStringField(json, NAME_KEYS);
+      if (name && !isStandaloneMediaUrl(name)) displayName = name;
+    }
+    if (!displaySymbol) {
+      const symbol = readStringField(json, SYMBOL_KEYS);
+      if (symbol && !isStandaloneMediaUrl(symbol)) displaySymbol = symbol;
+    }
+    if (!description) {
+      description = readStringField(json, ["description"]);
+    }
+  }
+
+  if (!displayName) displayName = humanizeMetadataField(assetName);
+  if (!displaySymbol) {
+    const symbol = humanizeMetadataField(assetSymbol);
+    if (symbol && symbol !== displayName) displaySymbol = symbol;
+  }
+
+  return {
+    displayName,
+    displaySymbol,
+    imageUrl: resolveImageUrlFromSources(assetName, assetSymbol),
+    description,
+  };
+}
+
+export function formatAssetDisplayLabel(
+  meta: AssetDisplayMetadata,
+  fallback = "Unnamed",
+): string {
+  const parts = [meta.displayName, meta.displaySymbol].filter(Boolean);
+  return parts.length ? parts.join(" · ") : fallback;
 }

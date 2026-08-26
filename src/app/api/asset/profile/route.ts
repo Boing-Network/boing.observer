@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { BoingRpcError, validateHex32 } from "boing-sdk";
 import { createServerBoingClient } from "@/lib/server-boing-client";
 import { resolveNativeDexFactoryForExplorer } from "@/lib/resolve-native-dex-factory";
-import { extractHttpOrIpfsUrl, resolveImageUrlFromSources } from "@/lib/extract-media-url";
+import { resolveImageUrlFromSources } from "@/lib/extract-media-url";
 import { buildTokenIndexForHeightRange } from "@/lib/token-index/build-token-index";
 import { probeReferenceNftCollectionSamples } from "@/lib/reference-nft-probe";
 import { getRpcBaseUrl, isMainnetConfigured } from "@/lib/rpc-client";

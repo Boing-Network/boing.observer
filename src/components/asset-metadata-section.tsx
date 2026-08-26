@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { explorerAssetHref } from "@/lib/explorer-href";
+import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import type { NetworkId } from "@/lib/rpc-types";
 import { shortenHash } from "@/lib/rpc-types";
 import type { TokenIndexJsonEntry } from "@/lib/token-index/types";
+import { AssetMediaThumb } from "@/components/asset-media-thumb";
 
 type DexTokenProfile = {
   id: string;
@@ -56,9 +57,12 @@ export function AssetMetadataSection({
   /** When set, shows a control to run the bounded deploy/receipt scan. */
   onRequestScan?: () => void;
 }) {
-  const [imgHidden, setImgHidden] = useState(false);
-  const { dexToken, tokenIndex, imageUrl, tokenIndexScan, indexWarnings, nftSamples } = profile;
-  const hasBody = Boolean(dexToken || tokenIndex || nftSamples?.length || (imageUrl && !imgHidden));
+  const { dexToken, tokenIndex, tokenIndexScan, indexWarnings, nftSamples } = profile;
+  const dexDisplay = dexToken ? parseAssetDisplayMetadata(dexToken.name, dexToken.symbol) : null;
+  const indexDisplay = tokenIndex
+    ? parseAssetDisplayMetadata(tokenIndex.assetName, tokenIndex.assetSymbol)
+    : null;
+  const hasBody = Boolean(dexToken || tokenIndex || nftSamples?.length);
 
   return (
     <section className="glass-card space-y-4 p-4 sm:p-6" aria-labelledby="asset-metadata-heading">
@@ -96,39 +100,17 @@ export function AssetMetadataSection({
         </p>
       )}
 
-      {imageUrl && !imgHidden && (
-        <div className="flex flex-wrap items-start gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element -- remote user/deploy URLs */}
-          <img
-            src={imageUrl}
-            alt={tokenIndex?.assetName || dexToken?.name || "Token image"}
-            width={160}
-            height={160}
-            className="max-h-40 max-w-[10rem] rounded-lg border border-[var(--border-color)] object-contain bg-black/20"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            onError={() => setImgHidden(true)}
-          />
-          <p className="max-w-xl text-xs text-[var(--text-muted)] break-all">
-            Image URL inferred from metadata text:{" "}
-            <a href={imageUrl} className="text-network-cyan hover:underline" target="_blank" rel="noopener noreferrer">
-              {shortenHash(imageUrl.replace(/^https?:\/\//i, ""), 32, 24)}
-            </a>
-          </p>
-        </div>
-      )}
-
       {dexToken && (
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-[var(--text-primary)]">DEX token</h3>
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Symbol</dt>
-              <dd>{dexToken.symbol}</dd>
+              <dd>{dexDisplay?.displaySymbol || dexToken.symbol || "—"}</dd>
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Name</dt>
-              <dd className="break-words">{dexToken.name}</dd>
+              <dd className="break-words">{dexDisplay?.displayName || dexToken.name || "—"}</dd>
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Decimals</dt>
@@ -170,11 +152,13 @@ export function AssetMetadataSection({
             </div>
             <div className="flex flex-wrap gap-x-2 sm:col-span-2">
               <dt className="text-[var(--text-muted)]">Asset name</dt>
-              <dd className="break-words">{tokenIndex.assetName ?? "—"}</dd>
+              <dd className="break-words">
+                {indexDisplay ? formatAssetDisplayLabel(indexDisplay, "—") : (tokenIndex.assetName ?? "—")}
+              </dd>
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Symbol</dt>
-              <dd>{tokenIndex.assetSymbol ?? "—"}</dd>
+              <dd>{indexDisplay?.displaySymbol ?? tokenIndex.assetSymbol ?? "—"}</dd>
             </div>
             <div className="flex flex-wrap gap-x-2 sm:col-span-2">
               <dt className="text-[var(--text-muted)]">Purpose</dt>
@@ -209,19 +193,19 @@ export function AssetMetadataSection({
               >
                 <p className="text-xs font-medium text-[var(--text-secondary)]">
                   Token #{sample.tokenIdU64}
-                  {sample.metadataName ? ` · ${sample.metadataName}` : ""}
+                  {sample.metadataName
+                    ? ` · ${parseAssetDisplayMetadata(sample.metadataName).displayName ?? sample.metadataName}`
+                    : ""}
                 </p>
                 {sample.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- remote NFT media
-                  <img
-                    src={sample.imageUrl}
-                    alt={sample.metadataName ?? `NFT #${sample.tokenIdU64}`}
-                    width={120}
-                    height={120}
-                    className="mt-2 max-h-28 rounded border border-[var(--border-color)] object-contain bg-black/20"
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                  />
+                  <div className="mt-2">
+                    <AssetMediaThumb
+                      imageUrl={sample.imageUrl}
+                      alt={sample.metadataName ?? `NFT #${sample.tokenIdU64}`}
+                      size="md"
+                      kind="nft"
+                    />
+                  </div>
                 ) : (
                   <p className="mt-2 text-xs text-[var(--text-muted)] font-mono break-all">
                     metadata: {shortenHash(sample.metadataHash.replace(/^0x/i, ""), 12, 10)}

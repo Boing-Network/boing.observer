@@ -23,6 +23,8 @@ import {
 import { CopyButton } from "@/components/copy-button";
 import { TESTNET_FAUCET_ACCOUNT_HEX } from "@/lib/testnet-constants";
 import type { TxPayloadKind } from "@/lib/rpc-types";
+import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
+import { AssetMediaThumb } from "@/components/asset-media-thumb";
 
 type VisualScale = "standard" | "featured";
 
@@ -99,7 +101,11 @@ function SignedPayloadHeadlineRich({
         </>
       );
     case "ContractDeployWithPurposeAndMetadata": {
-      const meta = [inner.asset_name, inner.asset_symbol].filter(Boolean).join(" · ");
+      const parsed = parseAssetDisplayMetadata(
+        typeof inner.asset_name === "string" ? inner.asset_name : null,
+        typeof inner.asset_symbol === "string" ? inner.asset_symbol : null,
+      );
+      const meta = formatAssetDisplayLabel(parsed, "");
       return (
         <>
           You signed a deployment ({formatPurposeHeadline(String(inner.purpose_category ?? "other"))}
@@ -576,6 +582,11 @@ export function TransactionInsight({
     isContractDeployPayloadKind(kind) && receipt && receipt.success !== false
       ? tryParseCreatedAccountIdFromDeployReturnData(receipt.return_data)
       : null;
+  const deployDisplay = parseAssetDisplayMetadata(
+    typeof payloadInner.asset_name === "string" ? payloadInner.asset_name : null,
+    typeof payloadInner.asset_symbol === "string" ? payloadInner.asset_symbol : null,
+  );
+  const deployLabel = formatAssetDisplayLabel(deployDisplay, "");
   const featured = visualScale === "featured";
 
   const isFaucetTransfer =
@@ -629,17 +640,30 @@ export function TransactionInsight({
           <h4 className="font-display text-xs font-semibold uppercase tracking-[0.15em] text-fuchsia-200/90">
             Deployed asset
           </h4>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            New on-chain account created by this deployment (token, NFT, or contract). Open the asset page for balances,
-            nonce, and contract hints.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Link href={explorerAssetHref(deployedAssetHex, network)} className="address-link text-sm font-semibold">
-              {shortenHash(deployedAssetHex)}
-            </Link>
-            <CopyButton value={toPrefixedHex64(deployedAssetHex)} label="Copy asset address" />
+          <div className="mt-3 flex items-start gap-4">
+            <AssetMediaThumb
+              imageUrl={deployDisplay.imageUrl}
+              alt={deployLabel || "Deployed asset"}
+              size="lg"
+              kind={String(payloadInner.purpose_category ?? "")}
+            />
+            <div className="min-w-0 space-y-2">
+              {deployLabel ? (
+                <p className="font-display text-lg font-semibold text-[var(--text-primary)]">{deployLabel}</p>
+              ) : null}
+              <p className="text-sm text-[var(--text-secondary)]">
+                New on-chain account created by this deployment (token, NFT, or contract). Open the asset page for
+                balances, nonce, and contract hints.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link href={explorerAssetHref(deployedAssetHex, network)} className="address-link text-sm font-semibold">
+                  {shortenHash(deployedAssetHex)}
+                </Link>
+                <CopyButton value={toPrefixedHex64(deployedAssetHex)} label="Copy asset address" />
+              </div>
+              <p className="hash break-all text-[0.65rem] text-[var(--text-muted)]">0x{deployedAssetHex}</p>
+            </div>
           </div>
-          <p className="mt-2 hash break-all text-[0.65rem] text-[var(--text-muted)]">0x{deployedAssetHex}</p>
         </div>
       ) : null}
 
@@ -688,6 +712,9 @@ export function TransactionInsight({
                     </dt>
                     <dd className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
+                        {row.imageUrl ? (
+                          <AssetMediaThumb imageUrl={row.imageUrl} alt={row.value} size="sm" />
+                        ) : null}
                         {row.accountHex64 ? (
                           <Link
                             href={explorerAssetHref(row.accountHex64, network)}

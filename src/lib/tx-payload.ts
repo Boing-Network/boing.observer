@@ -6,6 +6,7 @@
 import type { TxPayloadKind } from "./rpc-types";
 import { toSafeHexString } from "./rpc-types";
 import { TESTNET_FAUCET_ACCOUNT_HEX } from "./testnet-constants";
+import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "./extract-media-url";
 
 /** Serde-style tagged enums: `{ "Bond": { "amount": "1" } }` — unwrap to inner body + kind. */
 const TAGGED_PAYLOAD_KIND_BY_KEY: Record<string, TxPayloadKind> = {
@@ -120,12 +121,20 @@ export function getTxPayloadSummary(payload: unknown): string {
     case "ContractDeployWithPurpose":
       return `deploy contract · ${formatPurpose(String(p.purpose_category ?? "other"))}`;
     case "ContractDeployWithPurposeAndMetadata": {
-      const meta = [p.asset_name, p.asset_symbol].filter(Boolean).join(" · ");
+      const meta = deployAssetLabel(p);
       return `deploy · ${formatPurpose(String(p.purpose_category ?? "other"))}${meta ? ` · ${meta}` : ""}`;
     }
     default:
       return "—";
   }
+}
+
+function deployAssetLabel(inner: Record<string, unknown>): string {
+  const parsed = parseAssetDisplayMetadata(
+    typeof inner.asset_name === "string" ? inner.asset_name : null,
+    typeof inner.asset_symbol === "string" ? inner.asset_symbol : null,
+  );
+  return formatAssetDisplayLabel(parsed, "");
 }
 
 function formatShortAddr(value: unknown): string {
@@ -165,7 +174,7 @@ export function getSignedPayloadHeadline(kind: TxPayloadKind, inner: Record<stri
     case "ContractDeployWithPurpose":
       return `You signed a contract deployment with purpose ${formatPurpose(String(inner.purpose_category ?? "other"))}.`;
     case "ContractDeployWithPurposeAndMetadata": {
-      const meta = [inner.asset_name, inner.asset_symbol].filter(Boolean).join(" · ");
+      const meta = deployAssetLabel(inner);
       return `You signed a deployment (${formatPurpose(String(inner.purpose_category ?? "other"))}${meta ? ` · ${meta}` : ""}).`;
     }
     case "Unknown":

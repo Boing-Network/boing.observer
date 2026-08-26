@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
 import { explorerAssetHref } from "@/lib/explorer-href";
+import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { shortenHash, normalizeHex64 } from "@/lib/rpc-types";
+import { AssetMediaThumb } from "@/components/asset-media-thumb";
 
 type DexTokenRow = {
   id: string;
@@ -39,6 +41,10 @@ type TokensUnsupported = {
   reason: string;
   message: string;
 };
+
+function tokenDisplay(row: DexTokenRow) {
+  return parseAssetDisplayMetadata(row.name, row.symbol);
+}
 
 function assetPath(hexWith0x: string, network: string): string {
   const h = normalizeHex64(hexWith0x.replace(/^0x/i, ""));
@@ -267,18 +273,23 @@ export function DexTokensPanel() {
             ) : (
               <>
                 <div className="data-card-list md:hidden">
-                  {rows.map((row) => (
+                  {rows.map((row) => {
+                    const display = tokenDisplay(row);
+                    const label = formatAssetDisplayLabel(display, row.symbol || "—");
+                    return (
                     <div key={row.id} className="data-card space-y-2">
-                      <Link
-                        href={assetPath(row.id, network)}
-                        className="hash font-mono text-sm text-network-cyan hover:underline break-all"
-                      >
-                        {shortenHash(row.id, 12, 10)}
-                      </Link>
-                      <p className="font-medium text-[var(--text-primary)]">
-                        {row.symbol}
-                        {row.name ? <span className="font-normal text-[var(--text-secondary)]"> · {row.name}</span> : null}
-                      </p>
+                      <div className="flex items-start gap-3">
+                        <AssetMediaThumb imageUrl={display.imageUrl} alt={label} size="sm" />
+                        <div className="min-w-0 space-y-1">
+                          <Link
+                            href={assetPath(row.id, network)}
+                            className="hash font-mono text-sm text-network-cyan hover:underline break-all"
+                          >
+                            {shortenHash(row.id, 12, 10)}
+                          </Link>
+                          <p className="font-medium text-[var(--text-primary)]">{label}</p>
+                        </div>
+                      </div>
                       <div className="data-card__row">
                         <span className="data-card__label">Decimals</span>
                         <span className="data-card__value font-mono">{row.decimals}</span>
@@ -298,7 +309,8 @@ export function DexTokensPanel() {
                         </div>
                       ) : null}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="table-scroll-wrap hidden md:block">
                   <p className="table-scroll-hint">Swipe horizontally to see all columns</p>
@@ -315,23 +327,30 @@ export function DexTokensPanel() {
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((row) => (
+                      {rows.map((row) => {
+                        const display = tokenDisplay(row);
+                        const label = formatAssetDisplayLabel(display, "—");
+                        return (
                         <tr key={row.id} className="border-b border-[var(--border-color)]/60">
-                          <td className="py-2 pr-3 font-mono text-xs">
-                            <Link href={assetPath(row.id, network)} className="text-network-cyan hover:underline break-all">
-                              {shortenHash(row.id, 12, 10)}
-                            </Link>
+                          <td className="py-2 pr-3">
+                            <div className="flex items-center gap-2">
+                              <AssetMediaThumb imageUrl={display.imageUrl} alt={label} size="sm" />
+                              <Link href={assetPath(row.id, network)} className="font-mono text-xs text-network-cyan hover:underline break-all">
+                                {shortenHash(row.id, 12, 10)}
+                              </Link>
+                            </div>
                           </td>
-                          <td className="py-2 pr-3">{row.symbol}</td>
-                          <td className="py-2 pr-3 max-w-[12rem] truncate" title={row.name}>
-                            {row.name}
+                          <td className="py-2 pr-3">{display.displaySymbol || row.symbol || "—"}</td>
+                          <td className="py-2 pr-3 max-w-[12rem] truncate" title={display.displayName || row.name}>
+                            {display.displayName || row.name || "—"}
                           </td>
                           <td className="py-2 pr-3 font-mono">{row.decimals}</td>
                           <td className="py-2 pr-3 font-mono">{row.poolCount}</td>
                           <td className="py-2 pr-3 font-mono">{row.firstSeenHeight ?? "—"}</td>
                           <td className="py-2 font-mono text-xs">{row.metadataSource ?? "—"}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

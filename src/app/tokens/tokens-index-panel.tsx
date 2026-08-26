@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNetwork } from "@/context/network-context";
 import { explorerAssetHref } from "@/lib/explorer-href";
-import { resolveImageUrlFromSources } from "@/lib/extract-media-url";
+import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { shortenHash } from "@/lib/rpc-types";
 import type { TokenIndexCacheMeta, TokenIndexJsonEntry, TokenIndexResult } from "@/lib/token-index/types";
+import { AssetMediaThumb } from "@/components/asset-media-thumb";
 
 const WINDOW_OPTIONS = [256, 512, 1024, 2048] as const;
 
@@ -56,10 +57,13 @@ export function TokensIndexPanel() {
     const q = filter.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter((row) => {
+      const display = parseAssetDisplayMetadata(row.assetName, row.assetSymbol);
       const hay = [
         row.address,
         row.assetName ?? "",
         row.assetSymbol ?? "",
+        display.displayName ?? "",
+        display.displaySymbol ?? "",
         row.purposeCategory ?? "",
         row.deployer ?? "",
         row.deployTxId ?? "",
@@ -259,30 +263,12 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function TokenCard({ row, network }: { row: TokenIndexJsonEntry; network: string }) {
-  const title = [row.assetName, row.assetSymbol].filter(Boolean).join(" · ") || "—";
-  const thumbUrl = resolveImageUrlFromSources(row.assetName, row.assetSymbol);
+  const display = parseAssetDisplayMetadata(row.assetName, row.assetSymbol);
+  const title = formatAssetDisplayLabel(display, "—");
   return (
     <div className="data-card space-y-2">
       <div className="flex items-start gap-3">
-        {thumbUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- token logo from deploy metadata
-          <img
-            src={thumbUrl}
-            alt=""
-            width={40}
-            height={40}
-            className="h-10 w-10 shrink-0 rounded border border-[var(--border-color)] bg-black/20 object-contain"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <span
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded border border-[var(--border-color)] bg-boing-navy-mid/50 text-[10px] uppercase text-[var(--text-muted)]"
-            aria-hidden
-          >
-            {row.kind === "nft" ? "NFT" : "TKN"}
-          </span>
-        )}
+        <AssetMediaThumb imageUrl={display.imageUrl} alt={title} size="sm" kind={row.kind} />
         <div className="min-w-0 flex-1 space-y-1">
           <Link
             href={explorerAssetHref(row.address, network)}
@@ -337,30 +323,12 @@ function TokenCard({ row, network }: { row: TokenIndexJsonEntry; network: string
 }
 
 function TokenRow({ row, network }: { row: TokenIndexJsonEntry; network: string }) {
-  const title = [row.assetName, row.assetSymbol].filter(Boolean).join(" · ") || "—";
-  const thumbUrl = resolveImageUrlFromSources(row.assetName, row.assetSymbol);
+  const display = parseAssetDisplayMetadata(row.assetName, row.assetSymbol);
+  const title = formatAssetDisplayLabel(display, "—");
   return (
     <tr className="border-b border-[var(--border-color)]/60">
       <td className="py-2 pr-2 align-top w-14">
-        {thumbUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- token logo from deploy metadata
-          <img
-            src={thumbUrl}
-            alt=""
-            width={40}
-            height={40}
-            className="h-10 w-10 rounded border border-[var(--border-color)] object-contain bg-black/20"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <span
-            className="inline-flex h-10 w-10 items-center justify-center rounded border border-[var(--border-color)] bg-boing-navy-mid/50 text-[10px] uppercase text-[var(--text-muted)]"
-            aria-hidden
-          >
-            {row.kind === "nft" ? "NFT" : "TKN"}
-          </span>
-        )}
+        <AssetMediaThumb imageUrl={display.imageUrl} alt={title} size="sm" kind={row.kind} />
       </td>
       <td className="py-2 pr-3 align-top">
         <div className="space-y-1">
