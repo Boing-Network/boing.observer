@@ -10,6 +10,10 @@ export type TokenIndexJsonEntry = {
   deployer: string | null;
   firstSeenBlock: number;
   deployTxId: string | null;
+  /** Blake3-256 of off-chain launch metadata JSON when present on the deploy payload. */
+  descriptionHash?: string | null;
+  /** Resolved HTTP(S) image from on-chain name/symbol JSON or off-chain metadata. */
+  imageUrl?: string | null;
 };
 
 export type TokenIndexResult = {

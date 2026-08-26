@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { explorerAssetHref } from "@/lib/explorer-href";
+import { explorerAccountHref } from "@/lib/explorer-href";
 import type { Block } from "@/lib/rpc-types";
 import { shortenHash, hexForLink, toPrefixedHex64 } from "@/lib/rpc-types";
 import { CopyButton } from "@/components/copy-button";
@@ -73,7 +73,7 @@ export function BlockDetails({
                 {proposerHex ? (
                   <>
                     <Link
-                      href={explorerAssetHref(proposerHex, network)}
+                      href={explorerAccountHref(proposerHex, network)}
                       className="address-link font-mono text-sm"
                       title="Validator account that proposed this block (HotStuff BFT)"
                     >
@@ -86,7 +86,7 @@ export function BlockDetails({
                 )}
               </div>
               <p className="text-xs leading-relaxed text-[var(--text-muted)]">
-                Consensus validators rotate proposal duties; open the asset page for balance and contract hints.
+                Consensus validators rotate proposal duties; open the account page for balance and history.
               </p>
               {consensusHint &&
                 (consensusHint.validatorCount != null || consensusHint.model) && (
@@ -117,13 +117,19 @@ export function BlockDetails({
               )}
             </dd>
           </div>
-          <div className="flex flex-wrap gap-x-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <dt className="text-[var(--text-muted)]">State root</dt>
-            <dd className="hash text-[var(--text-secondary)]">{block.header.state_root ?? "—"}</dd>
+            <dd className="hash flex flex-wrap items-center gap-2 text-[var(--text-secondary)]">
+              <span className="break-all">{block.header.state_root ?? "—"}</span>
+              {block.header.state_root ? <CopyButton value={String(block.header.state_root)} label="Copy state root" /> : null}
+            </dd>
           </div>
-          <div className="flex flex-wrap gap-x-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <dt className="text-[var(--text-muted)]">Tx root</dt>
-            <dd className="hash text-[var(--text-secondary)]">{block.header.tx_root ?? "—"}</dd>
+            <dd className="hash flex flex-wrap items-center gap-2 text-[var(--text-secondary)]">
+              <span className="break-all">{block.header.tx_root ?? "—"}</span>
+              {block.header.tx_root ? <CopyButton value={String(block.header.tx_root)} label="Copy tx root" /> : null}
+            </dd>
           </div>
         </dl>
       </section>

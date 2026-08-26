@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
-import { explorerAssetHref } from "@/lib/explorer-href";
+import { explorerAssetHref, explorerBlockHeightHref } from "@/lib/explorer-href";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { shortenHash, normalizeHex64 } from "@/lib/rpc-types";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
@@ -283,11 +283,16 @@ export function DexTokensPanel() {
                         <div className="min-w-0 space-y-1">
                           <Link
                             href={assetPath(row.id, network)}
+                            className="font-medium text-network-cyan hover:underline"
+                          >
+                            {label}
+                          </Link>
+                          <Link
+                            href={assetPath(row.id, network)}
                             className="hash font-mono text-sm text-network-cyan hover:underline break-all"
                           >
                             {shortenHash(row.id, 12, 10)}
                           </Link>
-                          <p className="font-medium text-[var(--text-primary)]">{label}</p>
                         </div>
                       </div>
                       <div className="data-card__row">
@@ -300,7 +305,18 @@ export function DexTokensPanel() {
                       </div>
                       <div className="data-card__row">
                         <span className="data-card__label">First seen</span>
-                        <span className="data-card__value font-mono">{row.firstSeenHeight ?? "—"}</span>
+                        <span className="data-card__value font-mono">
+                          {row.firstSeenHeight != null ? (
+                            <Link
+                              href={explorerBlockHeightHref(row.firstSeenHeight, network)}
+                              className="text-network-cyan hover:underline"
+                            >
+                              #{row.firstSeenHeight.toLocaleString()}
+                            </Link>
+                          ) : (
+                            "—"
+                          )}
+                        </span>
                       </div>
                       {row.metadataSource ? (
                         <div className="data-card__row">
@@ -346,7 +362,18 @@ export function DexTokensPanel() {
                           </td>
                           <td className="py-2 pr-3 font-mono">{row.decimals}</td>
                           <td className="py-2 pr-3 font-mono">{row.poolCount}</td>
-                          <td className="py-2 pr-3 font-mono">{row.firstSeenHeight ?? "—"}</td>
+                          <td className="py-2 pr-3 font-mono">
+                            {row.firstSeenHeight != null ? (
+                              <Link
+                                href={explorerBlockHeightHref(row.firstSeenHeight, network)}
+                                className="text-network-cyan hover:underline"
+                              >
+                                {row.firstSeenHeight}
+                              </Link>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
                           <td className="py-2 font-mono text-xs">{row.metadataSource ?? "—"}</td>
                         </tr>
                         );

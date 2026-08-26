@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { BlockTransaction, TransactionReceipt } from "@/lib/rpc-types";
 import { hexForLink, shortenHash, toPrefixedHex64, normalizeHex64 } from "@/lib/rpc-types";
-import { explorerAssetHref } from "@/lib/explorer-href";
+import { explorerAccountHref, explorerAssetHref, explorerBlockHeightHref, explorerTxHref } from "@/lib/explorer-href";
 import { tryParseCreatedAccountIdFromDeployReturnData } from "@/lib/deploy-receipt";
 import {
   formatBoingAmount,
@@ -64,7 +64,7 @@ function SignedPayloadHeadlineRich({
         <>
           You signed a transfer of {amt("amount")} BOING to{" "}
           {to ? (
-            <Link href={explorerAssetHref(to, network)} className="text-network-cyan hover:underline">
+            <Link href={explorerAccountHref(to, network)} className="text-network-cyan hover:underline">
               {short}
             </Link>
           ) : (
@@ -146,7 +146,7 @@ function TxContextNarrativeRich({
         <>
           Contract deploy ·{" "}
           {from ? (
-            <Link href={explorerAssetHref(from, network)} className="text-network-cyan hover:underline">
+            <Link href={explorerAccountHref(from, network)} className="text-network-cyan hover:underline">
               {shortenHash(from) || from}
             </Link>
           ) : (
@@ -165,12 +165,12 @@ function TxContextNarrativeRich({
       return (
         <>
           Testnet{" "}
-          <Link href={explorerAssetHref(faucet, network)} className="text-network-cyan hover:underline">
+          <Link href={explorerAccountHref(faucet, network)} className="text-network-cyan hover:underline">
             faucet
           </Link>
           {" → "}
           {to ? (
-            <Link href={explorerAssetHref(to, network)} className="text-network-cyan hover:underline">
+            <Link href={explorerAccountHref(to, network)} className="text-network-cyan hover:underline">
               {shortenHash(to) || to}
             </Link>
           ) : (
@@ -249,14 +249,14 @@ function TransferFlowDiagram({
             {featured ? "Sender (debited)" : "From"}
           </p>
           <Link
-            href={explorerAssetHref(from, network)}
+            href={explorerAccountHref(from, network)}
             className={`address-link mt-1 inline-block ${featured ? "text-base font-semibold" : "text-sm"}`}
           >
             {shortenHash(from) || "—"}
           </Link>
           {featured && from ? (
             <p className="mt-2 hash break-all text-left text-[0.65rem] leading-snug text-[var(--text-muted)]">
-              <Link href={explorerAssetHref(from, network)} className="text-network-cyan hover:underline">
+              <Link href={explorerAccountHref(from, network)} className="text-network-cyan hover:underline">
                 0x{from}
               </Link>
             </p>
@@ -284,14 +284,14 @@ function TransferFlowDiagram({
             {featured ? "Recipient (credited)" : "To"}
           </p>
           <Link
-            href={explorerAssetHref(to, network)}
+            href={explorerAccountHref(to, network)}
             className={`address-link mt-1 inline-block ${featured ? "text-base font-semibold" : "text-sm"}`}
           >
             {shortenHash(to) || "—"}
           </Link>
           {featured && to ? (
             <p className="mt-2 hash break-all text-right text-[0.65rem] leading-snug text-[var(--text-muted)] sm:text-right">
-              <Link href={explorerAssetHref(to, network)} className="text-network-cyan hover:underline">
+              <Link href={explorerAccountHref(to, network)} className="text-network-cyan hover:underline">
                 0x{to}
               </Link>
             </p>
@@ -333,12 +333,12 @@ function StakeMovementVisual({
       </div>
       <div className="mt-6 rounded-lg border border-[var(--border-color)] bg-boing-black/35 p-4 text-center">
         <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Signer account</p>
-        <Link href={explorerAssetHref(from, network)} className="address-link mt-2 inline-block text-base font-semibold">
+        <Link href={explorerAccountHref(from, network)} className="address-link mt-2 inline-block text-base font-semibold">
           {shortenHash(from) || "—"}
         </Link>
         {from ? (
           <p className="mt-2 hash break-all text-center text-[0.65rem] leading-snug text-[var(--text-muted)]">
-            <Link href={explorerAssetHref(from, network)} className="text-network-cyan hover:underline">
+            <Link href={explorerAccountHref(from, network)} className="text-network-cyan hover:underline">
               0x{from}
             </Link>
           </p>
@@ -456,7 +456,7 @@ function ReceiptPanel({
   const rd = normalizeHexData(receipt.return_data);
   const txIdRaw = receipt.tx_id ? normalizeHex64(receipt.tx_id) : "";
   const txPageHref =
-    txIdRaw.length === 64 ? `/tx/${txIdRaw}?network=${encodeURIComponent(network)}` : "";
+    txIdRaw.length === 64 ? explorerTxHref(txIdRaw, network) : "";
 
   return (
     <div
@@ -487,7 +487,9 @@ function ReceiptPanel({
           <div className="flex flex-wrap items-center gap-2">
             <dt className="text-[var(--text-muted)]">Tx id</dt>
             <dd className="flex flex-wrap items-center gap-2">
-              <span className="hash text-xs text-[var(--text-secondary)]">{shortenHash(txIdRaw)}</span>
+              <Link href={txPageHref || explorerTxHref(txIdRaw, network)} className="hash text-xs text-network-cyan hover:underline">
+                {shortenHash(txIdRaw)}
+              </Link>
               <CopyButton value={toPrefixedHex64(txIdRaw)} label="Copy tx id" />
               {showTransactionPageLink && txPageHref ? (
                 <Link
@@ -586,6 +588,41 @@ export function TransactionInsight({
     typeof payloadInner.asset_name === "string" ? payloadInner.asset_name : null,
     typeof payloadInner.asset_symbol === "string" ? payloadInner.asset_symbol : null,
   );
+  const [offchainImage, setOffchainImage] = useState<string | null>(null);
+  useEffect(() => {
+    if (deployDisplay.imageUrl) {
+      setOffchainImage(null);
+      return;
+    }
+    const hash = payloadInner.description_hash;
+    if (hash == null) {
+      setOffchainImage(null);
+      return;
+    }
+    let cancelled = false;
+    const hex =
+      typeof hash === "string"
+        ? hash.replace(/^0x/i, "")
+        : Array.isArray(hash)
+          ? (hash as number[]).map((n) => n.toString(16).padStart(2, "0")).join("")
+          : "";
+    if (hex.length !== 64) {
+      setOffchainImage(null);
+      return;
+    }
+    void fetch(`/api/asset/metadata?hash=${encodeURIComponent(hex)}`)
+      .then(async (res) => (await res.json()) as { found?: boolean; imageUrl?: string | null })
+      .then((json) => {
+        if (!cancelled && json.found && json.imageUrl) setOffchainImage(json.imageUrl);
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [deployDisplay.imageUrl, payloadInner.description_hash]);
+  const deployImageUrl = deployDisplay.imageUrl || offchainImage;
   const deployLabel = formatAssetDisplayLabel(deployDisplay, "");
   const featured = visualScale === "featured";
 
@@ -603,7 +640,7 @@ export function TransactionInsight({
           <div className="flex flex-wrap items-center gap-2">
             {blockPlacement ? (
               <Link
-                href={`/block/${blockPlacement.height}?network=${network}#tx-${blockPlacement.txIndex}`}
+                href={explorerBlockHeightHref(blockPlacement.height, network, blockPlacement.txIndex)}
                 className="font-mono text-sm text-network-cyan hover:text-network-cyan-light hover:underline"
               >
                 Block #{blockPlacement.height} · slot {blockPlacement.txIndex}
@@ -620,7 +657,7 @@ export function TransactionInsight({
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Signer</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Link href={explorerAssetHref(sender, network)} className="address-link text-sm">
+              <Link href={explorerAccountHref(sender, network)} className="address-link text-sm">
                 {shortenHash(sender) || "—"}
               </Link>
               <CopyButton value={toPrefixedHex64(sender)} label="Copy signer" />
@@ -642,7 +679,7 @@ export function TransactionInsight({
           </h4>
           <div className="mt-3 flex items-start gap-4">
             <AssetMediaThumb
-              imageUrl={deployDisplay.imageUrl}
+              imageUrl={deployImageUrl}
               alt={deployLabel || "Deployed asset"}
               size="lg"
               kind={String(payloadInner.purpose_category ?? "")}
@@ -717,7 +754,11 @@ export function TransactionInsight({
                         ) : null}
                         {row.accountHex64 ? (
                           <Link
-                            href={explorerAssetHref(row.accountHex64, network)}
+                            href={
+                              row.label === "Recipient" || row.label === "Signer"
+                                ? explorerAccountHref(row.accountHex64, network)
+                                : explorerAssetHref(row.accountHex64, network)
+                            }
                             className="hash text-sm text-network-cyan hover:underline"
                           >
                             {row.value}

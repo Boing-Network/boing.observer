@@ -4,6 +4,7 @@ import { createServerBoingClient } from "@/lib/server-boing-client";
 import { resolveNativeDexFactoryForExplorer } from "@/lib/resolve-native-dex-factory";
 import { resolveImageUrlFromSources } from "@/lib/extract-media-url";
 import { buildTokenIndexForHeightRange } from "@/lib/token-index/build-token-index";
+import { resolveOffchainTokenMetadata } from "@/lib/token-metadata-lookup";
 import { probeReferenceNftCollectionSamples } from "@/lib/reference-nft-probe";
 import { getRpcBaseUrl, isMainnetConfigured } from "@/lib/rpc-client";
 import { normalizeHex64 } from "@/lib/rpc-types";
@@ -87,12 +88,19 @@ export async function GET(req: NextRequest) {
       tokenIndex = indexResult.entries.find((e) => e.address === address64) ?? null;
     }
 
-    const imageUrl = resolveImageUrlFromSources(
+    const onChainImage = resolveImageUrlFromSources(
       typeof dexToken?.name === "string" ? dexToken.name : null,
       typeof dexToken?.symbol === "string" ? dexToken.symbol : null,
       tokenIndex?.assetName,
       tokenIndex?.assetSymbol,
     );
+    let resolvedImage = onChainImage ?? tokenIndex?.imageUrl ?? null;
+    let resolvedDescription: string | null = null;
+    if (tokenIndex?.descriptionHash) {
+      const off = await resolveOffchainTokenMetadata(tokenIndex.descriptionHash);
+      if (!resolvedImage) resolvedImage = off?.imageUrl ?? null;
+      resolvedDescription = off?.description ?? null;
+    }
 
     const isNftCollection =
       tokenIndex?.kind === "nft" ||
@@ -104,7 +112,7 @@ export async function GET(req: NextRequest) {
     }
 
     const nftPreviewImage =
-      imageUrl ?? nftSamples.find((s) => s.imageUrl)?.imageUrl ?? null;
+      resolvedImage ?? nftSamples.find((s) => s.imageUrl)?.imageUrl ?? null;
 
     return NextResponse.json({
       supported: true as const,
@@ -117,6 +125,7 @@ export async function GET(req: NextRequest) {
       tokenIndex,
       tokenIndexScan,
       imageUrl: nftPreviewImage,
+      description: resolvedDescription,
       nftSamples: nftSamples.length ? nftSamples : undefined,
       ...(indexWarnings && indexWarnings.length ? { indexWarnings } : {}),
     });

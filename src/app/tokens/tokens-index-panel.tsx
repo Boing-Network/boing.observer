@@ -1,13 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNetwork } from "@/context/network-context";
-import { explorerAssetHref } from "@/lib/explorer-href";
+import { ExplorerHexLink } from "@/components/explorer-hex-link";
+import { explorerAssetHref, explorerBlockHeightHref, explorerTxHref } from "@/lib/explorer-href";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { shortenHash } from "@/lib/rpc-types";
 import type { TokenIndexCacheMeta, TokenIndexJsonEntry, TokenIndexResult } from "@/lib/token-index/types";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
+
+function tokenVisual(
+  row: TokenIndexJsonEntry,
+  extra?: { imageUrl?: string; description?: string } | null,
+  fallbackImage?: string | null,
+) {
+  const display = parseAssetDisplayMetadata(row.assetName, row.assetSymbol);
+  return {
+    ...display,
+    imageUrl: extra?.imageUrl || row.imageUrl || display.imageUrl || fallbackImage || null,
+    description: extra?.description || display.description,
+  };
+}
 
 const WINDOW_OPTIONS = [256, 512, 1024, 2048] as const;
 
@@ -75,6 +89,58 @@ export function TokensIndexPanel() {
       return hay.includes(q);
     });
   }, [data?.entries, filter]);
+
+  const [extraMeta, setExtraMeta] = useState<Record<string, { imageUrl?: string; description?: string }>>({});
+  const attemptedMeta = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    attemptedMeta.current = new Set();
+    setExtraMeta({});
+  }, [data]);
+  useEffect(() => {
+    const missing = filtered.filter((row) => {
+      const key = row.descriptionHash ?? "";
+      if (!key || attemptedMeta.current.has(row.address)) return false;
+      if (extraMeta[row.address]?.imageUrl || row.imageUrl) return false;
+      return !parseAssetDisplayMetadata(row.assetName, row.assetSymbol).imageUrl;
+    });
+    if (missing.length === 0) return;
+    for (const row of missing) attemptedMeta.current.add(row.address);
+    let cancelled = false;
+    void Promise.all(
+      missing.slice(0, 24).map(async (row) => {
+        const res = await fetch(`/api/asset/metadata?hash=${encodeURIComponent(row.descriptionHash!)}`);
+        const json = (await res.json()) as {
+          found?: boolean;
+          imageUrl?: string | null;
+          description?: string | null;
+        };
+        if (json.found && (json.imageUrl || json.description)) {
+          return [row.address, { imageUrl: json.imageUrl ?? undefined, description: json.description ?? undefined }] as const;
+        }
+        return null;
+      }),
+    ).then((pairs) => {
+      if (cancelled) return;
+      const next: Record<string, { imageUrl?: string; description?: string }> = {};
+      for (const pair of pairs) {
+        if (pair) next[pair[0]] = pair[1];
+      }
+      if (Object.keys(next).length) setExtraMeta((prev) => ({ ...prev, ...next }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [filtered, extraMeta]);
+
+  const imageByLabel = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of data?.entries ?? []) {
+      const visual = tokenVisual(row, extraMeta[row.address]);
+      const key = `${visual.displayName ?? ""}|${visual.displaySymbol ?? ""}`.toLowerCase();
+      if (visual.imageUrl && key !== "|") map.set(key, visual.imageUrl);
+    }
+    return map;
+  }, [data?.entries, extraMeta]);
 
   return (
     <div className="space-y-8">
@@ -219,9 +285,22 @@ export function TokensIndexPanel() {
             ) : (
               <>
                 <div className="data-card-list mt-4 md:hidden">
-                  {filtered.map((row) => (
-                    <TokenCard key={row.address} row={row} network={network} />
-                  ))}
+                  {filtered.map((row) => {
+                    const extra = extraMeta[row.address];
+                    const visual = tokenVisual(row, extra);
+                    const fallback = imageByLabel.get(
+                      `${visual.displayName ?? ""}|${visual.displaySymbol ?? ""}`.toLowerCase(),
+                    );
+                    return (
+                    <TokenCard
+                      key={row.address}
+                      row={row}
+                      network={network}
+                      extra={extra}
+                      fallbackImage={fallback}
+                    />
+                    );
+                  })}
                 </div>
                 <div className="table-scroll-wrap mt-4 hidden md:block">
                   <p className="table-scroll-hint">Swipe horizontally to see all columns</p>
@@ -238,9 +317,22 @@ export function TokensIndexPanel() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map((row) => (
-                        <TokenRow key={row.address} row={row} network={network} />
-                      ))}
+                      {filtered.map((row) => {
+                        const extra = extraMeta[row.address];
+                        const visual = tokenVisual(row, extra);
+                        const fallback = imageByLabel.get(
+                          `${visual.displayName ?? ""}|${visual.displaySymbol ?? ""}`.toLowerCase(),
+                        );
+                        return (
+                          <TokenRow
+                            key={row.address}
+                            row={row}
+                            network={network}
+                            extra={extra}
+                            fallbackImage={fallback}
+                          />
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -262,13 +354,23 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TokenCard({ row, network }: { row: TokenIndexJsonEntry; network: string }) {
-  const display = parseAssetDisplayMetadata(row.assetName, row.assetSymbol);
+function TokenCard({
+  row,
+  network,
+  extra,
+  fallbackImage,
+}: {
+  row: TokenIndexJsonEntry;
+  network: string;
+  extra?: { imageUrl?: string; description?: string };
+  fallbackImage?: string;
+}) {
+  const display = tokenVisual(row, extra, fallbackImage);
   const title = formatAssetDisplayLabel(display, "—");
   return (
     <div className="data-card space-y-2">
       <div className="flex items-start gap-3">
-        <AssetMediaThumb imageUrl={display.imageUrl} alt={title} size="sm" kind={row.kind} />
+        <AssetMediaThumb imageUrl={display.imageUrl} alt={title} size="md" kind={row.kind} />
         <div className="min-w-0 flex-1 space-y-1">
           <Link
             href={explorerAssetHref(row.address, network)}
@@ -276,7 +378,10 @@ function TokenCard({ row, network }: { row: TokenIndexJsonEntry; network: string
           >
             {title}
           </Link>
-          <p className="hash font-mono text-xs text-[var(--text-muted)]">{shortenHash(row.address, 12, 10)}</p>
+          <ExplorerHexLink value={row.address} network={network} kind="asset" head={12} tail={10} copy />
+          {display.description ? (
+            <p className="line-clamp-2 text-xs leading-relaxed text-[var(--text-secondary)]">{display.description}</p>
+          ) : null}
         </div>
       </div>
       <div className="data-card__row">
@@ -290,7 +395,10 @@ function TokenCard({ row, network }: { row: TokenIndexJsonEntry; network: string
       <div className="data-card__row">
         <span className="data-card__label">First block</span>
         <span className="data-card__value">
-          <Link href={`/block/${row.firstSeenBlock}?network=${network}`} className="font-mono text-network-cyan hover:underline">
+          <Link
+            href={explorerBlockHeightHref(row.firstSeenBlock, network)}
+            className="font-mono text-network-cyan hover:underline"
+          >
             #{row.firstSeenBlock.toLocaleString()}
           </Link>
         </span>
@@ -299,10 +407,7 @@ function TokenCard({ row, network }: { row: TokenIndexJsonEntry; network: string
         <div className="data-card__row">
           <span className="data-card__label">Deploy tx</span>
           <span className="data-card__value">
-            <Link
-              href={`/tx/${row.deployTxId}?network=${network}`}
-              className="hash font-mono text-network-cyan hover:underline"
-            >
+            <Link href={explorerTxHref(row.deployTxId, network)} className="hash font-mono text-network-cyan hover:underline">
               {shortenHash(row.deployTxId, 10, 8)}
             </Link>
           </span>
@@ -312,9 +417,7 @@ function TokenCard({ row, network }: { row: TokenIndexJsonEntry; network: string
         <div className="data-card__row">
           <span className="data-card__label">Deployer</span>
           <span className="data-card__value">
-            <Link href={explorerAssetHref(row.deployer, network)} className="address-link text-xs">
-              {shortenHash(row.deployer)}
-            </Link>
+            <ExplorerHexLink value={row.deployer} network={network} kind="account" />
           </span>
         </div>
       ) : null}
@@ -322,13 +425,23 @@ function TokenCard({ row, network }: { row: TokenIndexJsonEntry; network: string
   );
 }
 
-function TokenRow({ row, network }: { row: TokenIndexJsonEntry; network: string }) {
-  const display = parseAssetDisplayMetadata(row.assetName, row.assetSymbol);
+function TokenRow({
+  row,
+  network,
+  extra,
+  fallbackImage,
+}: {
+  row: TokenIndexJsonEntry;
+  network: string;
+  extra?: { imageUrl?: string; description?: string };
+  fallbackImage?: string;
+}) {
+  const display = tokenVisual(row, extra, fallbackImage);
   const title = formatAssetDisplayLabel(display, "—");
   return (
     <tr className="border-b border-[var(--border-color)]/60">
       <td className="py-2 pr-2 align-top w-14">
-        <AssetMediaThumb imageUrl={display.imageUrl} alt={title} size="sm" kind={row.kind} />
+        <AssetMediaThumb imageUrl={display.imageUrl} alt={title} size="md" kind={row.kind} />
       </td>
       <td className="py-2 pr-3 align-top">
         <div className="space-y-1">
@@ -338,25 +451,25 @@ function TokenRow({ row, network }: { row: TokenIndexJsonEntry; network: string 
           >
             {title}
           </Link>
-          <p className="hash font-mono text-xs text-[var(--text-muted)]">{shortenHash(row.address, 12, 10)}</p>
+          <ExplorerHexLink value={row.address} network={network} kind="asset" head={12} tail={10} copy />
           {row.purposeCategory ? (
             <p className="text-xs text-[var(--text-muted)]">Purpose: {row.purposeCategory}</p>
+          ) : null}
+          {display.description ? (
+            <p className="line-clamp-2 text-xs leading-relaxed text-[var(--text-secondary)]">{display.description}</p>
           ) : null}
         </div>
       </td>
       <td className="py-2 pr-3 align-top font-mono text-xs text-[var(--text-secondary)]">{row.kind}</td>
       <td className="py-2 pr-3 align-top text-xs text-[var(--text-secondary)]">{row.sources.join(", ")}</td>
       <td className="py-2 pr-3 align-top font-mono text-xs">
-        <Link href={`/block/${row.firstSeenBlock}?network=${network}`} className="text-network-cyan hover:underline">
+        <Link href={explorerBlockHeightHref(row.firstSeenBlock, network)} className="text-network-cyan hover:underline">
           #{row.firstSeenBlock.toLocaleString()}
         </Link>
       </td>
       <td className="py-2 pr-3 align-top">
         {row.deployTxId ? (
-          <Link
-            href={`/tx/${row.deployTxId}?network=${network}`}
-            className="hash font-mono text-xs text-network-cyan hover:underline"
-          >
+          <Link href={explorerTxHref(row.deployTxId, network)} className="hash font-mono text-xs text-network-cyan hover:underline">
             {shortenHash(row.deployTxId, 10, 8)}
           </Link>
         ) : (
@@ -365,9 +478,7 @@ function TokenRow({ row, network }: { row: TokenIndexJsonEntry; network: string 
       </td>
       <td className="py-2 align-top">
         {row.deployer ? (
-          <Link href={explorerAssetHref(row.deployer, network)} className="address-link text-xs">
-            {shortenHash(row.deployer)}
-          </Link>
+          <ExplorerHexLink value={row.deployer} network={network} kind="account" />
         ) : (
           <span className="text-[var(--text-muted)]">—</span>
         )}

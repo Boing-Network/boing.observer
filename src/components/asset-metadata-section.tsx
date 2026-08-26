@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { explorerAssetHref } from "@/lib/explorer-href";
+import { explorerAccountHref, explorerAssetHref, explorerBlockHeightHref, explorerTxHref } from "@/lib/explorer-href";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import type { NetworkId } from "@/lib/rpc-types";
 import { shortenHash } from "@/lib/rpc-types";
@@ -37,13 +37,10 @@ export type ExplorerAssetProfilePayload = {
   tokenIndex: TokenIndexJsonEntry | null;
   tokenIndexScan: { fromHeight: number; toHeight: number } | null;
   imageUrl: string | null;
+  description?: string | null;
   nftSamples?: NftSamplePreview[];
   indexWarnings?: string[];
 };
-
-function assetHref(hex64: string, network: NetworkId): string {
-  return explorerAssetHref(hex64, network);
-}
 
 export function AssetMetadataSection({
   network,
@@ -57,11 +54,12 @@ export function AssetMetadataSection({
   /** When set, shows a control to run the bounded deploy/receipt scan. */
   onRequestScan?: () => void;
 }) {
-  const { dexToken, tokenIndex, tokenIndexScan, indexWarnings, nftSamples } = profile;
+  const { dexToken, tokenIndex, tokenIndexScan, indexWarnings, nftSamples, imageUrl, factory } = profile;
   const dexDisplay = dexToken ? parseAssetDisplayMetadata(dexToken.name, dexToken.symbol) : null;
   const indexDisplay = tokenIndex
     ? parseAssetDisplayMetadata(tokenIndex.assetName, tokenIndex.assetSymbol)
     : null;
+  const heroImage = imageUrl || dexDisplay?.imageUrl || indexDisplay?.imageUrl || tokenIndex?.imageUrl || null;
   const hasBody = Boolean(dexToken || tokenIndex || nftSamples?.length);
 
   return (
@@ -79,6 +77,14 @@ export function AssetMetadataSection({
         <Link href={`/tokens?network=${encodeURIComponent(network)}`} className="text-network-cyan hover:underline">
           token index
         </Link>
+        {factory ? (
+          <>
+            . Factory{" "}
+            <Link href={explorerAssetHref(factory, network)} className="font-mono text-network-cyan hover:underline">
+              {shortenHash(factory, 10, 8)}
+            </Link>
+          </>
+        ) : null}
         .
       </p>
 
@@ -103,7 +109,13 @@ export function AssetMetadataSection({
       {dexToken && (
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-[var(--text-primary)]">DEX token</h3>
-          <dl className="grid gap-2 text-sm sm:grid-cols-2">
+          <div className="flex items-start gap-3">
+            <AssetMediaThumb
+              imageUrl={heroImage}
+              alt={dexDisplay ? formatAssetDisplayLabel(dexDisplay, dexToken.symbol || "Token") : "Token"}
+              size="md"
+            />
+            <dl className="grid min-w-0 flex-1 gap-2 text-sm sm:grid-cols-2">
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Symbol</dt>
               <dd>{dexDisplay?.displaySymbol || dexToken.symbol || "—"}</dd>
@@ -122,19 +134,39 @@ export function AssetMetadataSection({
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">firstSeenHeight</dt>
-              <dd className="font-mono">{dexToken.firstSeenHeight ?? "—"}</dd>
+              <dd className="font-mono">
+                {dexToken.firstSeenHeight != null ? (
+                  <Link
+                    href={explorerBlockHeightHref(dexToken.firstSeenHeight, network)}
+                    className="text-network-cyan hover:underline"
+                  >
+                    #{dexToken.firstSeenHeight.toLocaleString()}
+                  </Link>
+                ) : (
+                  "—"
+                )}
+              </dd>
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">metadataSource</dt>
               <dd className="font-mono text-xs">{dexToken.metadataSource ?? "—"}</dd>
             </div>
-          </dl>
+            </dl>
+          </div>
         </div>
       )}
 
       {tokenIndex && (
         <div className="space-y-2 border-t border-[var(--border-color)] pt-4">
           <h3 className="text-sm font-medium text-[var(--text-primary)]">Deploy index (recent blocks)</h3>
+          <div className="flex items-start gap-3">
+            <AssetMediaThumb
+              imageUrl={heroImage}
+              alt={indexDisplay ? formatAssetDisplayLabel(indexDisplay, "Asset") : "Asset"}
+              size="md"
+              kind={tokenIndex.kind}
+            />
+            <div className="min-w-0 flex-1 space-y-2">
           {tokenIndex.kind === "nft" && (
             <p className="text-xs text-[var(--text-muted)]">
               Reference NFT collections store per-token metadata on-chain. Samples below are read via{" "}
@@ -166,19 +198,38 @@ export function AssetMetadataSection({
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">First block</dt>
-              <dd className="font-mono">{tokenIndex.firstSeenBlock}</dd>
+              <dd className="font-mono">
+                <Link
+                  href={explorerBlockHeightHref(tokenIndex.firstSeenBlock, network)}
+                  className="text-network-cyan hover:underline"
+                >
+                  #{tokenIndex.firstSeenBlock.toLocaleString()}
+                </Link>
+              </dd>
             </div>
+            {tokenIndex.deployTxId ? (
+              <div className="flex flex-wrap gap-x-2 sm:col-span-2">
+                <dt className="text-[var(--text-muted)]">Deploy tx</dt>
+                <dd className="font-mono text-xs">
+                  <Link href={explorerTxHref(tokenIndex.deployTxId, network)} className="text-network-cyan hover:underline">
+                    {tokenIndex.deployTxId}
+                  </Link>
+                </dd>
+              </div>
+            ) : null}
             {tokenIndex.deployer && (
               <div className="flex flex-wrap gap-x-2 sm:col-span-2">
                 <dt className="text-[var(--text-muted)]">Deployer</dt>
                 <dd className="font-mono text-xs">
-                  <Link href={assetHref(tokenIndex.deployer, network)} className="text-network-cyan hover:underline break-all">
+                  <Link href={explorerAccountHref(tokenIndex.deployer, network)} className="text-network-cyan hover:underline break-all">
                     0x{tokenIndex.deployer}
                   </Link>
                 </dd>
               </div>
             )}
           </dl>
+            </div>
+          </div>
         </div>
       )}
 

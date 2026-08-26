@@ -17,7 +17,7 @@ import {
 import { fetchQaPoolConfig, fetchQaPoolList, fetchQaRegistry } from "@/lib/rpc-methods";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import type { QaPoolConfigResult, QaPoolItemSummary, QaRegistryResult } from "@/lib/rpc-types";
-import { explorerAssetHref } from "@/lib/explorer-href";
+import { explorerAccountHref } from "@/lib/explorer-href";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { hexForLink, normalizeHex64, shortenHash } from "@/lib/rpc-types";
 import {
@@ -469,7 +469,7 @@ export function QaTransparencyDashboard() {
                     <div className="data-card__row">
                       <span className="data-card__label">Deployer</span>
                       <span className="data-card__value">
-                        <Link href={explorerAssetHref(deployerPath, network)} className="address-link text-xs">
+                        <Link href={explorerAccountHref(deployerPath, network)} className="address-link text-xs">
                           {shortenHash(deployerPath)}
                         </Link>
                       </span>
@@ -552,7 +552,7 @@ export function QaTransparencyDashboard() {
                         </td>
                         <td className="p-3 align-top">
                           <Link
-                            href={explorerAssetHref(deployerPath, network)}
+                            href={explorerAccountHref(deployerPath, network)}
                             className="address-link text-xs"
                           >
                             {shortenHash(deployerPath)}

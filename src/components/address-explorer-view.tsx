@@ -10,6 +10,7 @@ import type { Account } from "@/lib/rpc-types";
 import { isHex64, normalizeAddress, formatBalance, toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
+import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 import { AccountBalanceMix } from "@/components/account-balance-mix";
 import { AccountContractHints } from "@/components/account-contract-hints";
 import { AccountTxHistory } from "@/components/account-tx-history";
@@ -145,6 +146,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
         return {
           ...parsed,
           imageUrl: assetProfile.imageUrl ?? parsed.imageUrl,
+          description: assetProfile.description ?? parsed.description,
           kind: assetProfile.tokenIndex?.kind ?? null,
         };
       })()
@@ -162,22 +164,48 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
   return (
     <div className="space-y-6">
       <header className="space-y-3">
-        <Link href="/" className="text-sm text-network-cyan hover:underline">
-          ← Home
-        </Link>
+        <ExplorerCrumbs
+          items={
+            variant === "asset"
+              ? [
+                  { label: "Home", href: "/" },
+                  { label: "Tokens", href: `/tokens?network=${encodeURIComponent(network)}` },
+                  { label: identityLabel || "Asset" },
+                ]
+              : [
+                  { label: "Home", href: "/" },
+                  { label: identityLabel || "Account" },
+                ]
+          }
+        />
         <div className="flex items-start gap-4">
           {showAssetIdentity ? (
             <AssetMediaThumb
               imageUrl={identity?.imageUrl}
               alt={identityLabel || title}
-              size="lg"
+              size="xl"
               kind={identity?.kind}
             />
           ) : null}
           <div className="min-w-0 space-y-2">
-            <h1 className="font-display text-xl font-bold text-[var(--text-primary)] sm:text-2xl">{title}</h1>
-            {identityLabel ? (
-              <p className="font-display text-lg text-[var(--text-primary)]">{identityLabel}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-xl font-bold text-[var(--text-primary)] sm:text-2xl">
+                {identityLabel || title}
+              </h1>
+              {identity?.kind ? (
+                <span className="rounded-full border border-[var(--border-color)] bg-white/5 px-2 py-0.5 text-xs capitalize text-[var(--text-secondary)]">
+                  {identity.kind}
+                </span>
+              ) : (
+                <span className="rounded-full border border-[var(--border-color)] bg-white/5 px-2 py-0.5 text-xs text-[var(--text-secondary)]">
+                  {title}
+                </span>
+              )}
+            </div>
+            {identityLabel && identityLabel !== title ? (
+              <p className="sr-only">
+                {title} {address}
+              </p>
             ) : null}
             {identity?.description ? (
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{identity.description}</p>

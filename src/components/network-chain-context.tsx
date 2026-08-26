@@ -62,7 +62,11 @@ export function NetworkChainContext() {
             <dl className="space-y-2 text-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <dt className="text-[var(--text-muted)]">Head height</dt>
-                <dd className="font-mono text-network-cyan">{sync.head_height.toLocaleString()}</dd>
+                <dd className="font-mono text-network-cyan">
+                  <Link href={`/block/${sync.head_height}?network=${encodeURIComponent(network)}`} className="hover:underline">
+                    {sync.head_height.toLocaleString()}
+                  </Link>
+                </dd>
               </div>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <dt className="text-[var(--text-muted)]">Finalized height</dt>

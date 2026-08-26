@@ -1,6 +1,20 @@
 const MAX_URL = 2048;
 
-const IMAGE_KEYS = ["image", "image_url", "logo", "logoURI", "animation_url"] as const;
+const IMAGE_KEYS = [
+  "image",
+  "image_url",
+  "imageUrl",
+  "imageURI",
+  "imageUri",
+  "logo",
+  "logoURI",
+  "logoUri",
+  "logo_url",
+  "icon",
+  "icon_url",
+  "animation_url",
+  "picture",
+] as const;
 const NAME_KEYS = ["name", "title", "collection"] as const;
 const SYMBOL_KEYS = ["symbol", "ticker"] as const;
 
@@ -98,6 +112,24 @@ function imageUrlFromJsonObject(parsed: unknown): string | null {
       if (/^https?:\/\//i.test(u) && u.length <= MAX_URL) return u;
     }
   }
+  const properties = o.properties;
+  if (properties && typeof properties === "object" && !Array.isArray(properties)) {
+    const nested = imageUrlFromJsonObject(properties);
+    if (nested) return nested;
+    const files = (properties as Record<string, unknown>).files;
+    if (Array.isArray(files)) {
+      for (const file of files) {
+        if (file && typeof file === "object") {
+          const rec = file as Record<string, unknown>;
+          const u = readMetadataImageField(rec.uri ?? rec.url ?? rec.image);
+          if (u) {
+            const g = extractHttpOrIpfsUrl(u);
+            if (g) return g;
+          }
+        }
+      }
+    }
+  }
   return null;
 }
 
@@ -115,6 +147,7 @@ export function isStandaloneMediaUrl(text: string): boolean {
   if (!t || t.length > MAX_URL) return false;
   if (/^ipfs:\/\/\S+$/i.test(t)) return true;
   if (/^https?:\/\/\S+$/i.test(t)) return true;
+  if (/^data:image\/[a-z0-9.+-]+[;,]/i.test(t)) return true;
   return false;
 }
 

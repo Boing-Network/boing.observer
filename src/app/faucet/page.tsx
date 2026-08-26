@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
+import { explorerAccountHref } from "@/lib/explorer-href";
 import { NETWORK_FAUCET_URL, NETWORK_TESTNET_URL } from "@/lib/constants";
 import { faucetRequest, type FaucetResult } from "@/lib/rpc-methods";
 import { toPrefixedHex64 } from "@/lib/rpc-types";
@@ -127,9 +128,21 @@ export default function FaucetPage() {
           aria-live="polite"
         >
           {result.ok ? (
-            <p className="text-green-200">
-              {result.amount ?? "1,000"} testnet BOING sent. {result.message ?? ""}
-            </p>
+            <div className="space-y-2 text-green-200">
+              <p>
+                {result.amount ?? "1,000"} testnet BOING sent. {result.message ?? ""}
+              </p>
+              {toPrefixedHex64(accountId) ? (
+                <p>
+                  <Link
+                    href={explorerAccountHref(accountId, network)}
+                    className="text-network-cyan hover:underline"
+                  >
+                    Open account
+                  </Link>
+                </p>
+              ) : null}
+            </div>
           ) : (
             <p className="text-amber-200">{result.message ?? "Request completed; check your wallet."}</p>
           )}

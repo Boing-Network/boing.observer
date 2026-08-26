@@ -17,14 +17,17 @@ import {
   YAxis,
 } from "recharts";
 import { HOME_BLOCK_WINDOW, useHomeChainData } from "@/context/home-chain-data";
+import { useNetwork } from "@/context/network-context";
 import {
   analyzeBlockEconomics,
   bigIntToChartNumber,
   cumulativeTransferSeries,
   proposerShare,
 } from "@/lib/block-economics";
+import { explorerAccountHref } from "@/lib/explorer-href";
 import { shortenHash } from "@/lib/rpc-types";
 import { formatBoingAmount } from "@/lib/tx-payload";
+import Link from "next/link";
 
 const BLOCKS_TO_SAMPLE = HOME_BLOCK_WINDOW;
 
@@ -84,6 +87,7 @@ function volumePieWeights(bond: bigint, unbond: bigint, transfer: bigint): VolPi
 }
 
 export function NetworkEconomyInsights() {
+  const { network } = useNetwork();
   const { sliceBlocks, loading, error } = useHomeChainData();
   const blocks = sliceBlocks(BLOCKS_TO_SAMPLE);
 
@@ -204,7 +208,16 @@ export function NetworkEconomyInsights() {
             </div>
           ) : proposerRows.length === 1 ? (
             <div className="flex h-[240px] flex-col items-center justify-center gap-2 px-4 text-center">
-              <p className="font-mono text-sm text-network-cyan">{proposerRows[0].label}</p>
+              {proposerRows[0].proposer ? (
+                <Link
+                  href={explorerAccountHref(proposerRows[0].proposer, network)}
+                  className="font-mono text-sm text-network-cyan hover:underline"
+                >
+                  {proposerRows[0].label}
+                </Link>
+              ) : (
+                <p className="font-mono text-sm text-network-cyan">{proposerRows[0].label}</p>
+              )}
               <p className="text-sm text-[var(--text-secondary)]">
                 Produced every sampled block ({proposerRows[0].count.toLocaleString()}).
               </p>

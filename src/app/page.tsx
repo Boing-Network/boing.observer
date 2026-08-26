@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { explorerAssetHref } from "@/lib/explorer-href";
+import { explorerAccountHref, explorerBlockHashHref, explorerBlockHeightHref } from "@/lib/explorer-href";
 import { useNetwork } from "@/context/network-context";
 import { HomeChainDataProvider, useHomeChainData } from "@/context/home-chain-data";
 import { SearchBar } from "@/components/search-bar";
@@ -61,21 +61,32 @@ function LatestBlocksSection() {
                 ? new Date(Number(b.header.timestamp) * 1000).toLocaleString()
                 : "—";
               return (
-                <Link
+                <article
                   key={hashStr || b.header.height}
-                  href={`/block/${b.header.height}?network=${network}`}
-                  className="glass-card block space-y-2 p-4 transition-colors hover:border-[var(--border-hover)] active:bg-white/[0.03]"
+                  className="glass-card space-y-2 p-4 transition-colors hover:border-[var(--border-hover)]"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-display text-lg font-semibold text-network-cyan">
+                    <Link
+                      href={explorerBlockHeightHref(b.header.height, network)}
+                      className="font-display text-lg font-semibold text-network-cyan hover:underline"
+                    >
                       #{b.header.height}
-                    </span>
+                    </Link>
                     <span className="shrink-0 text-right font-mono text-xs text-[var(--text-muted)]">{t}</span>
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-secondary)]">
                     <span>
                       Hash{" "}
-                      <span className="hash text-[var(--text-primary)]">{shortenHash(hashStr)}</span>
+                      {hashStr ? (
+                        <Link
+                          href={explorerBlockHashHref(hashStr, network)}
+                          className="hash text-network-cyan hover:underline"
+                        >
+                          {shortenHash(hashStr)}
+                        </Link>
+                      ) : (
+                        <span className="hash text-[var(--text-primary)]">—</span>
+                      )}
                     </span>
                     <span>
                       Txns <span className="font-mono text-network-cyan">{b.transactions?.length ?? 0}</span>
@@ -85,7 +96,7 @@ function LatestBlocksSection() {
                     Proposer{" "}
                     {proposerStr ? (
                       <Link
-                        href={explorerAssetHref(proposerStr, network)}
+                        href={explorerAccountHref(proposerStr, network)}
                         className="hash text-network-cyan hover:underline"
                       >
                         {shortenHash(proposerStr)}
@@ -94,7 +105,7 @@ function LatestBlocksSection() {
                       <span className="hash text-[var(--text-secondary)]">—</span>
                     )}
                   </p>
-                </Link>
+                </article>
               );
             })}
           </div>
@@ -121,7 +132,7 @@ function LatestBlocksSection() {
                     >
                       <td className="py-3 pr-4">
                         <Link
-                          href={`/block/${b.header.height}?network=${network}`}
+                          href={explorerBlockHeightHref(b.header.height, network)}
                           className="font-mono text-network-cyan hover:text-network-cyan-light underline underline-offset-2"
                         >
                           {b.header.height}
@@ -129,7 +140,7 @@ function LatestBlocksSection() {
                       </td>
                       <td className="py-3 pr-4">
                         <Link
-                          href={`/block/hash/${hashStr}?network=${network}`}
+                          href={explorerBlockHashHref(hashStr, network)}
                           className="hash text-[var(--text-secondary)] hover:text-network-primary-light"
                         >
                           {shortenHash(hashStr)}
@@ -137,7 +148,7 @@ function LatestBlocksSection() {
                       </td>
                       <td className="py-3 pr-4">
                         <Link
-                          href={explorerAssetHref(proposerStr, network)}
+                          href={explorerAccountHref(proposerStr, network)}
                           className="hash text-network-cyan hover:underline"
                         >
                           {shortenHash(proposerStr)}
@@ -171,7 +182,11 @@ function HomePageBody() {
       <section aria-labelledby="home-intro-heading">
         <SiteLogo variant="hero" headingId="home-intro-heading" />
         <p className="mt-1 max-w-2xl text-[var(--text-secondary)]">
-          Blocks, accounts, and transactions on Boing.{" "}
+          Blocks, accounts, tokens, and transactions on Boing.{" "}
+          <Link href="/tokens" className="text-network-cyan hover:underline">
+            Token index
+          </Link>
+          {" · "}
           <Link href="/tools" className="text-network-cyan hover:underline">
             Tools
           </Link>

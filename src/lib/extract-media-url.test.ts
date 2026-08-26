@@ -47,13 +47,15 @@ describe("parseAssetDisplayMetadata", () => {
   });
 });
 
-describe("resolveImageUrlFromSources", () => {
-  it("parses logoURI from inline JSON", () => {
-    expect(resolveImageUrlFromSources('{"logoURI":"https://cdn.example.com/logo.svg"}')).toBe(
-      "https://cdn.example.com/logo.svg",
-    );
+  it("reads nested properties.files[].uri", () => {
+    expect(
+      resolveImageUrlFromSources(
+        JSON.stringify({
+          properties: { files: [{ uri: "https://cdn.example.com/nested.png", type: "image/png" }] },
+        }),
+      ),
+    ).toBe("https://cdn.example.com/nested.png");
   });
-});
 
 describe("formatAssetDisplayLabel", () => {
   it("joins name and symbol", () => {

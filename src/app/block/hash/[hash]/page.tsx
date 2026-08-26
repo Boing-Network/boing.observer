@@ -9,6 +9,7 @@ import type { Block, BoingNetworkInfo } from "@/lib/rpc-types";
 import { isHex64, normalizeHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
+import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 import { BlockDetails } from "@/components/block-details";
 
 export default function BlockByHashPage() {
@@ -67,13 +68,11 @@ export default function BlockByHashPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-3">
-        <Link href="/" className="text-sm text-network-cyan hover:underline">
-          ← Home
-        </Link>
+        <ExplorerCrumbs items={[{ label: "Home", href: "/" }, { label: "Block" }]} />
         <h1 className="font-display text-xl font-bold text-[var(--text-primary)] sm:text-2xl">Block by hash</h1>
         <p className="max-w-2xl text-sm text-[var(--text-muted)]">BLAKE3 block id (64 hex). Transfers live under Transactions.</p>
         <div className="flex flex-wrap items-center gap-2">
-          <p className="hash break-all text-sm text-[var(--text-secondary)]">{hash}</p>
+          <p className="hash break-all text-sm text-[var(--text-secondary)]">0x{hash}</p>
           <CopyButton value={`0x${hash}`} label="Copy hash" />
         </div>
       </header>

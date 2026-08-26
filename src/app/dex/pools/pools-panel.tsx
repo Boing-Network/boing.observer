@@ -137,7 +137,11 @@ export function PoolsPanel() {
               </div>
               <div className="flex flex-wrap gap-x-2">
                 <dt className="text-[var(--text-muted)]">Head height</dt>
-                <dd className="font-mono">{data.headHeight}</dd>
+                <dd className="font-mono">
+                  <Link href={`/block/${data.headHeight}?network=${encodeURIComponent(network)}`} className="text-network-cyan hover:underline">
+                    #{data.headHeight}
+                  </Link>
+                </dd>
               </div>
               <div className="flex flex-wrap gap-x-2">
                 <dt className="text-[var(--text-muted)]">Pairs registered (factory storage)</dt>

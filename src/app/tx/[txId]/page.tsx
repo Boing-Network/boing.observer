@@ -10,6 +10,7 @@ import { explorerAssetHref } from "@/lib/explorer-href";
 import { isHex64, normalizeHex64, toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
+import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 import { TransactionInsight } from "@/components/transaction-insight";
 
 export default function TransactionByIdPage() {
@@ -96,17 +97,14 @@ export default function TransactionByIdPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/" className="text-sm text-network-cyan hover:underline">
-        ← Home
-      </Link>
-
       <header className="space-y-3">
+        <ExplorerCrumbs items={[{ label: "Home", href: "/" }, { label: "Transaction" }]} />
         <h1 className="font-display text-xl font-bold text-[var(--text-primary)] sm:text-2xl">Transaction</h1>
         <p className="max-w-xl text-sm text-[var(--text-muted)]">
           Signable payload id (64 hex). Search prefers this over block hash when both could match.
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <p className="hash break-all text-sm text-[var(--text-secondary)]">{txId}</p>
+          <p className="hash break-all text-sm text-[var(--text-secondary)]">0x{txId}</p>
           <CopyButton value={toPrefixedHex64(txId)} label="Copy transaction id" />
         </div>
         {height != null ? (

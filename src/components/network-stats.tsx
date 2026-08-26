@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { useHomeChainData } from "@/context/home-chain-data";
+import { useNetwork } from "@/context/network-context";
+import { explorerBlockHeightHref } from "@/lib/explorer-href";
 import { formatIntervalLabel } from "@/lib/block-economics";
 import { computeNetworkStats, type NetworkStats as NetworkStatsData } from "@/lib/network-stats";
 import { formatBoingAmount } from "@/lib/tx-payload";
@@ -13,12 +16,23 @@ function StatCard({
   value,
   sub,
   loading,
+  href,
 }: {
   label: string;
   value: string;
   sub?: string;
   loading?: boolean;
+  href?: string;
 }) {
+  const valueNode = loading ? (
+    <span className="animate-pulse font-mono text-lg text-[var(--text-muted)]">—</span>
+  ) : href ? (
+    <Link href={href} className="font-mono text-lg font-semibold text-network-cyan hover:underline">
+      {value}
+    </Link>
+  ) : (
+    <span className="font-mono text-lg font-semibold text-network-cyan">{value}</span>
+  );
   return (
     <div
       className="glass-card flex min-w-0 flex-col gap-1 p-4"
@@ -26,17 +40,14 @@ function StatCard({
       aria-label={`${label}: ${loading ? "Loading" : value}`}
     >
       <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">{label}</span>
-      {loading ? (
-        <span className="animate-pulse font-mono text-lg text-[var(--text-muted)]">—</span>
-      ) : (
-        <span className="font-mono text-lg font-semibold text-network-cyan">{value}</span>
-      )}
+      {valueNode}
       {sub ? <span className="text-xs text-[var(--text-muted)]">{sub}</span> : null}
     </div>
   );
 }
 
 export function NetworkStats() {
+  const { network } = useNetwork();
   const { tipHeight, sliceBlocks, loading, error } = useHomeChainData();
 
   const stats = useMemo((): NetworkStatsData | null => {
@@ -64,6 +75,9 @@ export function NetworkStats() {
           label="Block height"
           value={stats?.blockHeight != null ? stats.blockHeight.toLocaleString() : "—"}
           loading={loading}
+          href={
+            stats?.blockHeight != null ? explorerBlockHeightHref(stats.blockHeight, network) : undefined
+          }
         />
         <StatCard
           label="Avg block interval"

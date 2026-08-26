@@ -8,6 +8,7 @@ import {
   accountTxRoleLabel,
   type AccountTxHistoryItem,
 } from "@/lib/account-tx-history";
+import { explorerAccountHref, explorerBlockHeightHref, explorerTxHref } from "@/lib/explorer-href";
 import type { NetworkId } from "@/lib/rpc-types";
 import { shortenHash } from "@/lib/rpc-types";
 
@@ -22,8 +23,8 @@ type HistoryOk = {
 };
 
 function txHref(row: AccountTxHistoryItem, network: NetworkId): string {
-  if (row.txId) return `/tx/${row.txId}?network=${encodeURIComponent(network)}`;
-  return `/block/${row.blockHeight}?network=${encodeURIComponent(network)}#tx-${row.txIndex}`;
+  if (row.txId) return explorerTxHref(row.txId, network);
+  return explorerBlockHeightHref(row.blockHeight, network, row.txIndex);
 }
 
 function formatTs(ts: number | null): string {
@@ -145,7 +146,7 @@ export function AccountTxHistory({ address64, network }: { address64: string; ne
                       <span className="data-card__label">Block</span>
                       <span className="data-card__value">
                         <Link
-                          href={`/block/${row.blockHeight}?network=${encodeURIComponent(network)}#tx-${row.txIndex}`}
+                          href={explorerBlockHeightHref(row.blockHeight, network, row.txIndex)}
                           className="font-mono text-network-cyan hover:underline"
                         >
                           #{row.blockHeight}
@@ -165,7 +166,7 @@ export function AccountTxHistory({ address64, network }: { address64: string; ne
                       <span className="data-card__value">
                         {row.sender ? (
                           <Link
-                            href={`/account/${row.sender}?network=${encodeURIComponent(network)}`}
+                            href={explorerAccountHref(row.sender, network)}
                             className="address-link text-xs"
                           >
                             {shortenHash(row.sender)}
@@ -187,6 +188,7 @@ export function AccountTxHistory({ address64, network }: { address64: string; ne
                       <th className="p-3 font-medium">Role</th>
                       <th className="p-3 font-medium">Type</th>
                       <th className="p-3 font-medium">Summary</th>
+                      <th className="p-3 font-medium">Signer</th>
                       <th className="p-3 font-medium">Block</th>
                       <th className="p-3 font-medium">Tx</th>
                     </tr>
@@ -209,9 +211,18 @@ export function AccountTxHistory({ address64, network }: { address64: string; ne
                         </td>
                         <td className="p-3 align-top font-mono text-xs">{row.kind}</td>
                         <td className="p-3 align-top text-[var(--text-primary)]">{row.summary}</td>
+                        <td className="p-3 align-top">
+                          {row.sender ? (
+                            <Link href={explorerAccountHref(row.sender, network)} className="address-link text-xs">
+                              {shortenHash(row.sender)}
+                            </Link>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
                         <td className="p-3 align-top font-mono text-xs">
                           <Link
-                            href={`/block/${row.blockHeight}?network=${encodeURIComponent(network)}#tx-${row.txIndex}`}
+                            href={explorerBlockHeightHref(row.blockHeight, network, row.txIndex)}
                             className="text-network-cyan hover:underline"
                           >
                             #{row.blockHeight}

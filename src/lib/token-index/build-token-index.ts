@@ -8,8 +8,13 @@ import {
 } from "boing-sdk";
 import { tryPredictDeployedContractAddressFromDeployTx } from "@/lib/deploy-contract-address";
 import { receiptReturnDataHex, tryParseCreatedAccountIdFromDeployReturnData } from "@/lib/deploy-receipt";
+import { parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { resolveNativeDexFactoryForExplorer } from "@/lib/resolve-native-dex-factory";
 import { hexForLink, normalizeHex64 } from "@/lib/rpc-types";
+import {
+  descriptionHashToHex64,
+  resolveOffchainTokenMetadata,
+} from "@/lib/token-metadata-lookup";
 import {
   getTxPayloadInner,
   getTxPayloadKind,
@@ -29,6 +34,8 @@ type MutableEntry = {
   deployer: string | null;
   firstSeenBlock: number;
   deployTxId: string | null;
+  descriptionHash: string | null;
+  imageUrl: string | null;
 };
 
 function inferAssetKind(purpose: string | undefined | null): TokenIndexAssetKind {
@@ -57,6 +64,8 @@ function ensureEntry(map: Map<string, MutableEntry>, address: string): MutableEn
       deployer: null,
       firstSeenBlock: Number.MAX_SAFE_INTEGER,
       deployTxId: null,
+      descriptionHash: null,
+      imageUrl: null,
     };
     map.set(address, e);
   }
@@ -73,6 +82,7 @@ function applyDeployRow(
     purposeCategory: string | null;
     assetName: string | null;
     assetSymbol: string | null;
+    descriptionHash: string | null;
   },
 ) {
   const e = ensureEntry(map, row.address);
@@ -88,6 +98,7 @@ function applyDeployRow(
   if (row.assetName && !e.assetName) e.assetName = row.assetName;
   if (row.assetSymbol && !e.assetSymbol) e.assetSymbol = row.assetSymbol;
   if (row.deployer && !e.deployer) e.deployer = row.deployer;
+  if (row.descriptionHash && !e.descriptionHash) e.descriptionHash = row.descriptionHash;
 }
 
 function applyDexToken(map: Map<string, MutableEntry>, tokenHexWith0x: string, blockHeight: number) {
@@ -186,6 +197,7 @@ export async function buildTokenIndexForHeightRange(
       const assetSymbol = typeof inner.asset_symbol === "string" ? inner.asset_symbol : null;
       const deployer = hexForLink(tx.sender) || null;
       const txId = receipt ? normalizeTxId(receipt.tx_id) : null;
+      const descriptionHash = descriptionHashToHex64(inner.description_hash);
 
       applyDeployRow(map, {
         address: addr,
@@ -195,6 +207,7 @@ export async function buildTokenIndexForHeightRange(
         purposeCategory: purpose,
         assetName,
         assetSymbol,
+        descriptionHash,
       });
     }
   }
@@ -216,9 +229,15 @@ export async function buildTokenIndexForHeightRange(
     applyDexToken(map, row.tokenBHex, bh);
   }
 
-  const entries: TokenIndexJsonEntry[] = Array.from(map.values())
-    .filter((e) => e.firstSeenBlock !== Number.MAX_SAFE_INTEGER)
-    .map((e) => ({
+  const entries: TokenIndexJsonEntry[] = [];
+  for (const e of Array.from(map.values()).filter((row) => row.firstSeenBlock !== Number.MAX_SAFE_INTEGER)) {
+    const parsed = parseAssetDisplayMetadata(e.assetName, e.assetSymbol);
+    let imageUrl = parsed.imageUrl;
+    if (!imageUrl && e.descriptionHash) {
+      const off = await resolveOffchainTokenMetadata(e.descriptionHash);
+      imageUrl = off?.imageUrl ?? null;
+    }
+    entries.push({
       address: e.address,
       kind: e.kind,
       sources: Array.from(e.sources).sort(),
@@ -228,11 +247,14 @@ export async function buildTokenIndexForHeightRange(
       deployer: e.deployer,
       firstSeenBlock: e.firstSeenBlock,
       deployTxId: e.deployTxId,
-    }))
-    .sort((a, b) => {
-      if (b.firstSeenBlock !== a.firstSeenBlock) return b.firstSeenBlock - a.firstSeenBlock;
-      return a.address.localeCompare(b.address);
+      descriptionHash: e.descriptionHash,
+      imageUrl,
     });
+  }
+  entries.sort((a, b) => {
+    if (b.firstSeenBlock !== a.firstSeenBlock) return b.firstSeenBlock - a.firstSeenBlock;
+    return a.address.localeCompare(b.address);
+  });
 
   return {
     chainId,

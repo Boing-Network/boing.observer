@@ -8,6 +8,7 @@ import { fetchBlockByHeight, fetchNetworkInfo } from "@/lib/rpc-methods";
 import type { Block, BoingNetworkInfo } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { BlockDetails } from "@/components/block-details";
+import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 
 export default function BlockByHeightPage() {
   const params = useParams();
@@ -65,9 +66,7 @@ export default function BlockByHeightPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <Link href="/" className="text-sm text-network-cyan hover:underline">
-          ← Home
-        </Link>
+        <ExplorerCrumbs items={[{ label: "Home", href: "/" }, { label: `Block #${height.toLocaleString()}` }]} />
         <h1 className="font-display text-xl font-bold text-[var(--text-primary)] sm:text-2xl">
           Block #{height.toLocaleString()}
         </h1>

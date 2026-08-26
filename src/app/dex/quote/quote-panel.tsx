@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
+import { explorerAssetHref } from "@/lib/explorer-href";
 import { shortenHash } from "@/lib/rpc-types";
 
 type Hop = {
@@ -164,7 +165,11 @@ export function QuotePanel() {
           <section className="glass-card space-y-2 p-4 sm:p-6 text-sm">
             <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">Result</h2>
             <p className="text-[var(--text-muted)]">
-              Head {result.headHeight} · venues hydrated {result.venueCount} · log mode {result.logsMode}
+              Head{" "}
+              <Link href={`/block/${result.headHeight}?network=${encodeURIComponent(network)}`} className="text-network-cyan hover:underline">
+                #{result.headHeight}
+              </Link>{" "}
+              · venues hydrated {result.venueCount} · log mode {result.logsMode}
             </p>
             <p className="text-[var(--text-muted)]">Routes returned: {result.routes.length}</p>
           </section>
@@ -176,10 +181,24 @@ export function QuotePanel() {
                 </p>
                 <ol className="list-decimal space-y-2 pl-5 text-sm text-[var(--text-secondary)]">
                   {r.hops.map((h, j) => (
-                    <li key={j}>
+                    <li key={j} className="space-y-1">
                       <span className="font-mono text-xs text-[var(--text-muted)]">
-                        Pool {shortenHash(h.poolHex, 8, 6)} · fee {h.feeBps} bps · dir {h.directionForSwapCalldata}
+                        Fee {h.feeBps} bps · dir {h.directionForSwapCalldata}
                       </span>
+                      <p className="text-xs">
+                        Pool{" "}
+                        <Link href={explorerAssetHref(h.poolHex, network)} className="font-mono text-network-cyan hover:underline">
+                          {shortenHash(h.poolHex, 10, 8)}
+                        </Link>
+                        {" · "}
+                        <Link href={explorerAssetHref(h.tokenInHex, network)} className="font-mono text-network-cyan hover:underline">
+                          in {shortenHash(h.tokenInHex, 8, 6)}
+                        </Link>
+                        {" → "}
+                        <Link href={explorerAssetHref(h.tokenOutHex, network)} className="font-mono text-network-cyan hover:underline">
+                          out {shortenHash(h.tokenOutHex, 8, 6)}
+                        </Link>
+                      </p>
                     </li>
                   ))}
                 </ol>
