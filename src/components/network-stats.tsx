@@ -2,43 +2,36 @@
 
 import { useMemo } from "react";
 import { useHomeChainData } from "@/context/home-chain-data";
-import {
-  computeNetworkStats,
-  formatStatValue,
-  type NetworkStats as NetworkStatsData,
-} from "@/lib/network-stats";
+import { formatIntervalLabel } from "@/lib/block-economics";
+import { computeNetworkStats, type NetworkStats as NetworkStatsData } from "@/lib/network-stats";
+import { formatBoingAmount } from "@/lib/tx-payload";
 
 const BLOCKS_TO_SAMPLE = 20;
 
-interface StatCardProps {
+function StatCard({
+  label,
+  value,
+  sub,
+  loading,
+}: {
   label: string;
   value: string;
   sub?: string;
   loading?: boolean;
-}
-
-function StatCard({ label, value, sub, loading }: StatCardProps) {
+}) {
   return (
     <div
       className="glass-card flex min-w-0 flex-col gap-1 p-4"
       role="group"
       aria-label={`${label}: ${loading ? "Loading" : value}`}
     >
-      <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
-        {label}
-      </span>
+      <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">{label}</span>
       {loading ? (
-        <span className="font-mono text-lg text-[var(--text-muted)] animate-pulse">
-          —
-        </span>
+        <span className="animate-pulse font-mono text-lg text-[var(--text-muted)]">—</span>
       ) : (
-        <span className="font-mono text-lg font-semibold text-network-cyan">
-          {value}
-        </span>
+        <span className="font-mono text-lg font-semibold text-network-cyan">{value}</span>
       )}
-      {sub && (
-        <span className="text-xs text-[var(--text-muted)]">{sub}</span>
-      )}
+      {sub ? <span className="text-xs text-[var(--text-muted)]">{sub}</span> : null}
     </div>
   );
 }
@@ -61,6 +54,9 @@ export function NetworkStats() {
     );
   }
 
+  const moved =
+    stats != null ? `${formatBoingAmount(stats.boingMoved.toString())} BOING` : "—";
+
   return (
     <div className="py-2" role="region" aria-label="Summary statistics">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -70,25 +66,23 @@ export function NetworkStats() {
           loading={loading}
         />
         <StatCard
-          label="Avg block time"
-          value={formatStatValue(stats?.avgBlockTimeSec ?? null)}
-          sub="seconds"
+          label="Avg block interval"
+          value={stats?.avgBlockTimeSec != null ? formatIntervalLabel(stats.avgBlockTimeSec) : "—"}
+          sub="between sampled blocks"
           loading={loading}
         />
         <StatCard
-          label="TPS"
-          value={formatStatValue(stats?.tps ?? null)}
-          sub="tx/sec"
-          loading={loading}
-        />
-        <StatCard
-          label="Transactions"
+          label="Since last block"
           value={
-            stats?.txCountLastN != null
-              ? stats.txCountLastN.toLocaleString()
-              : "—"
+            stats?.secondsSinceLastBlock != null ? formatIntervalLabel(stats.secondsSinceLastBlock) : "—"
           }
-          sub={`last ${BLOCKS_TO_SAMPLE} blocks`}
+          sub="from this browser clock"
+          loading={loading}
+        />
+        <StatCard
+          label="BOING moved"
+          value={loading ? "—" : moved}
+          sub={`transfers + stake in last ${stats?.blocksSampled ?? BLOCKS_TO_SAMPLE} blocks`}
           loading={loading}
         />
       </div>

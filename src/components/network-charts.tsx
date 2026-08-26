@@ -2,50 +2,62 @@
 
 import { useMemo } from "react";
 import {
-  LineChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
 } from "recharts";
-import { useHomeChainData } from "@/context/home-chain-data";
-
-const BLOCKS_TO_SAMPLE = 30;
-
-interface ChartPoint {
-  height: number;
-  blockTimeSec: number | null;
-  txCount: number;
-}
+import { HOME_BLOCK_WINDOW, useHomeChainData } from "@/context/home-chain-data";
+import {
+  analyzeBlockEconomics,
+  bigIntToChartNumber,
+  blockIntervalSeries,
+  formatIntervalLabel,
+  intervalAxisScale,
+} from "@/lib/block-economics";
+import { formatBoingAmount } from "@/lib/tx-payload";
 
 export function NetworkCharts() {
   const { sliceBlocks, loading, error } = useHomeChainData();
+  const blocks = sliceBlocks(HOME_BLOCK_WINDOW);
 
-  const data = useMemo((): ChartPoint[] => {
-    const valid = sliceBlocks(BLOCKS_TO_SAMPLE);
-    const sorted = [...valid].sort(
-      (a, b) => (a.header?.height ?? 0) - (b.header?.height ?? 0)
-    );
+  const { rows } = useMemo(() => analyzeBlockEconomics(blocks), [blocks]);
 
-    return sorted.map((b, i) => {
-      const ts = b.header?.timestamp != null ? Number(b.header.timestamp) : 0;
-      const prev = sorted[i - 1];
-      const prevTs = prev?.header?.timestamp != null ? Number(prev.header.timestamp) : 0;
-      const blockTimeSec =
-        i > 0 && ts > 0 && prevTs > 0 ? ts - prevTs : null;
-      return {
-        height: b.header?.height ?? 0,
-        blockTimeSec,
-        txCount: b.transactions?.length ?? 0,
-      };
-    });
-  }, [sliceBlocks]);
+  const intervalRaw = useMemo(() => blockIntervalSeries(rows), [rows]);
+  const maxInterval = intervalRaw.reduce((m, p) => Math.max(m, p.intervalSec), 0);
+  const axis = intervalAxisScale(maxInterval);
+  const intervalData = useMemo(
+    () =>
+      intervalRaw.map((p) => ({
+        height: p.height,
+        interval: p.intervalSec / axis.divisor,
+        intervalSec: p.intervalSec,
+      })),
+    [intervalRaw, axis.divisor]
+  );
 
-  if (error && data.length === 0 && !loading) {
+  const valueData = useMemo(
+    () =>
+      rows.map((r) => ({
+        height: r.height,
+        transfer: bigIntToChartNumber(r.transferVolume),
+        bond: bigIntToChartNumber(r.bond),
+        unbond: bigIntToChartNumber(r.unbond),
+        transferRaw: r.transferVolume,
+        bondRaw: r.bond,
+        unbondRaw: r.unbond,
+      })),
+    [rows]
+  );
+
+  const anyValue = valueData.some((d) => d.transfer > 0 || d.bond > 0 || d.unbond > 0);
+
+  if (error && rows.length === 0 && !loading) {
     return (
       <div className="py-2" role="region" aria-label="Network charts">
         <div className="glass-card border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-200" role="alert">
@@ -55,103 +67,137 @@ export function NetworkCharts() {
     );
   }
 
-  const blockTimeData = data.filter((d) => d.blockTimeSec != null);
-
   return (
     <div className="space-y-4 py-2" role="region" aria-labelledby="charts-region-heading">
-      <h3
-        id="charts-region-heading"
-        className="font-display text-base font-semibold text-[var(--text-primary)]"
-      >
-        Block time and throughput
-      </h3>
+      <div>
+        <h3
+          id="charts-region-heading"
+          className="font-display text-base font-semibold text-[var(--text-primary)]"
+        >
+          Liveness and value
+        </h3>
+        <p className="mt-1 max-w-3xl text-xs leading-relaxed text-[var(--text-muted)]">
+          Testnet blocks often carry a single transaction, so tx-per-block is not a useful signal.
+          Interval shows idle gaps between produced blocks; BOING moved is payload amounts, not
+          transaction count.
+        </p>
+      </div>
 
       {loading ? (
-        <div className="glass-card p-8 flex items-center justify-center text-[var(--text-muted)]">
+        <div className="glass-card flex items-center justify-center p-8 text-[var(--text-muted)]">
           Loading charts…
         </div>
-      ) : data.length === 0 ? (
-        <div className="glass-card p-8 text-center text-[var(--text-muted)]">
-          No block data available yet.
-        </div>
+      ) : rows.length === 0 ? (
+        <div className="glass-card p-8 text-center text-[var(--text-muted)]">No block data available yet.</div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="glass-card p-4">
-            <h4 className="mb-3 text-sm font-medium text-[var(--text-muted)]">Block time (seconds)</h4>
+            <h4 className="mb-1 text-sm font-medium text-[var(--text-muted)]">
+              Time between blocks ({axis.unit})
+            </h4>
+            <p className="mb-3 text-xs text-[var(--text-muted)]">
+              Consecutive heights in the last {rows.length} blocks
+            </p>
             <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={blockTimeData}
-                  margin={{ top: 5, right: 5, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
-                  <XAxis
-                    dataKey="height"
-                    tick={{ fill: "var(--text-muted)", fontSize: 11 }}
-                    tickFormatter={(v) => v.toLocaleString()}
-                  />
-                  <YAxis
-                    tick={{ fill: "var(--text-muted)", fontSize: 11 }}
-                    tickFormatter={(v) => v.toFixed(1)}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--boing-navy-deep)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: 8,
-                    }}
-                    labelStyle={{ color: "var(--text-primary)" }}
-                    formatter={(value: number | undefined) => [value != null ? `${value.toFixed(2)}s` : "—", "Block time"]}
-                    labelFormatter={(label) => `Block #${Number(label).toLocaleString()}`}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="blockTimeSec"
-                    stroke="var(--network-cyan)"
-                    strokeWidth={2}
-                    dot={{ fill: "var(--network-cyan)", r: 2 }}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {intervalData.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-[var(--text-muted)]">
+                  Need at least two timestamps.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={intervalData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
+                    <XAxis
+                      dataKey="height"
+                      tick={{ fill: "var(--text-muted)", fontSize: 11 }}
+                      tickFormatter={(v) => Number(v).toLocaleString()}
+                    />
+                    <YAxis
+                      tick={{ fill: "var(--text-muted)", fontSize: 11 }}
+                      tickFormatter={(v) => `${Number(v).toFixed(axis.unit === "s" ? 0 : 1)}`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "var(--boing-navy-deep)",
+                        border: "1px solid var(--border-color)",
+                        borderRadius: 8,
+                      }}
+                      labelStyle={{ color: "var(--text-primary)" }}
+                      formatter={(value: number | undefined, _n, item) => {
+                        const sec = (item?.payload as { intervalSec?: number } | undefined)?.intervalSec;
+                        return [sec != null ? formatIntervalLabel(sec) : String(value ?? "—"), "Interval"];
+                      }}
+                      labelFormatter={(label) => `Block #${Number(label).toLocaleString()}`}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="interval"
+                      stroke="var(--network-cyan)"
+                      strokeWidth={2}
+                      dot={{ fill: "var(--network-cyan)", r: 2 }}
+                      isAnimationActive={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
           <div className="glass-card p-4">
-            <h4 className="mb-3 text-sm font-medium text-[var(--text-muted)]">Transactions per block</h4>
+            <h4 className="mb-1 text-sm font-medium text-[var(--text-muted)]">BOING moved per block</h4>
+            <p className="mb-3 text-xs text-[var(--text-muted)]">
+              Transfer, bond, and unbond amounts (not how many txs)
+            </p>
             <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={[...data].reverse()}
-                  margin={{ top: 5, right: 5, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
-                  <XAxis
-                    dataKey="height"
-                    tick={{ fill: "var(--text-muted)", fontSize: 11 }}
-                    tickFormatter={(v) => v.toLocaleString()}
-                  />
-                  <YAxis
-                    tick={{ fill: "var(--text-muted)", fontSize: 11 }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--boing-navy-deep)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: 8,
-                    }}
-                    labelStyle={{ color: "var(--text-primary)" }}
-                    formatter={(value: number | undefined) => [value ?? 0, "Txns"]}
-                    labelFormatter={(label) => `Block #${Number(label).toLocaleString()}`}
-                  />
-                  <Bar
-                    dataKey="txCount"
-                    fill="var(--network-cyan)"
-                    radius={[2, 2, 0, 0]}
-                    isAnimationActive={false}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {!anyValue ? (
+                <div className="flex h-full items-center justify-center text-center text-sm text-[var(--text-muted)]">
+                  No transfer or stake amounts in this window.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={valueData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
+                    <XAxis
+                      dataKey="height"
+                      tick={{ fill: "var(--text-muted)", fontSize: 11 }}
+                      tickFormatter={(v) => Number(v).toLocaleString()}
+                    />
+                    <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "var(--boing-navy-deep)",
+                        border: "1px solid var(--border-color)",
+                        borderRadius: 8,
+                      }}
+                      labelStyle={{ color: "var(--text-primary)" }}
+                      formatter={(value, name, item) => {
+                        const payload = item?.payload as
+                          | { transferRaw?: bigint; bondRaw?: bigint; unbondRaw?: bigint }
+                          | undefined;
+                        const raw =
+                          name === "transfer"
+                            ? payload?.transferRaw
+                            : name === "bond"
+                              ? payload?.bondRaw
+                              : payload?.unbondRaw;
+                        const label = name === "transfer" ? "Transfer" : name === "bond" ? "Bond" : "Unbond";
+                        const amt = raw != null ? formatBoingAmount(raw.toString()) : String(value ?? 0);
+                        return [`${amt} BOING`, label];
+                      }}
+                      labelFormatter={(label) => `Block #${Number(label).toLocaleString()}`}
+                    />
+                    <Bar dataKey="transfer" stackId="v" fill="var(--network-cyan)" name="transfer" />
+                    <Bar dataKey="bond" stackId="v" fill="var(--network-primary-light)" name="bond" />
+                    <Bar
+                      dataKey="unbond"
+                      stackId="v"
+                      fill="rgba(251, 191, 36, 0.85)"
+                      name="unbond"
+                      radius={[2, 2, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
         </div>

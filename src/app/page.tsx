@@ -206,8 +206,8 @@ function HomePageBody() {
             Network activity
           </h2>
           <p className="mt-1 max-w-2xl text-sm text-[var(--text-muted)]">
-            Live chain metrics, charts, pie breakdowns of recent activity, and context for supply data the RPC does not
-            expose globally.
+            Live chain metrics: how long blocks wait, how much BOING actually moved, who produced
+            recent headers, and supply context the RPC does not expose globally.
           </p>
         </div>
         <NetworkStats />

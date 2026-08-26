@@ -8,6 +8,7 @@ import { getTxPayloadKind, getTxPayloadInner } from "./tx-payload";
 
 export type BlockEconomicsRow = {
   height: number;
+  timestamp: number;
   bond: bigint;
   unbond: bigint;
   transferVolume: bigint;
@@ -123,6 +124,7 @@ export function analyzeBlockEconomics(blocks: Block[]): { rows: BlockEconomicsRo
 
     return {
       height: block.header.height,
+      timestamp: block.header.timestamp != null ? Number(block.header.timestamp) : 0,
       bond,
       unbond,
       transferVolume,
@@ -158,11 +160,67 @@ export function analyzeBlockEconomics(blocks: Block[]): { rows: BlockEconomicsRo
   };
 }
 
-/** Cumulative net stake (bond − unbond) at each block in order. */
-export function cumulativeNetStakeSeries(rows: BlockEconomicsRow[]): { height: number; cumulative: bigint }[] {
+/** Seconds between consecutive sampled blocks (skips the oldest, which has no predecessor in-window). */
+export function blockIntervalSeries(
+  rows: BlockEconomicsRow[]
+): { height: number; intervalSec: number }[] {
+  const out: { height: number; intervalSec: number }[] = [];
+  for (let i = 1; i < rows.length; i++) {
+    const prev = rows[i - 1].timestamp;
+    const ts = rows[i].timestamp;
+    if (ts > 0 && prev > 0 && ts >= prev) {
+      out.push({ height: rows[i].height, intervalSec: ts - prev });
+    }
+  }
+  return out;
+}
+
+export type ProposerShareRow = { proposer: string; count: number };
+
+/** Block-header proposers in the sample, highest count first. */
+export function proposerShare(blocks: Block[]): ProposerShareRow[] {
+  const counts = new Map<string, number>();
+  for (const b of blocks) {
+    if (!b?.header) continue;
+    const id = hexForLink(b.header.proposer);
+    if (!id) continue;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([proposer, count]) => ({ proposer, count }))
+    .sort((a, b) => b.count - a.count || a.proposer.localeCompare(b.proposer));
+}
+
+/** Running sum of transfer payload amounts (not tx count). */
+export function cumulativeTransferSeries(
+  rows: BlockEconomicsRow[]
+): { height: number; cumulative: bigint }[] {
   let run = BigInt(0);
   return rows.map((r) => {
-    run += r.bond - r.unbond;
+    run += r.transferVolume;
     return { height: r.height, cumulative: run };
   });
+}
+
+/** Compact duration for liveness charts (seconds → s / m / h / d). */
+export function formatIntervalLabel(sec: number): string {
+  if (!Number.isFinite(sec) || sec < 0) return "—";
+  if (sec < 90) return `${sec < 10 ? sec.toFixed(1) : Math.round(sec)}s`;
+  if (sec < 3600) {
+    const m = sec / 60;
+    return m < 10 ? `${m.toFixed(1)}m` : `${Math.round(m)}m`;
+  }
+  if (sec < 86400) {
+    const h = sec / 3600;
+    return h < 10 ? `${h.toFixed(1)}h` : `${Math.round(h)}h`;
+  }
+  const d = sec / 86400;
+  return d < 10 ? `${d.toFixed(1)}d` : `${Math.round(d)}d`;
+}
+
+/** Y-axis scale so multi-hour stalls remain readable. */
+export function intervalAxisScale(maxSec: number): { divisor: number; unit: "s" | "m" | "h" } {
+  if (maxSec >= 3600) return { divisor: 3600, unit: "h" };
+  if (maxSec >= 180) return { divisor: 60, unit: "m" };
+  return { divisor: 1, unit: "s" };
 }

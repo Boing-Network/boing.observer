@@ -20,8 +20,10 @@ import { HOME_BLOCK_WINDOW, useHomeChainData } from "@/context/home-chain-data";
 import {
   analyzeBlockEconomics,
   bigIntToChartNumber,
-  cumulativeNetStakeSeries,
+  cumulativeTransferSeries,
+  proposerShare,
 } from "@/lib/block-economics";
+import { shortenHash } from "@/lib/rpc-types";
 import { formatBoingAmount } from "@/lib/tx-payload";
 
 const BLOCKS_TO_SAMPLE = HOME_BLOCK_WINDOW;
@@ -66,8 +68,6 @@ function formatBig(b: bigint): string {
   return `${formatBoingAmount(b.toString())} BOING`;
 }
 
-type TxPieRow = { name: string; value: number; fill: string };
-
 type VolPieRow = { name: string; value: number; fill: string; raw: bigint };
 
 /** Integer slice weights for Recharts; avoids huge Number() on u128 totals. */
@@ -88,19 +88,7 @@ export function NetworkEconomyInsights() {
   const blocks = sliceBlocks(BLOCKS_TO_SAMPLE);
 
   const { rows, totals } = useMemo(() => analyzeBlockEconomics(blocks), [blocks]);
-  const cumulative = useMemo(() => cumulativeNetStakeSeries(rows), [rows]);
-
-  const chartRows = useMemo(
-    () =>
-      rows.map((r) => ({
-        height: r.height,
-        bond: bigIntToChartNumber(r.bond),
-        unbond: bigIntToChartNumber(r.unbond),
-        bondTxs: r.bondTxs,
-        unbondTxs: r.unbondTxs,
-      })),
-    [rows]
-  );
+  const cumulative = useMemo(() => cumulativeTransferSeries(rows), [rows]);
 
   const cumulativeChart = useMemo(
     () =>
@@ -111,16 +99,20 @@ export function NetworkEconomyInsights() {
     [cumulative]
   );
 
-  const txPieData = useMemo((): TxPieRow[] => {
-    const { bond, unbond, transfer, other } = totals.txCounts;
-    const rows: TxPieRow[] = [
-      { name: "Bond", value: bond, fill: "var(--network-primary-light)" },
-      { name: "Unbond", value: unbond, fill: "rgba(251, 191, 36, 0.9)" },
-      { name: "Transfer", value: transfer, fill: "var(--network-cyan)" },
-      { name: "Other", value: other, fill: "rgba(100, 116, 139, 0.85)" },
-    ];
-    return rows.filter((r) => r.value > 0);
-  }, [totals.txCounts]);
+  const proposerRows = useMemo(() => {
+    const share = proposerShare(blocks);
+    const limit = 8;
+    const mapped = (share.length > limit ? share.slice(0, limit) : share).map((s) => ({
+      label: shortenHash(s.proposer, 6, 4),
+      proposer: s.proposer,
+      count: s.count,
+    }));
+    if (share.length > limit) {
+      const rest = share.slice(limit).reduce((n, s) => n + s.count, 0);
+      mapped.push({ label: "Other", proposer: "", count: rest });
+    }
+    return mapped;
+  }, [blocks]);
 
   const volPieData = useMemo(
     () => volumePieWeights(totals.bond, totals.unbond, totals.transferVolume),
@@ -148,7 +140,8 @@ export function NetworkEconomyInsights() {
           <strong className="text-[var(--text-secondary)]">Unbond</strong>, and{" "}
           <strong className="text-[var(--text-secondary)]">Transfer</strong> payloads in the last{" "}
           {BLOCKS_TO_SAMPLE} blocks. They are <strong className="text-[var(--text-secondary)]">not</strong>{" "}
-          chain-wide TVL. Pie charts show the mix of transaction types and BOING volume in that same window.
+          chain-wide TVL. Charts show who produced those blocks and where BOING amounts went — not
+          transaction counts.
         </p>
       </div>
 
@@ -198,35 +191,43 @@ export function NetworkEconomyInsights() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="glass-card p-4">
-          <h4 className="mb-1 text-sm font-medium text-[var(--text-muted)]">Transactions by type</h4>
+          <h4 className="mb-1 text-sm font-medium text-[var(--text-muted)]">Who produced these blocks</h4>
           <p className="mb-3 text-xs text-[var(--text-muted)]">
-            Share of txs in sample ({totals.txCounts.total.toLocaleString()} total)
+            Header proposers in the last {totals.blocksSampled} blocks
+            {totals.uniqueProposers === 1 ? " — a single producer in this window" : ""}
           </p>
           {loading ? (
             <div className="flex h-[220px] items-center justify-center text-[var(--text-muted)]">Loading…</div>
-          ) : txPieData.length === 0 ? (
+          ) : proposerRows.length === 0 ? (
             <div className="flex h-[220px] items-center justify-center text-center text-sm text-[var(--text-muted)]">
-              No transactions in sampled blocks.
+              No proposers in sampled blocks.
+            </div>
+          ) : proposerRows.length === 1 ? (
+            <div className="flex h-[240px] flex-col items-center justify-center gap-2 px-4 text-center">
+              <p className="font-mono text-sm text-network-cyan">{proposerRows[0].label}</p>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Produced every sampled block ({proposerRows[0].count.toLocaleString()}).
+              </p>
+              <p className="text-xs text-[var(--text-muted)]">
+                A bar chart of shares is more useful once more than one producer appears.
+              </p>
             </div>
           ) : (
             <div className="h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart margin={{ top: 0, right: 8, bottom: 8, left: 8 }}>
-                  <Pie
-                    data={txPieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={52}
-                    outerRadius={88}
-                    paddingAngle={2}
-                    isAnimationActive={false}
-                  >
-                    {txPieData.map((entry, i) => (
-                      <Cell key={i} fill={entry.fill} stroke="var(--boing-navy-deep)" strokeWidth={1} />
-                    ))}
-                  </Pie>
+                <BarChart
+                  data={proposerRows}
+                  layout="vertical"
+                  margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
+                  <XAxis type="number" allowDecimals={false} tick={{ fill: "var(--text-muted)", fontSize: 10 }} />
+                  <YAxis
+                    type="category"
+                    dataKey="label"
+                    width={88}
+                    tick={{ fill: "var(--text-muted)", fontSize: 10 }}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "var(--boing-navy-deep)",
@@ -234,13 +235,13 @@ export function NetworkEconomyInsights() {
                       borderRadius: 8,
                     }}
                     labelStyle={{ color: "var(--text-primary)" }}
-                    formatter={(value: number | undefined, name: string | undefined) => [
-                      `${(value ?? 0).toLocaleString()} tx${(value ?? 0) === 1 ? "" : "s"}`,
-                      name ?? "",
+                    formatter={(value: number | undefined) => [
+                      `${(value ?? 0).toLocaleString()} block${(value ?? 0) === 1 ? "" : "s"}`,
+                      "Produced",
                     ]}
                   />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                </PieChart>
+                  <Bar dataKey="count" fill="var(--network-cyan)" radius={[0, 2, 2, 0]} isAnimationActive={false} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           )}
@@ -295,95 +296,51 @@ export function NetworkEconomyInsights() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="glass-card p-4">
-          <h4 className="mb-1 text-sm font-medium text-[var(--text-muted)]">Bond vs unbond per block</h4>
-          <p className="mb-3 text-xs text-[var(--text-muted)]">BOING units (chart may round large values)</p>
-          {loading ? (
-            <div className="flex h-[220px] items-center justify-center text-[var(--text-muted)]">Loading…</div>
-          ) : chartRows.length === 0 ? (
-            <div className="flex h-[220px] items-center justify-center text-[var(--text-muted)]">No data</div>
-          ) : (
-            <div className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
-                  <XAxis
-                    dataKey="height"
-                    tick={{ fill: "var(--text-muted)", fontSize: 10 }}
-                    tickFormatter={(v) => `#${Number(v).toLocaleString()}`}
-                  />
-                  <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--boing-navy-deep)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: 8,
-                    }}
-                    labelStyle={{ color: "var(--text-primary)" }}
-                    formatter={(value, name) => {
-                      const v = typeof value === "number" ? value : 0;
-                      const label = name === "bond" ? "Bond" : "Unbond";
-                      return [`${formatBoingAmount(String(Math.round(v)))} BOING`, label];
-                    }}
-                    labelFormatter={(h) => `Block #${Number(h).toLocaleString()}`}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: 12 }}
-                    formatter={(value) => (value === "bond" ? "Bond" : "Unbond")}
-                  />
-                  <Bar dataKey="bond" fill="var(--network-primary-light)" radius={[2, 2, 0, 0]} name="bond" />
-                  <Bar dataKey="unbond" fill="rgba(251, 191, 36, 0.85)" radius={[2, 2, 0, 0]} name="unbond" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-
-        <div className="glass-card p-4">
-          <h4 className="mb-1 text-sm font-medium text-[var(--text-muted)]">Cumulative net stake (window)</h4>
-          <p className="mb-3 text-xs text-[var(--text-muted)]">Running bond − unbond over sampled blocks</p>
-          {loading ? (
-            <div className="flex h-[220px] items-center justify-center text-[var(--text-muted)]">Loading…</div>
-          ) : cumulativeChart.length === 0 ? (
-            <div className="flex h-[220px] items-center justify-center text-[var(--text-muted)]">No data</div>
-          ) : (
-            <div className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={cumulativeChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
-                  <XAxis
-                    dataKey="height"
-                    tick={{ fill: "var(--text-muted)", fontSize: 10 }}
-                    tickFormatter={(v) => `#${Number(v).toLocaleString()}`}
-                  />
-                  <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--boing-navy-deep)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: 8,
-                    }}
-                    labelStyle={{ color: "var(--text-primary)" }}
-                    formatter={(value) => {
-                      const v = typeof value === "number" ? value : 0;
-                      return [`${formatBoingAmount(String(Math.round(v)))} BOING`, "Net (Σ)"];
-                    }}
-                    labelFormatter={(h) => `Block #${Number(h).toLocaleString()}`}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="cumulative"
-                    stroke="var(--network-cyan)"
-                    strokeWidth={2}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+      <div className="glass-card p-4">
+        <h4 className="mb-1 text-sm font-medium text-[var(--text-muted)]">Cumulative BOING transferred</h4>
+        <p className="mb-3 text-xs text-[var(--text-muted)]">
+          Running sum of Transfer amounts in this window (faucet and user sends)
+        </p>
+        {loading ? (
+          <div className="flex h-[220px] items-center justify-center text-[var(--text-muted)]">Loading…</div>
+        ) : cumulativeChart.length === 0 ? (
+          <div className="flex h-[220px] items-center justify-center text-[var(--text-muted)]">No data</div>
+        ) : (
+          <div className="h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={cumulativeChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
+                <XAxis
+                  dataKey="height"
+                  tick={{ fill: "var(--text-muted)", fontSize: 10 }}
+                  tickFormatter={(v) => `#${Number(v).toLocaleString()}`}
+                />
+                <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--boing-navy-deep)",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: 8,
+                  }}
+                  labelStyle={{ color: "var(--text-primary)" }}
+                  formatter={(value) => {
+                    const v = typeof value === "number" ? value : 0;
+                    return [`${formatBoingAmount(String(Math.round(v)))} BOING`, "Cumulative transfers"];
+                  }}
+                  labelFormatter={(h) => `Block #${Number(h).toLocaleString()}`}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="cumulative"
+                  stroke="var(--network-cyan)"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       <aside className="rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/40 px-4 py-3 text-xs text-[var(--text-muted)]">

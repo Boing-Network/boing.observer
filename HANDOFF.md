@@ -39,7 +39,7 @@ Current state:
 - Block lookup works by both height and hash.
 - Account lookup works by 32-byte hex address (strict 64 hex digits; no silent padding of short input).
 - Transaction detail exists at `/tx/[txId]` when the node returns receipts.
-- Basic chain metrics and charts are implemented client-side.
+- Basic chain metrics and charts are implemented client-side (liveness, BOING moved, proposers — not tx-per-block).
 - QA pre-flight tooling is exposed in the UI.
 - QA gate rules catalog (every Allow / Reject / Unsure rule) is at `/qa/rules` with `public/pdfs/QA-GATE-RULES.pdf`.
 - Faucet UI is exposed for testnet.
