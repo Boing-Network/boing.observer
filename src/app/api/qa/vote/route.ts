@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { HOSTED_TESTNET_RPC_FALLBACKS, getRpcBaseUrl, isMainnetConfigured } from "@/lib/rpc-client";
-import { isAccountHex, normalizeVoterHex } from "@/lib/qa-reviewer-auth";
+import {
+  isAccountHex,
+  normalizeSignedTxHex,
+  normalizeVoterHex,
+  qaPoolVoteRpcParams,
+} from "@/lib/qa-reviewer-auth";
 import { normalizeHex64 } from "@/lib/rpc-types";
 import type { NetworkId } from "@/lib/rpc-types";
 
@@ -11,6 +16,7 @@ type VoteBody = {
   voterHex?: string;
   txHash?: string;
   vote?: string;
+  signedTxHex?: string;
 };
 
 function parseNetwork(v: unknown): NetworkId | null {
@@ -29,6 +35,8 @@ function voteRpcUrl(network: NetworkId): string {
 /**
  * Public proxy for `boing_qaPoolVote`.
  * Browser never sees `BOING_OPERATOR_RPC_TOKEN`.
+ * With a signed `QaPoolVote` hex (4th RPC param), public-membership nodes accept the vote
+ * and inclusion can pay treasury rewards. Unsigned 3-param votes do not pay.
  */
 export async function POST(req: NextRequest) {
   let body: VoteBody;
@@ -64,6 +72,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Vote must be allow, reject, or abstain." }, { status: 400 });
   }
 
+  let signedTxHex: string | null = null;
+  if (typeof body.signedTxHex === "string" && body.signedTxHex.trim()) {
+    signedTxHex = normalizeSignedTxHex(body.signedTxHex);
+    if (!signedTxHex) {
+      return NextResponse.json({ error: "signedTxHex must be even-length hex of a signed QaPoolVote." }, { status: 400 });
+    }
+  }
+
   const operatorToken = process.env.BOING_OPERATOR_RPC_TOKEN?.trim();
   const upstream = voteRpcUrl(network);
   const upstreamUrl = upstream.endsWith("/") ? upstream : `${upstream}/`;
@@ -85,7 +101,7 @@ export async function POST(req: NextRequest) {
         jsonrpc: "2.0",
         id: 1,
         method: "boing_qaPoolVote",
-        params: [`0x${txHash}`, `0x${voterHex}`, vote],
+        params: qaPoolVoteRpcParams(txHash, voterHex, vote, signedTxHex),
       }),
       signal: AbortSignal.timeout(20_000),
     });
@@ -114,5 +130,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, result: data.result ?? {} });
+  return NextResponse.json({
+    ok: true,
+    result: data.result ?? {},
+    rewardedPath: Boolean(signedTxHex),
+  });
 }

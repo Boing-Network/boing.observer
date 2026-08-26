@@ -12,6 +12,7 @@ import {
   QA_DOC_URL,
   QA_RPC_TWO_SURFACES_DOC_URL,
   RPC_SPEC_URL,
+  WALLET_URL,
 } from "@/lib/constants";
 import { fetchQaPoolConfig, fetchQaPoolList, fetchQaRegistry } from "@/lib/rpc-methods";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
@@ -78,7 +79,7 @@ export function QaTransparencyDashboard() {
   const [registryError, setRegistryError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const { session, signIn, signOut } = useQaReviewerSession();
+  const { session, signIn, signOut, connectWallet, switchWalletChain } = useQaReviewerSession();
 
   const load = useCallback(async () => {
     setError(null);
@@ -371,10 +372,14 @@ export function QaTransparencyDashboard() {
         </h2>
         <p className="mb-4 max-w-3xl text-sm text-[var(--text-muted)]">
           Automated QA already Allow/Rejects most deploys. Items here are{" "}
-          <strong className="text-[var(--text-secondary)]">Unsure</strong> — public voting: anyone with a
-          32-byte account can Allow or Reject based on the asset (name, symbol, purpose, bytecode)
-          before it can enter a block. Voter rewards from a network treasury are a protocol change
-          and are not paid by this explorer.{" "}
+          <strong className="text-[var(--text-secondary)]">Unsure</strong> — public voting: connect{" "}
+          <a href={WALLET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
+            Boing Express
+          </a>{" "}
+          to Allow or Reject based on the asset (name, symbol, purpose, bytecode) before it can enter
+          a block. This explorer does not pay voters. Counted Allow/Reject votes earn on-chain
+          treasury rewards (typically 1 BOING) when a signed <code className="rounded bg-white/10 px-1">QaPoolVote</code>{" "}
+          is included. Abstain does not pay by default.{" "}
           <a href={RPC_SPEC_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
             RPC spec
           </a>
@@ -392,7 +397,13 @@ export function QaTransparencyDashboard() {
           </div>
         ) : null}
         <div className="mb-6">
-          <QaReviewerSessionPanel session={session} onSignIn={signIn} onSignOut={signOut} />
+          <QaReviewerSessionPanel
+            session={session}
+            onSignIn={signIn}
+            onSignOut={signOut}
+            onConnectWallet={connectWallet}
+            onSwitchChain={switchWalletChain}
+          />
         </div>
         {loading && items.length === 0 && !error ? (
           <div className="h-32 glass-card animate-pulse bg-white/5" aria-busy="true" />
