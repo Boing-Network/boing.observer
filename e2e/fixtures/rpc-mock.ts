@@ -12,6 +12,22 @@ type JsonRpcBody = {
  * often sees HTTP 530 from the upstream).
  */
 export async function installMinimalRpcMocks(page: Page): Promise<void> {
+  await page.route("**/api/account/history**", async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        address: "1e1a11f9eb8612aee66bdf0286dbb29ca662cadf7d76e384ac19449d62433615",
+        headHeight: 1,
+        scannedFromHeight: 0,
+        scannedToHeight: 1,
+        blocksFetched: 1,
+        items: [],
+        note: "e2e mock — bounded scan not run",
+      }),
+    });
+  });
+
   await page.route("**/api/rpc", async (route: Route) => {
     if (route.request().method() !== "POST") {
       await route.continue();

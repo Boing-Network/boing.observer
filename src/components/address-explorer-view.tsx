@@ -12,6 +12,7 @@ import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
 import { AccountBalanceMix } from "@/components/account-balance-mix";
 import { AccountContractHints } from "@/components/account-contract-hints";
+import { AccountTxHistory } from "@/components/account-tx-history";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
 import { AssetMetadataSection, type ExplorerAssetProfilePayload } from "@/components/asset-metadata-section";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
@@ -321,6 +322,10 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
           />
         </section>
       )}
+
+      {variant === "account" && isHex64(address) ? (
+        <AccountTxHistory address64={address} network={network} />
+      ) : null}
     </div>
   );
 }

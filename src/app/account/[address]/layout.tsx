@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { address } = await params;
   const shortAddr = address.length > 16 ? `${address.slice(0, 16)}...` : address;
   const title = `Account ${shortAddr}`;
-  const description = `View account ${shortAddr} on Boing Network. Check balance, nonce, and stake.`;
+  const description = `View account ${shortAddr} on Boing Network. Check balance, nonce, stake, and recent transaction history.`;
   return {
     title,
     description,
