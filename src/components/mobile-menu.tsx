@@ -44,8 +44,16 @@ export function MobileMenu() {
 
   useEffect(() => {
     if (!open) return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onDesktop = () => {
+      if (mq.matches) setOpen(false);
+    };
     window.addEventListener("keydown", onEscape);
-    return () => window.removeEventListener("keydown", onEscape);
+    mq.addEventListener("change", onDesktop);
+    return () => {
+      window.removeEventListener("keydown", onEscape);
+      mq.removeEventListener("change", onDesktop);
+    };
   }, [open, onEscape]);
 
   return (
