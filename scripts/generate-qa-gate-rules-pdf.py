@@ -91,6 +91,11 @@ def md_to_html(text: str) -> str:
     return raw
 
 
+def html_section_chunks(html: str) -> list[str]:
+    """Split HTML so each <h2> starts a new PDF page (cover stays on page 1)."""
+    return [chunk for chunk in re.split(r"(?=<h2\b)", html, flags=re.I) if chunk.strip()]
+
+
 def main() -> None:
     md = ascii_safe(SRC.read_text(encoding="utf-8"))
     body = ascii_safe(md_to_html(md))
@@ -113,11 +118,14 @@ def main() -> None:
         "strong": FontFace(emphasis="B", color=NAVY),
     }
 
-    pdf.write_html(
-        f"<font face='Helvetica' size='11'>{body}</font>",
-        tag_styles=tag_styles,
-        table_line_separators=True,
-    )
+    for index, chunk in enumerate(html_section_chunks(body)):
+        if index > 0:
+            pdf.add_page()
+        pdf.write_html(
+            f"<font face='Helvetica' size='11'>{chunk}</font>",
+            tag_styles=tag_styles,
+            table_line_separators=True,
+        )
     pdf.output(DEST)
     print(f"Wrote {DEST} ({DEST.stat().st_size} bytes)")
 
