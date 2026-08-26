@@ -73,6 +73,14 @@ export default function AboutPage() {
         </h2>
         <ul className="grid gap-3 sm:grid-cols-2">
           <li>
+            <Link
+              href="/qa/rules"
+              className="block rounded-xl border border-[var(--border-color)] bg-boing-navy-mid/40 px-4 py-3 text-sm text-network-cyan hover:border-network-cyan/50"
+            >
+              QA gate rules (PDF + catalog)
+            </Link>
+          </li>
+          <li>
             <a
               href="https://boing.network/pdfs/BOING-NETWORK-ESSENTIALS.pdf"
               target="_blank"

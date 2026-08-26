@@ -155,6 +155,10 @@ export function QaTransparencyDashboard() {
           Anyone can Allow or Reject Unsure deploys in the public QA vote below.
         </p>
         <p className="mt-2 text-sm text-[var(--text-muted)]">
+          <Link href="/qa/rules" className="text-network-cyan hover:underline">
+            QA gate rules
+          </Link>
+          {" · "}
           <Link href="/tools/qa-check" className="text-network-cyan hover:underline">
             QA pre-flight
           </Link>{" "}
@@ -553,6 +557,13 @@ export function QaTransparencyDashboard() {
             <strong className="text-[var(--text-primary)]">Reject</strong> /{" "}
             <strong className="text-[var(--text-primary)]">Unsure</strong> — automated path; Unsure may yield pool entry (
             <code className="rounded bg-white/10 px-1">-32051</code>).
+          </li>
+          <li>
+            <Link href="/qa/rules" className="text-network-cyan hover:underline">
+              QA gate rules
+            </Link>
+            {" — "}
+            every Allow / Reject / Unsure rule, plus PDF.
           </li>
           <li>
             <Link href="/tools/qa-check" className="text-network-cyan hover:underline">

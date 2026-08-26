@@ -228,6 +228,10 @@ export default function QaCheckPage() {
 
       <footer className="text-sm text-[var(--text-muted)]">
         Policy:{" "}
+        <Link href="/qa/rules" className="text-network-cyan hover:underline">
+          Gate rules
+        </Link>
+        {" · "}
         <a href={QA_DOC_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
           QA docs
         </a>

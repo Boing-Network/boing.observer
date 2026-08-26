@@ -98,6 +98,17 @@ export default function ToolsPage() {
         </li>
         <li>
           <Link
+            href="/qa/rules"
+            className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+          >
+            <h2 className="font-display text-lg font-semibold text-network-cyan">QA gate rules</h2>
+            <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+              Every Allow / Reject / Unsure rule a deploy must pass, plus the downloadable PDF catalog.
+            </p>
+          </Link>
+        </li>
+        <li>
+          <Link
             href="/tokens"
             className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
           >

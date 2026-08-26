@@ -15,10 +15,10 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/tools", tokens)).toBe(false);
   });
 
-  it("does not mark Tools as active on nested tool pages when exact", () => {
-    const tools: NavItem = { href: "/tools", label: "Tools", exact: true };
-    expect(navItemIsActive("/tools", tools)).toBe(true);
-    expect(navItemIsActive("/tools/rpc-catalog", tools)).toBe(false);
+  it("does not mark QA as active on /qa/rules when exact", () => {
+    const qa: NavItem = { href: "/qa", label: "QA", exact: true };
+    expect(navItemIsActive("/qa", qa)).toBe(true);
+    expect(navItemIsActive("/qa/rules", qa)).toBe(false);
   });
 
   it("ignores external items", () => {

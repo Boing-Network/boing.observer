@@ -41,6 +41,7 @@ Current state:
 - Transaction detail exists at `/tx/[txId]` when the node returns receipts.
 - Basic chain metrics and charts are implemented client-side.
 - QA pre-flight tooling is exposed in the UI.
+- QA gate rules catalog (every Allow / Reject / Unsure rule) is at `/qa/rules` with `public/pdfs/QA-GATE-RULES.pdf`.
 - Faucet UI is exposed for testnet.
 - Native DEX read-only tooling: `/dex/pools` (directory snapshot + optional bounded logs) and `/dex/quote` (CP route quotes via `boing-sdk`), aligned with [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md) Observer §3.
 - SEO, structured data, sitemap, robots, favicon, OG image, and metadata are implemented.

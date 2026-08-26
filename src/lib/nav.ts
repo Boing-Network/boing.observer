@@ -21,7 +21,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { href: "/", label: "Home", exact: true },
       { href: "/about", label: "About" },
-      { href: "/qa", label: "QA" },
+      { href: "/qa", label: "QA", exact: true },
+      { href: "/qa/rules", label: "QA rules" },
     ],
   },
   {

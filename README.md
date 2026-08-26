@@ -24,6 +24,7 @@ flowchart LR
 | 👤 Account | `/account/:address` | Balance, nonce, stake (32-byte hex) |
 | 📄 Transaction | `/tx/:txId` | Receipt when the node has one |
 | ✅ QA transparency | [`/qa`](https://boing.observer/qa) | Live pool + public Allow/Reject voting |
+| 📜 QA gate rules | [`/qa/rules`](https://boing.observer/qa/rules) | Every Allow / Reject / Unsure rule + PDF |
 | 🧪 QA check | `/tools/qa-check` | Pre-flight `boing_qaCheck` |
 | 💱 DEX | `/dex/pools`, `/dex/quote` | Read-only directory + CP quotes via `boing-sdk` |
 | 📡 RPC catalog | `/tools/rpc-catalog` | Live `boing_getRpcMethodCatalog` |
