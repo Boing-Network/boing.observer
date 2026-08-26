@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { isAccountHex, normalizeVoterHex } from "@/lib/qa-reviewer-auth";
 import type { NetworkId } from "@/lib/rpc-types";
 
-const TOKEN_KEY = "boing.observer.qa-reviewer.token";
-const VOTER_KEY = "boing.observer.qa-reviewer.voter";
+const VOTER_KEY = "boing.observer.qa-voter.account";
 
-type ReviewerStatus = {
+type VoteStatus = {
   configured: boolean;
-  allowlistConfigured: boolean;
+  publicVoting: boolean;
   operatorTokenConfigured: boolean;
 };
 
@@ -17,39 +17,43 @@ type VoteKind = "allow" | "reject" | "abstain";
 export type QaReviewerSession = {
   ready: boolean;
   configured: boolean;
-  allowlistConfigured: boolean;
-  token: string;
+  publicVoting: boolean;
+  operatorTokenConfigured: boolean;
   voterHex: string;
   signedIn: boolean;
 };
 
 export function useQaReviewerSession(): {
   session: QaReviewerSession;
-  signIn: (token: string, voterHex: string) => void;
+  signIn: (voterHex: string) => void;
   signOut: () => void;
 } {
-  const [status, setStatus] = useState<ReviewerStatus | null>(null);
-  const [token, setToken] = useState("");
+  const [status, setStatus] = useState<VoteStatus | null>(null);
   const [voterHex, setVoterHex] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     void fetch("/api/qa/reviewer-status")
-      .then((r) => r.json() as Promise<ReviewerStatus>)
+      .then((r) => r.json() as Promise<VoteStatus>)
       .then((s) => {
-        if (!cancelled) setStatus(s);
+        if (!cancelled) {
+          setStatus({
+            configured: s.configured !== false,
+            publicVoting: s.publicVoting !== false,
+            operatorTokenConfigured: Boolean(s.operatorTokenConfigured),
+          });
+        }
       })
       .catch(() => {
         if (!cancelled) {
           setStatus({
-            configured: false,
-            allowlistConfigured: false,
+            configured: true,
+            publicVoting: true,
             operatorTokenConfigured: false,
           });
         }
       });
     try {
-      setToken(sessionStorage.getItem(TOKEN_KEY) ?? "");
       setVoterHex(sessionStorage.getItem(VOTER_KEY) ?? "");
     } catch {
       /* private mode */
@@ -59,37 +63,35 @@ export function useQaReviewerSession(): {
     };
   }, []);
 
-  const signIn = useCallback((nextToken: string, nextVoter: string) => {
-    setToken(nextToken);
-    setVoterHex(nextVoter);
+  const signIn = useCallback((nextVoter: string) => {
+    const hex = normalizeVoterHex(nextVoter);
+    if (!isAccountHex(hex)) return;
+    setVoterHex(hex);
     try {
-      sessionStorage.setItem(TOKEN_KEY, nextToken);
-      sessionStorage.setItem(VOTER_KEY, nextVoter);
+      sessionStorage.setItem(VOTER_KEY, hex);
     } catch {
       /* ignore */
     }
   }, []);
 
   const signOut = useCallback(() => {
-    setToken("");
     setVoterHex("");
     try {
-      sessionStorage.removeItem(TOKEN_KEY);
       sessionStorage.removeItem(VOTER_KEY);
     } catch {
       /* ignore */
     }
   }, []);
 
-  const configured = Boolean(status?.configured);
-  const signedIn = configured && token.length >= 8 && voterHex.replace(/^0x/i, "").length === 64;
+  const configured = status !== null ? status.configured : false;
+  const signedIn = configured && isAccountHex(normalizeVoterHex(voterHex));
 
   return {
     session: {
       ready: status !== null,
       configured,
-      allowlistConfigured: Boolean(status?.allowlistConfigured),
-      token,
+      publicVoting: Boolean(status?.publicVoting),
+      operatorTokenConfigured: Boolean(status?.operatorTokenConfigured),
       voterHex,
       signedIn,
     },
@@ -104,11 +106,11 @@ export function QaReviewerSessionPanel({
   onSignOut,
 }: {
   session: QaReviewerSession;
-  onSignIn: (token: string, voterHex: string) => void;
+  onSignIn: (voterHex: string) => void;
   onSignOut: () => void;
 }) {
-  const [token, setToken] = useState("");
   const [voter, setVoter] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
 
   if (!session.ready) {
     return <div className="h-24 rounded-lg bg-white/5 animate-pulse" aria-busy="true" />;
@@ -117,12 +119,7 @@ export function QaReviewerSessionPanel({
   if (!session.configured) {
     return (
       <div className="rounded-lg border border-[var(--border-color)] bg-boing-black/40 p-4 text-sm text-[var(--text-secondary)]">
-        <p>
-          Reviewer voting is not enabled on this explorer yet. Operators set{" "}
-          <code className="rounded bg-white/10 px-1">QA_REVIEWER_TOKEN</code> and{" "}
-          <code className="rounded bg-white/10 px-1">BOING_OPERATOR_RPC_TOKEN</code> on the Worker,
-          then give reviewers the shared token plus their 32-byte voter account.
-        </p>
+        <p>Public voting is not available on this explorer yet.</p>
       </div>
     );
   }
@@ -132,7 +129,7 @@ export function QaReviewerSessionPanel({
     return (
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-network-cyan/40 bg-network-cyan/10 px-4 py-3">
         <p className="text-sm text-[var(--text-primary)]">
-          Reviewer session{" "}
+          Voting as{" "}
           <span className="font-mono text-network-cyan">
             0x{short.slice(0, 8)}…{short.slice(-6)}
           </span>
@@ -142,7 +139,7 @@ export function QaReviewerSessionPanel({
           onClick={onSignOut}
           className="rounded-lg border border-[var(--border-color)] px-3 py-1.5 text-sm text-[var(--text-secondary)] hover:border-network-cyan/50 hover:text-[var(--text-primary)]"
         >
-          Sign out
+          Change account
         </button>
       </div>
     );
@@ -153,51 +150,54 @@ export function QaReviewerSessionPanel({
       className="space-y-3 rounded-lg border border-[var(--border-color)] bg-boing-black/40 p-4"
       onSubmit={(e) => {
         e.preventDefault();
-        onSignIn(token.trim(), voter.trim());
+        const hex = normalizeVoterHex(voter);
+        if (!isAccountHex(hex)) {
+          setFormError("Enter a 32-byte account id (64 hex characters).");
+          return;
+        }
+        setFormError(null);
+        onSignIn(hex);
       }}
     >
       <p className="text-sm text-[var(--text-secondary)]">
-        Reviewers given the role can Allow, Reject, or Abstain on Unsure deploys. The vote is
-        recorded on the validator QA pool.
-        {session.allowlistConfigured
-          ? " This explorer also checks an address allowlist."
-          : null}
+        Anyone can Allow, Reject, or Abstain on Unsure deploys. Enter a 32-byte account id; the vote
+        is recorded on the validator QA pool. No reviewer code is required.
       </p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm" htmlFor="qa-reviewer-token">
-          <span className="text-[var(--text-muted)]">Reviewer token</span>
-          <input
-            id="qa-reviewer-token"
-            name="qa-reviewer-token"
-            type="password"
-            autoComplete="off"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/60 px-3 py-2 font-mono text-sm text-[var(--text-primary)]"
-            required
-          />
-        </label>
-        <label className="block text-sm" htmlFor="qa-voter-account">
-          <span className="text-[var(--text-muted)]">Voter account (32-byte hex)</span>
-          <input
-            id="qa-voter-account"
-            name="qa-voter-account"
-            type="text"
-            autoComplete="off"
-            spellCheck={false}
-            value={voter}
-            onChange={(e) => setVoter(e.target.value)}
-            placeholder="0x…"
-            className="mt-1 w-full rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/60 px-3 py-2 font-mono text-sm text-[var(--text-primary)]"
-            required
-          />
-        </label>
-      </div>
+      {!session.operatorTokenConfigured ? (
+        <p className="text-xs text-amber-200">
+          This explorer has no operator RPC token set. If the validator requires{" "}
+          <code className="rounded bg-white/10 px-1">X-Boing-Operator</code>, votes will fail until
+          operators add <code className="rounded bg-white/10 px-1">BOING_OPERATOR_RPC_TOKEN</code>.
+        </p>
+      ) : null}
+      <label className="block text-sm" htmlFor="qa-voter-account">
+        <span className="text-[var(--text-muted)]">Voter account (32-byte hex)</span>
+        <input
+          id="qa-voter-account"
+          name="qa-voter-account"
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
+          value={voter}
+          onChange={(e) => {
+            setVoter(e.target.value);
+            setFormError(null);
+          }}
+          placeholder="0x…"
+          className="mt-1 w-full rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/60 px-3 py-2 font-mono text-sm text-[var(--text-primary)]"
+          required
+        />
+      </label>
+      {formError ? (
+        <p className="text-xs text-rose-300" role="alert">
+          {formError}
+        </p>
+      ) : null}
       <button
         type="submit"
         className="rounded-lg bg-network-cyan px-4 py-2 font-semibold text-boing-black hover:bg-network-cyan-light"
       >
-        Unlock reviewer gate
+        Start voting
       </button>
     </form>
   );
@@ -230,7 +230,6 @@ export function QaReviewerVoteButtons({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           network,
-          reviewerToken: session.token,
           voterHex: session.voterHex,
           txHash,
           vote,

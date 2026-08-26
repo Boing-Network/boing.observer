@@ -68,7 +68,7 @@ Current state:
 - `/dex/pools`, `/dex/quote`
   - Server-backed `boing-sdk` views (directory + quotes); respect header network selector.
 - `/qa`
-  - QA transparency plus a **reviewer gate**: pending Unsure deploys with asset name/symbol/purpose; Allow / Reject / Abstain via server-side `boing_qaPoolVote` when `QA_REVIEWER_TOKEN` is set.
+  - QA transparency plus **public voting**: pending Unsure deploys with asset name/symbol/purpose; Allow / Reject / Abstain via server-side `boing_qaPoolVote`. No reviewer code. The node still enforces admin membership unless `dev_open_voting` is on.
 - `/tools/qa-check`
   - Calls the protocol QA RPC to evaluate deployment bytecode before submission.
 - `/tools/rpc-catalog`
@@ -94,6 +94,7 @@ Current state:
 - `boing_qaCheck`
 - `boing_qaPoolList`
 - `boing_qaPoolConfig`
+- `boing_qaPoolVote` (server proxy on `/api/qa/vote`; operator token stays on the Worker)
 - `boing_getQaRegistry`
 - `boing_faucetRequest`
 
@@ -140,7 +141,7 @@ Normative specs for ingestion, SQL storage, reorgs, and a read API live in **`bo
 
 ### Current cross-project reality
 
-The explorer is still mostly read-only. The `/qa` reviewer gate is the exception: assigned reviewers can vote Allow/Reject on Unsure deploys through a server proxy (operator token never reaches the browser).
+The explorer is still mostly read-only. The `/qa` public vote is the exception: anyone with a 32-byte account can vote Allow/Reject on Unsure deploys through a server proxy (operator token never reaches the browser). Protocol membership is still enforced by `boing_qaPoolVote`.
 
 - `boing.network` now has a live testnet portal sign-in page at `/testnet/sign-in`.
 - The portal supports nonce-backed wallet authentication using Ed25519 signatures verified in backend functions.
@@ -152,7 +153,9 @@ The explorer is still mostly read-only. The `/qa` reviewer gate is the exception
 - Compatibility fallback to `eth_requestAccounts`, `personal_sign`, `eth_chainId`, and `wallet_switchEthereumChain` is documented for wallets that expose Ethereum-style aliases.
 - The portal currently attempts Boing testnet chain ID `0x1b01` before wallet-based sign-in.
 
-This matters for wallet-aware explorer features: reuse the same provider and signing contract already documented in `boing.network`. The QA reviewer gate uses a shared token plus voter account rather than that wallet session today.
+This matters for wallet-aware explorer features: reuse the same provider and signing contract already documented in `boing.network`. Public QA voting currently uses a pasted 32-byte account rather than that wallet session.
+
+**Protocol follow-ups (not implementable in this explorer):** public votes still fail with `-32053` unless the validator enables `dev_open_voting` or a production public-membership model. Per-transaction BOING to a network treasury, and paying QA voters a share of those fees, must be implemented in `boing-node` / consensus — the explorer cannot intercept included transactions.
 
 ## Constraints and Gaps
 

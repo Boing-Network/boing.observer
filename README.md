@@ -23,7 +23,7 @@ flowchart LR
 | 🧱 Block | `/block/:height` or `/block/hash/:hash` | Header + transactions |
 | 👤 Account | `/account/:address` | Balance, nonce, stake (32-byte hex) |
 | 📄 Transaction | `/tx/:txId` | Receipt when the node has one |
-| ✅ QA transparency | [`/qa`](https://boing.observer/qa) | Live pool + registry from public RPC |
+| ✅ QA transparency | [`/qa`](https://boing.observer/qa) | Live pool + public Allow/Reject voting |
 | 🧪 QA check | `/tools/qa-check` | Pre-flight `boing_qaCheck` |
 | 💱 DEX | `/dex/pools`, `/dex/quote` | Read-only directory + CP quotes via `boing-sdk` |
 | 📡 RPC catalog | `/tools/rpc-catalog` | Live `boing_getRpcMethodCatalog` |
@@ -65,8 +65,6 @@ npm run test:e2e
 | `NEXT_PUBLIC_TESTNET_RPC` | Testnet RPC (default `https://testnet-rpc.boing.network/`) |
 | `NEXT_PUBLIC_TESTNET_RPC_FALLBACKS` | Extra testnet origins (comma-separated). The proxy already failsovers to hosted Fly nodes |
 | `NEXT_PUBLIC_MAINNET_RPC` | Mainnet RPC. **Leave unset** until a distinct mainnet endpoint is published |
-| `QA_REVIEWER_TOKEN` | Server-only secret (8+ chars) that unlocks Allow/Reject on `/qa` |
-| `QA_REVIEWER_ADDRESSES` | Optional comma-separated 32-byte voter accounts |
 | `BOING_OPERATOR_RPC_TOKEN` | Server-only; must match validator `X-Boing-Operator`. Never `NEXT_PUBLIC_` |
 | `BOING_QA_VOTE_RPC` | Validator JSON-RPC for `boing_qaPoolVote` (defaults to `https://boing-testnet-1.fly.dev`) |
 

@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { HOSTED_TESTNET_RPC_FALLBACKS, getRpcBaseUrl, isMainnetConfigured } from "@/lib/rpc-client";
-import {
-  isAccountHex,
-  normalizeVoterHex,
-  parseReviewerAllowlist,
-  reviewerTokensMatch,
-  reviewerVotingConfigured,
-  voterOnAllowlist,
-} from "@/lib/qa-reviewer-auth";
+import { isAccountHex, normalizeVoterHex } from "@/lib/qa-reviewer-auth";
 import { normalizeHex64 } from "@/lib/rpc-types";
 import type { NetworkId } from "@/lib/rpc-types";
 
@@ -15,7 +8,6 @@ const VOTES = new Set(["allow", "reject", "abstain"]);
 
 type VoteBody = {
   network?: string;
-  reviewerToken?: string;
   voterHex?: string;
   txHash?: string;
   vote?: string;
@@ -35,18 +27,10 @@ function voteRpcUrl(network: NetworkId): string {
 }
 
 /**
- * Reviewer-gated proxy for `boing_qaPoolVote`.
+ * Public proxy for `boing_qaPoolVote`.
  * Browser never sees `BOING_OPERATOR_RPC_TOKEN`.
  */
 export async function POST(req: NextRequest) {
-  const secret = process.env.QA_REVIEWER_TOKEN;
-  if (!reviewerVotingConfigured(secret)) {
-    return NextResponse.json(
-      { error: "Reviewer voting is not configured on this explorer." },
-      { status: 503 }
-    );
-  }
-
   let body: VoteBody;
   try {
     body = (await req.json()) as VoteBody;
@@ -62,24 +46,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Mainnet RPC is not configured." }, { status: 400 });
   }
 
-  const provided = typeof body.reviewerToken === "string" ? body.reviewerToken : "";
-  if (!reviewerTokensMatch(provided, secret!.trim())) {
-    return NextResponse.json({ error: "Invalid reviewer credentials." }, { status: 401 });
-  }
-
   const voterHex = normalizeVoterHex(typeof body.voterHex === "string" ? body.voterHex : "");
   if (!isAccountHex(voterHex)) {
     return NextResponse.json(
       { error: "Voter must be a 32-byte account id (64 hex chars)." },
       { status: 400 }
-    );
-  }
-
-  const allowlist = parseReviewerAllowlist(process.env.QA_REVIEWER_ADDRESSES);
-  if (!voterOnAllowlist(voterHex, allowlist)) {
-    return NextResponse.json(
-      { error: "This account is not on the explorer reviewer allowlist." },
-      { status: 403 }
     );
   }
 

@@ -61,7 +61,7 @@ const RPC_QA_ERRORS: { code: string; summary: string }[] = [
   { code: "-32050", summary: "Deployment rejected by protocol QA (rule_id + message in response)." },
   { code: "-32051", summary: "Unsure — referred to the governance QA pool; includes pending tx_hash." },
   { code: "-32052", summary: "No pending pool item for that transaction hash." },
-  { code: "-32053", summary: "Voter is not a governance QA administrator." },
+  { code: "-32053", summary: "Voter is not a governance QA administrator (node still has open voting off)." },
   { code: "-32054", summary: "QA pool disabled by governance (e.g. no admins / zero capacity)." },
   { code: "-32055", summary: "Global pool capacity reached." },
   { code: "-32056", summary: "Per-deployer pending cap reached." },
@@ -152,7 +152,7 @@ export function QaTransparencyDashboard() {
         </h1>
         <p className="mt-3 max-w-2xl text-[var(--text-secondary)] leading-relaxed">
           Live pool config, pending queue, and rule registry from public RPC — same methods the explorer uses elsewhere.
-          Reviewers with the assigned role can Allow or Reject Unsure deploys in the QA gate below.
+          Anyone can Allow or Reject Unsure deploys in the public QA vote below.
         </p>
         <p className="mt-2 text-sm text-[var(--text-muted)]">
           <Link href="/tools/qa-check" className="text-network-cyan hover:underline">
@@ -354,7 +354,7 @@ export function QaTransparencyDashboard() {
               <ConfigStat
                 label="Dev open voting"
                 value={config.dev_open_voting ? "On" : "Off"}
-                hint="When on with empty admin list, local-dev style voting may apply."
+                hint="When on, the node accepts votes from any account. When off, only governance admins count."
               />
             </dl>
           </div>
@@ -363,18 +363,30 @@ export function QaTransparencyDashboard() {
 
       <section aria-labelledby="qa-gate-heading">
         <h2 id="qa-gate-heading" className="mb-2 font-display text-xl font-semibold text-[var(--text-primary)]">
-          QA gate
+          Public vote
         </h2>
         <p className="mb-4 max-w-3xl text-sm text-[var(--text-muted)]">
           Automated QA already Allow/Rejects most deploys. Items here are{" "}
-          <strong className="text-[var(--text-secondary)]">Unsure</strong> — reviewers given the role vote
-          Allow or Reject based on the asset (name, symbol, purpose, bytecode) before it can enter a
-          block.{" "}
+          <strong className="text-[var(--text-secondary)]">Unsure</strong> — public voting: anyone with a
+          32-byte account can Allow or Reject based on the asset (name, symbol, purpose, bytecode)
+          before it can enter a block. Voter rewards from a network treasury are a protocol change
+          and are not paid by this explorer.{" "}
           <a href={RPC_SPEC_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
             RPC spec
           </a>
           .
         </p>
+        {config && !config.dev_open_voting ? (
+          <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-950/20 p-4 text-sm text-amber-100">
+            Anyone can vote from this page, but the node still reports{" "}
+            <strong className="text-amber-200">Dev open voting: Off</strong>
+            {config.administrator_count > 0
+              ? ` (${config.administrator_count} governance admin${config.administrator_count === 1 ? "" : "s"}).`
+              : "."}{" "}
+            Non-admin votes will fail with <code className="rounded bg-white/10 px-1">-32053</code> until
+            the validator enables public membership.
+          </div>
+        ) : null}
         <div className="mb-6">
           <QaReviewerSessionPanel session={session} onSignIn={signIn} onSignOut={signOut} />
         </div>
@@ -467,7 +479,7 @@ export function QaTransparencyDashboard() {
                     <th className="p-3 font-medium">Deployer</th>
                     <th className="p-3 font-medium">Votes</th>
                     <th className="p-3 font-medium">Age</th>
-                    <th className="p-3 font-medium">Review</th>
+                    <th className="p-3 font-medium">Vote</th>
                   </tr>
                 </thead>
                 <tbody>
