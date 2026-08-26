@@ -28,11 +28,19 @@ const jetbrainsMono = JetBrains_Mono({
 const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION;
 
+const OG_IMAGE = {
+  url: "/og.png",
+  width: 1200,
+  height: 630,
+  alt: "Boing Observer — blockchain explorer for Boing Network",
+};
+
 /** Enables edge-to-edge layout on notched iOS devices; pairs with safe-area env() in CSS. */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#050c18",
 };
 
 export const metadata: Metadata = {
@@ -45,6 +53,7 @@ export const metadata: Metadata = {
     "Explore blocks, transactions, and accounts on Boing Network. Browse Boing testnet today, with mainnet support enabled when configured. Search by block height, block hash, or account address at boing.observer.",
   keywords: [
     "Boing Network",
+    "Boing Observer",
     "blockchain explorer",
     "blocks",
     "transactions",
@@ -57,8 +66,9 @@ export const metadata: Metadata = {
     "quality assurance",
     "consensus",
     "True QA",
+    "DEX",
   ],
-  authors: [{ name: "Boing Network", url: SITE_URL }],
+  authors: [{ name: "Boing Network", url: WEBSITE_URL }],
   creator: "Boing Network",
   publisher: "Boing Network",
   robots: {
@@ -77,18 +87,26 @@ export const metadata: Metadata = {
     title: "Boing Observer — Blockchain Explorer | Boing Network",
     description:
       "Explore blocks, transactions, and accounts on Boing Network. Browse Boing testnet today, with mainnet support enabled when configured.",
+    images: [OG_IMAGE],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Boing Observer — Blockchain Explorer | Boing Network",
     description: "Explore blocks, transactions, and accounts on Boing Network.",
+    images: [OG_IMAGE],
   },
   alternates: {
     canonical: SITE_URL,
   },
   category: "technology",
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
   manifest: "/manifest.json",
   ...((googleVerification || bingVerification) && {
@@ -113,19 +131,17 @@ export default function RootLayout({
         url: SITE_URL,
         name: "Boing Observer",
         description: "Blockchain explorer for Boing Network. Browse blocks, transactions, and accounts.",
-        publisher: {
-          "@type": "Organization",
-          "@id": `${SITE_URL}/#organization`,
-          name: "Boing Network",
-          url: SITE_URL,
-        },
+        publisher: { "@id": `${SITE_URL}/#organization` },
       },
       {
         "@type": "Organization",
         "@id": `${SITE_URL}/#organization`,
         name: "Boing Network",
-        url: SITE_URL,
+        url: WEBSITE_URL,
         slogan: "Authentic. Decentralized. Optimal. Quality-Assured.",
+        logo: `${SITE_URL}/icon-512.png`,
+        image: `${SITE_URL}/og.png`,
+        sameAs: [WEBSITE_URL, WALLET_URL, "https://boing.finance"],
       },
     ],
   };
