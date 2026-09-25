@@ -116,8 +116,7 @@ function SignedPayloadHeadlineRich({
     case "ClaimUnbond":
       return (
         <>
-          You signed a <span className="font-mono">claim_unbond</span> — pending unbond returns to liquid balance when
-          the unlock height is reached.
+          You signed a <span className="font-mono">claim_unbond</span> — Boing-native stake claim (not an EVM withdrawal). Pending unbond returns to liquid balance when the unlock height is reached.
         </>
       );
     case "QaPoolVote": {
