@@ -2,6 +2,8 @@
 
 Browse blocks, transactions, accounts, QA, and native DEX on **Boing Network**. Live at **[boing.observer](https://boing.observer)**.
 
+**Boundary:** Boing Observer is a **Boing-native** explorer (Boing RPC + `boing-sdk`). It is **not** an Etherscan clone and does **not** embed an EVM runtime. EVM explorers/contracts live under **boing.finance**.
+
 > 👋 **Everyday users:** paste a block height, block hash, or 64-character account into search. Testnet is the default. Get coins at [boing.network/faucet](https://boing.network/faucet).  
 > 🛠️ **Developers:** Next.js 15 App Router. Browser traffic goes through same-origin `POST /api/rpc` (CORS-safe). Direct node calls happen only on the server.  
 > 🛰️ **Operators:** `NEXT_PUBLIC_TESTNET_RPC` defaults to `https://testnet-rpc.boing.network/`. Upgrading a laptop node does **not** change production explorer RPC.
