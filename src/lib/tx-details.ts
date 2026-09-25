@@ -53,6 +53,23 @@ export function buildPayloadDetailLines(payload: unknown): TxDetailLine[] {
     case "Unbond":
       lines.push({ label: "Unbond amount", value: `${formatBoingAmount(String(p.amount ?? ""))} BOING` });
       return lines;
+    case "ClaimUnbond":
+      lines.push({
+        label: "Action",
+        value: "Claim unbond — move matured pending_unbond back to liquid BOING",
+      });
+      return lines;
+    case "QaPoolVote": {
+      const subj = hexForLink(p.subject ?? p.subject_hex);
+      lines.push({ label: "Vote", value: String(p.vote ?? "—") });
+      lines.push({
+        label: "Subject (pending deploy tx)",
+        value: shortenHash(subj) || "—",
+        // subject is a tx id (32-byte), surface as copyable hex via account field unused
+        copyValue: subj ? `0x${subj}` : undefined,
+      });
+      return lines;
+    }
     case "ContractCall": {
       const c = hexForLink(p.contract);
       lines.push({
@@ -146,7 +163,10 @@ export function kindBadgeTone(kind: TxPayloadKind): string {
       return "border-network-cyan/40 bg-network-cyan/15 text-network-cyan-light";
     case "Bond":
     case "Unbond":
+    case "ClaimUnbond":
       return "border-network-primary/40 bg-network-primary/15 text-network-primary-light";
+    case "QaPoolVote":
+      return "border-emerald-500/40 bg-emerald-500/10 text-emerald-200";
     case "ContractCall":
       return "border-amber-500/40 bg-amber-500/10 text-amber-200";
     case "ContractDeploy":

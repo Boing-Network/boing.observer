@@ -13,6 +13,10 @@ const TAGGED_PAYLOAD_KIND_BY_KEY: Record<string, TxPayloadKind> = {
   Transfer: "Transfer",
   Bond: "Bond",
   Unbond: "Unbond",
+  ClaimUnbond: "ClaimUnbond",
+  claim_unbond: "ClaimUnbond",
+  QaPoolVote: "QaPoolVote",
+  qa_pool_vote: "QaPoolVote",
   ContractCall: "ContractCall",
   ContractDeploy: "ContractDeploy",
   ContractDeployWithPurpose: "ContractDeployWithPurpose",
@@ -82,6 +86,8 @@ function getTxPayloadKindFlat(p: Record<string, unknown>): TxPayloadKind {
     return "Unbond";
   }
   if ("amount" in p && !("to" in p)) return "Bond";
+  if (("subject" in p || "subject_hex" in p) && "vote" in p) return "QaPoolVote";
+  if (p.kind === "claim_unbond" || p.kind === "ClaimUnbond") return "ClaimUnbond";
   return "Unknown";
 }
 
@@ -124,6 +130,10 @@ export function getTxPayloadSummary(payload: unknown): string {
       const meta = deployAssetLabel(p);
       return `deploy · ${formatPurpose(String(p.purpose_category ?? "other"))}${meta ? ` · ${meta}` : ""}`;
     }
+    case "ClaimUnbond":
+      return "claim unbond";
+    case "QaPoolVote":
+      return `QA vote · ${String(p.vote ?? "")} · ${formatShortAddr(p.subject ?? p.subject_hex)}`;
     default:
       return "—";
   }
@@ -177,6 +187,10 @@ export function getSignedPayloadHeadline(kind: TxPayloadKind, inner: Record<stri
       const meta = deployAssetLabel(inner);
       return `You signed a deployment (${formatPurpose(String(inner.purpose_category ?? "other"))}${meta ? ` · ${meta}` : ""}).`;
     }
+    case "ClaimUnbond":
+      return "You signed a claim_unbond — pending unbond stake returns to liquid balance when unlock height is reached.";
+    case "QaPoolVote":
+      return `You signed a QA pool vote (${String(inner.vote ?? "")}) on subject ${formatShortAddr(inner.subject ?? inner.subject_hex)}.`;
     case "Unknown":
       return "";
     default: {

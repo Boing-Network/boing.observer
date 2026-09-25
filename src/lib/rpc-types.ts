@@ -40,6 +40,8 @@ export type TxPayloadKind =
   | "Transfer"
   | "Bond"
   | "Unbond"
+  | "ClaimUnbond"
+  | "QaPoolVote"
   | "ContractCall"
   | "ContractDeploy"
   | "ContractDeployWithPurpose"

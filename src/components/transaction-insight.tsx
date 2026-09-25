@@ -113,7 +113,31 @@ function SignedPayloadHeadlineRich({
         </>
       );
     }
-    case "Unknown":
+    case "ClaimUnbond":
+      return (
+        <>
+          You signed a <span className="font-mono">claim_unbond</span> — pending unbond returns to liquid balance when
+          the unlock height is reached.
+        </>
+      );
+    case "QaPoolVote": {
+      const subj = hexForLink(inner.subject ?? inner.subject_hex);
+      const short = subj ? shortenHash(subj) || subj : "—";
+      return (
+        <>
+          You signed a QA pool vote ({String(inner.vote ?? "")}) on subject{" "}
+          {subj ? (
+            <Link href={explorerTxHref(subj, network)} className="text-network-cyan hover:underline">
+              {short}
+            </Link>
+          ) : (
+            "—"
+          )}
+          .
+        </>
+      );
+    }
+case "Unknown":
       return null;
     default: {
       const _exhaustive: never = kind;
