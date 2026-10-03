@@ -69,7 +69,7 @@ export default function FaucetPage() {
           Testnet faucet helper
         </h1>
         <p className="mt-2 text-[var(--text-secondary)]">
-          Calls <code className="rounded bg-white/10 px-1.5 py-0.5 text-sm">boing_faucetRequest</code> — 1,000
+          Calls <code className="rounded bg-white/10 px-1.5 py-0.5 text-sm">boing_faucetRequest</code> — 10
           BOING per request, max once per 60s per account. Prefer the{" "}
           <a href={NETWORK_FAUCET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
             public faucet
@@ -110,7 +110,7 @@ export default function FaucetPage() {
           disabled={loading || network === "mainnet"}
           className="rounded-lg bg-network-cyan px-4 py-2 font-semibold text-boing-black hover:bg-network-cyan-light disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Requesting…" : "Request 1,000 testnet BOING"}
+          {loading ? "Requesting…" : "Request 10 testnet BOING"}
         </button>
       </form>
 
@@ -130,7 +130,7 @@ export default function FaucetPage() {
           {result.ok ? (
             <div className="space-y-2 text-green-200">
               <p>
-                {result.amount ?? "1,000"} testnet BOING sent. {result.message ?? ""}
+                {result.amount ?? "10"} testnet BOING sent. {result.message ?? ""}
               </p>
               {toPrefixedHex64(accountId) ? (
                 <p>
