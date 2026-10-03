@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE_URL } from "@/lib/constants";
+import { TechnicalDetails } from "@/components/technical-details";
 import { DexTokensPanel } from "./dex-tokens-panel";
 
 export const metadata: Metadata = {
   title: "DEX token directory",
-  description:
-    "Cursor-paginated DEX-derived token universe from boing_listDexTokens (boing-sdk) using the network canonical native DEX factory.",
+  description: "Tokens that appear in registered native DEX pools on the selected Boing network.",
   alternates: { canonical: `${SITE_URL}/dex/tokens` },
 };
 
@@ -21,39 +21,42 @@ export default function DexTokensPage() {
             </Link>
           </li>
           <li aria-hidden="true">/</li>
-          <li>
-            <Link href="/tools" className="text-network-cyan hover:underline">
-              Tools
-            </Link>
-          </li>
-          <li aria-hidden="true">/</li>
           <li className="text-[var(--text-primary)]">DEX tokens</li>
         </ol>
       </nav>
 
       <header className="space-y-2">
         <h1 className="page-title font-display">DEX token directory</h1>
-        <p className="max-w-3xl text-[var(--text-secondary)] leading-relaxed">
-          Tokens that appear in at least one pool under the canonical factory from{" "}
-          <code className="rounded bg-white/10 px-1 text-sm">boing_getNetworkInfo.end_user.canonical_native_dex_factory</code>
-          . Hosted testnet currently publishes no factory, so this page is empty until ops bootstraps the native DEX.
-          Deploying a token on boing.finance does not list it here; after the deploy is included in a block, use the{" "}
+        <p className="max-w-2xl text-[var(--text-secondary)] leading-relaxed">
+          Tokens that appear in at least one registered pool. If no factory is published on this network, the list stays
+          empty. Newly deployed tokens show on the{" "}
           <Link href="/tokens" className="text-network-cyan hover:underline">
             token index
-          </Link>
-          . Data is served by <code className="rounded bg-white/10 px-1 text-sm">boing_listDexTokens</code> via{" "}
-          <code className="rounded bg-white/10 px-1 text-sm">boing-sdk</code> on the server (same RPC as the rest of the
-          explorer).
+          </Link>{" "}
+          once included in a block — DEX listing comes after a pair is registered.
         </p>
         <p className="text-sm">
           <Link href="/dex/pools" className="text-network-cyan hover:underline">
-            DEX pools &amp; directory
+            DEX pools
           </Link>
           {" · "}
           <Link href="/dex/quote" className="text-network-cyan hover:underline">
-            CP quotes
+            Quotes
           </Link>
         </p>
+        <TechnicalDetails summary="Technical details">
+          <p>
+            Data follows the network&apos;s canonical native DEX factory. See{" "}
+            <Link href="/tools/rpc-catalog" className="text-network-cyan hover:underline">
+              RPC catalog
+            </Link>{" "}
+            and{" "}
+            <Link href="/about" className="text-network-cyan hover:underline">
+              About
+            </Link>{" "}
+            for method and integration references.
+          </p>
+        </TechnicalDetails>
       </header>
 
       <DexTokensPanel />

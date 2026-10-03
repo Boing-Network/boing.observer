@@ -66,30 +66,35 @@ export function PoolsPanel() {
   return (
     <div className="space-y-8">
       <div className="glass-card space-y-4 p-4 sm:p-6">
-        <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">Log scan mode</h2>
+        <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">Discovery depth</h2>
         <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-          Default is metadata + factory storage only (no <code className="rounded bg-white/10 px-1 text-xs">boing_getLogs</code>
-          ). &quot;Recent&quot; scans up to 128 blocks ending at chain tip. &quot;Full&quot; walks the whole chain in bounded
-          chunks — slower; use sparingly on public RPC (
-          <a
-            href={QA_RPC_TWO_SURFACES_DOC_URL}
-            className="text-network-cyan hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            alignment §2.1 (public vs local RPC)
-          </a>
-          ). For a separate cursor-paginated directory backed by indexer D1 (not a subgraph), see{" "}
-          <a
-            href={NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL}
-            className="text-network-cyan hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN
-          </a>
-          .
+          Summary uses published factory metadata. Recent or full history walks more blocks and is slower on public
+          networks — use sparingly.
         </p>
+        <details className="text-xs text-[var(--text-muted)]">
+          <summary className="cursor-pointer text-network-cyan hover:underline">Operator notes</summary>
+          <p className="mt-2 leading-relaxed">
+            Public vs local RPC surfaces:{" "}
+            <a
+              href={QA_RPC_TWO_SURFACES_DOC_URL}
+              className="text-network-cyan hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              alignment guide
+            </a>
+            . Optional indexed directory API:{" "}
+            <a
+              href={NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL}
+              className="text-network-cyan hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              native DEX directory handoff
+            </a>
+            .
+          </p>
+        </details>
         <div className="flex flex-wrap gap-2">
           {(
             [
@@ -165,7 +170,9 @@ export function PoolsPanel() {
                 ) : (
                   <p className="mt-1 text-[var(--text-muted)]">Not published on this RPC</p>
                 )}
-                <p className="text-xs text-[var(--text-muted)] mt-1">Source: {data.defaults.poolSource}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  Published via {data.defaults.poolSource.replace(/_/g, " ")}
+                </p>
               </li>
               <li>
                 <span className="text-[var(--text-muted)]">DEX factory (pair directory)</span>
@@ -179,7 +186,9 @@ export function PoolsPanel() {
                 ) : (
                   <p className="mt-1 text-[var(--text-muted)]">Not published on this RPC</p>
                 )}
-                <p className="text-xs text-[var(--text-muted)] mt-1">Source: {data.defaults.factorySource}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  Published via {data.defaults.factorySource.replace(/_/g, " ")}
+                </p>
               </li>
             </ul>
           </section>

@@ -143,14 +143,9 @@ export function DexRpcPoolsSection() {
   return (
     <div id="rpc-dex-pools" className="space-y-6 scroll-mt-24">
       <div className="glass-card space-y-3 p-4 sm:p-6">
-        <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
-          Registered pools (<code className="text-sm">boing_listDexPools</code>)
-        </h2>
+        <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">Registered pools</h2>
         <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-          Paginated discovery using the same factory as{" "}
-          <code className="rounded bg-white/10 px-1 text-xs">canonical_native_dex_factory</code> (unless the node omits
-          it — then this section explains what is missing). Pool rows include live reserves and per-leg decimals from
-          the node.
+          Pools under this network&apos;s published factory, with live reserves when available.
         </p>
         <div className="flex flex-wrap gap-4 text-sm">
           <label className="flex cursor-pointer items-center gap-2 text-[var(--text-secondary)]">
@@ -162,7 +157,7 @@ export function DexRpcPoolsSection() {
               onChange={(e) => setLight(e.target.checked)}
               className="rounded border-[var(--border-color)]"
             />
-            Light mode (skip receipt scan — <code className="text-xs">createdAtHeight</code> stays null)
+            Faster load (skip deep history for creation height)
           </label>
           {diagnosticsAllowed ? (
             <label className="flex cursor-pointer items-center gap-2 text-[var(--text-secondary)]">
@@ -174,7 +169,7 @@ export function DexRpcPoolsSection() {
                 onChange={(e) => setShowDiagnostics(e.target.checked)}
                 className="rounded border-[var(--border-color)]"
               />
-              Include diagnostics (ops — explain caps if you show this to end users)
+              Show scan diagnostics
             </label>
           ) : null}
         </div>

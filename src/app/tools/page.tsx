@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE_URL, NETWORK_FAUCET_URL } from "@/lib/constants";
+import { SITE_URL, NETWORK_FAUCET_URL, RPC_SPEC_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Developer tools",
   description:
-    "Boing Observer developer utilities: token index, DEX token directory (boing_listDexTokens), native DEX pools, faucet, QA pre-flight, RPC catalog, node health, and more.",
+    "Boing Observer utilities: faucet helper, node health, RPC catalog, QA pre-flight, token and DEX directories.",
   alternates: { canonical: `${SITE_URL}/tools` },
 };
 
@@ -25,18 +25,24 @@ export default function ToolsPage() {
       </nav>
 
       <header>
-        <h1 className="page-title font-display">
-          Developer tools
-        </h1>
+        <h1 className="page-title font-display">Developer tools</h1>
         <p className="mt-2 max-w-2xl text-[var(--text-secondary)]">
-          JSON-RPC helpers in the browser. Public onboarding:{" "}
+          Helpers for builders and operators. Everyday onboarding:{" "}
           <a
             href={NETWORK_FAUCET_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="text-network-cyan hover:underline"
           >
-            boing.network/faucet
+            testnet faucet
+          </a>
+          . Specs live under{" "}
+          <Link href="/about" className="text-network-cyan hover:underline">
+            About
+          </Link>{" "}
+          and the{" "}
+          <a href={RPC_SPEC_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
+            RPC API spec
           </a>
           .
         </p>
@@ -47,122 +53,113 @@ export default function ToolsPage() {
           Available tools
         </p>
         <ul className="grid gap-4 sm:grid-cols-2">
-        <li>
-          <Link
-            href="/faucet"
-            className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
-          >
-            <h2 className="font-display text-lg font-semibold text-network-cyan">Faucet helper</h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-              Call <code className="rounded bg-white/10 px-1 text-xs">boing_faucetRequest</code> directly
-              against the selected testnet RPC.
-            </p>
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/tools/node-health"
-            className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
-          >
-            <h2 className="font-display text-lg font-semibold text-network-cyan">Node health &amp; sync</h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-              <code className="rounded bg-white/10 px-1 text-xs">boing_chainHeight</code>,{" "}
-              <code className="rounded bg-white/10 px-1 text-xs">boing_getSyncState</code>, optional{" "}
-              <code className="rounded bg-white/10 px-1 text-xs">boing_health</code> (limits + metrics).
-            </p>
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/tools/rpc-catalog"
-            className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
-          >
-            <h2 className="font-display text-lg font-semibold text-network-cyan">RPC method catalog</h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-              Live <code className="rounded bg-white/10 px-1 text-xs">boing_getRpcMethodCatalog</code> from the selected
-              RPC — see which methods this endpoint exposes.
-            </p>
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/tools/qa-check"
-            className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
-          >
-            <h2 className="font-display text-lg font-semibold text-network-cyan">QA pre-flight</h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-              Run <code className="rounded bg-white/10 px-1 text-xs">boing_qaCheck</code> on bytecode before
-              deployment.
-            </p>
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/qa/rules"
-            className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
-          >
-            <h2 className="font-display text-lg font-semibold text-network-cyan">QA gate rules</h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-              Every Allow / Reject / Unsure rule a deploy must pass, plus the downloadable PDF catalog.
-            </p>
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/tokens"
-            className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
-          >
-            <h2 className="font-display text-lg font-semibold text-network-cyan">Token &amp; asset index</h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-              Scan recent blocks for deploys and merge native DEX{" "}
-              <code className="rounded bg-white/10 px-1 text-xs">register_pair</code> tokens. Snapshots persist on disk
-              (TTL) between requests; Rescan bypasses cache.
-            </p>
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/dex/tokens"
-            className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
-          >
-            <h2 className="font-display text-lg font-semibold text-network-cyan">DEX token directory (RPC)</h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-              <code className="rounded bg-white/10 px-1 text-xs">boing_listDexTokens</code> via{" "}
-              <code className="rounded bg-white/10 px-1 text-xs">boing-sdk</code> — pool counts, first-seen height,
-              metadata source, decimals (canonical factory).
-            </p>
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/dex/pools"
-            className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
-          >
-            <h2 className="font-display text-lg font-semibold text-network-cyan">Native DEX directory</h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-              <code className="rounded bg-white/10 px-1 text-xs">boing_listDexPools</code>, factory hints, pair counts,
-              optional bounded <code className="rounded bg-white/10 px-1 text-xs">register_pair</code> logs via{" "}
-              <code className="rounded bg-white/10 px-1 text-xs">boing-sdk</code>.
-            </p>
-          </Link>
-        </li>
-        <li>
-          <Link
-            href="/dex/quote"
-            className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
-          >
-            <h2 className="font-display text-lg font-semibold text-network-cyan">DEX route quotes</h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-              Read-only CP path quotes (<code className="rounded bg-white/10 px-1 text-xs">findBestCpRoutes</code>
-              ); execution stays in wallets and dApps.
-            </p>
-          </Link>
-        </li>
-      </ul>
+          <li>
+            <Link
+              href="/faucet"
+              className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+            >
+              <h2 className="font-display text-lg font-semibold text-network-cyan">Faucet helper</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+                Request testnet BOING for an account on the selected network.
+              </p>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/tools/node-health"
+              className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+            >
+              <h2 className="font-display text-lg font-semibold text-network-cyan">Node health &amp; sync</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+                Tip height, sync state, and optional node health metrics.
+              </p>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/tools/rpc-catalog"
+              className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+            >
+              <h2 className="font-display text-lg font-semibold text-network-cyan">RPC method catalog</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+                See which JSON-RPC methods the selected endpoint exposes.
+              </p>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/tools/qa-check"
+              className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+            >
+              <h2 className="font-display text-lg font-semibold text-network-cyan">QA pre-flight</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+                Check bytecode against live deploy QA rules before submitting.
+              </p>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/qa/rules"
+              className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+            >
+              <h2 className="font-display text-lg font-semibold text-network-cyan">QA gate rules</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+                Full Allow / Reject / Unsure catalog and downloadable PDF.
+              </p>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/tokens"
+              className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+            >
+              <h2 className="font-display text-lg font-semibold text-network-cyan">Token &amp; asset index</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+                Browse recent deploys and listed assets on the selected network.
+              </p>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/dex/tokens"
+              className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+            >
+              <h2 className="font-display text-lg font-semibold text-network-cyan">DEX token directory</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+                Tokens that appear in registered native DEX pools.
+              </p>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/dex/pools"
+              className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+            >
+              <h2 className="font-display text-lg font-semibold text-network-cyan">Native DEX directory</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+                Factory contracts, pools, and pair listings for this network.
+              </p>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/dex/quote"
+              className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+            >
+              <h2 className="font-display text-lg font-semibold text-network-cyan">DEX route quotes</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+                Preview read-only swap routes; execution stays in wallets and dApps.
+              </p>
+            </Link>
+          </li>
+        </ul>
       </nav>
 
       <p className="text-sm text-[var(--text-muted)]">
-        Live pool: <Link href="/qa" className="text-network-cyan hover:underline">QA transparency</Link>
+        Live pool:{" "}
+        <Link href="/qa" className="text-network-cyan hover:underline">
+          QA transparency
+        </Link>
       </p>
     </div>
   );

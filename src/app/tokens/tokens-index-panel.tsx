@@ -147,10 +147,8 @@ export function TokensIndexPanel() {
       <div className="glass-card space-y-4 p-4 sm:p-6">
         <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">Scan depth</h2>
         <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-          The observer walks blocks with receipts and merges native DEX{" "}
-          <code className="rounded bg-white/10 px-1 text-xs">register_pair</code> logs for the same heights. Matching
-          snapshots are reused from disk for a TTL (default 10 minutes) so repeat visits are fast. Use{" "}
-          <strong className="text-[var(--text-primary)]">Rescan</strong> to bypass cache and hit RPC again.
+          Choose how many recent blocks to include. Results may be reused briefly for speed — press{" "}
+          <strong className="text-[var(--text-primary)]">Rescan</strong> for a fresh lookup.
         </p>
         <div className="flex flex-wrap gap-2">
           {WINDOW_OPTIONS.map((w) => (
@@ -175,7 +173,7 @@ export function TokensIndexPanel() {
             disabled={loading}
             className="rounded-lg bg-network-primary px-4 py-2.5 font-display text-sm font-semibold text-white hover:bg-network-primary-light disabled:opacity-60"
           >
-            {loading ? "Scanning…" : "Rescan (refresh cache)"}
+            {loading ? "Scanning…" : "Rescan"}
           </button>
           <span className="text-xs text-[var(--text-muted)]">Network: {network}</span>
         </div>
@@ -212,25 +210,25 @@ export function TokensIndexPanel() {
         >
           {data.cacheMeta.hit ? (
             <p>
-              <strong className="text-network-cyan">Cached snapshot</strong> — served from disk (no full RPC scan this
-              request). Saved {data.cacheMeta.savedAt ? new Date(data.cacheMeta.savedAt).toLocaleString() : "—"} · stale
-              after ~{data.cacheMeta.staleAfterApprox ? new Date(data.cacheMeta.staleAfterApprox).toLocaleString() : "—"}.
+              <strong className="text-network-cyan">Updated snapshot</strong>
+              {data.cacheMeta.savedAt ? (
+                <> — last refreshed {new Date(data.cacheMeta.savedAt).toLocaleString()}.</>
+              ) : (
+                "."
+              )}{" "}
+              Rescan for the latest blocks.
             </p>
           ) : (
             <p>
-              <strong className="text-[var(--text-primary)]">Fresh RPC scan</strong>
-              {data.cacheMeta.snapshotPersisted === true
-                ? " — snapshot written to disk for reuse."
-                : data.cacheMeta.snapshotPersisted === false
-                  ? " — disk cache is enabled but this snapshot could not be written (read-only filesystem?)."
-                  : " — disk cache disabled (set a writable TOKEN_INDEX_CACHE_DIR or use default .cache)."}
+              <strong className="text-[var(--text-primary)]">Fresh scan</strong> — results reflect the current chain tip
+              for this window.
             </p>
           )}
           <p className="mt-1 text-xs text-[var(--text-muted)]">
-            Chain tip now #{data.cacheMeta.currentHeadHeight.toLocaleString()} · scan covered through #
+            Tip #{data.cacheMeta.currentHeadHeight.toLocaleString()} · scanned through #
             {data.scannedToHeight.toLocaleString()}
             {data.cacheMeta.blocksPastScanTip > 0
-              ? ` · ${data.cacheMeta.blocksPastScanTip} new block(s) since scan tip (widen window or rescan).`
+              ? ` · ${data.cacheMeta.blocksPastScanTip} newer block(s) — widen the window or rescan.`
               : ""}
           </p>
         </div>

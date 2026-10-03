@@ -36,9 +36,7 @@ export default function NodeHealthPage() {
           Node health &amp; sync
         </h1>
         <p className="max-w-2xl text-[var(--text-secondary)] leading-relaxed">
-          Operator-facing snapshot: committed tip via <code className="rounded bg-white/10 px-1 text-sm">boing_getSyncState</code>,{" "}
-          <code className="rounded bg-white/10 px-1 text-sm">boing_chainHeight</code>, and optional{" "}
-          <code className="rounded bg-white/10 px-1 text-sm">boing_health</code> (limits + metrics when exposed).
+          Tip height, sync state, and optional health metrics for the selected network endpoint.
         </p>
       </header>
 

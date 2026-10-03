@@ -161,8 +161,7 @@ export function DexTokensPanel() {
               onChange={(e) => setLight(e.target.checked)}
               className="rounded border-[var(--border-color)]"
             />
-            Light mode (skip receipt + deploy scans — <code className="text-xs">firstSeenHeight</code> null,{" "}
-            <code className="text-xs">metadataSource</code> abbrev-only)
+            Light list (skip deep history for first-seen height)
           </label>
           {diagnosticsAllowed ? (
             <label className="flex cursor-pointer items-center gap-2 text-[var(--text-secondary)]">
@@ -174,7 +173,7 @@ export function DexTokensPanel() {
                 onChange={(e) => setShowDiagnostics(e.target.checked)}
                 className="rounded border-[var(--border-color)]"
               />
-              Include diagnostics (ops — receipt / deploy scan counters; explain caps to end users if you re-surface)
+              Show scan diagnostics
             </label>
           ) : null}
         </div>

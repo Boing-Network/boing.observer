@@ -53,14 +53,14 @@ export default function AboutPage() {
           Six pillars
         </h2>
         <p className="text-sm text-[var(--text-muted)]">
-          Canonical source:{" "}
+          Full written source on GitHub:{" "}
           <a
             href="https://github.com/Boing-Network/boing.network/blob/main/docs/SIX-PILLARS.md"
             target="_blank"
             rel="noopener noreferrer"
             className="text-network-cyan hover:underline"
           >
-            docs/SIX-PILLARS.md
+            Six pillars
           </a>
           .
         </p>
@@ -69,15 +69,27 @@ export default function AboutPage() {
 
       <section className="space-y-4" aria-labelledby="docs-heading">
         <h2 id="docs-heading" className="font-display text-xl font-semibold text-[var(--text-primary)]">
-          Related PDFs
+          Documentation
         </h2>
+        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+          Explorer pages stay focused on what happened on-chain. Specs, method names, and operator notes live here and in
+          the links below.
+        </p>
         <ul className="grid gap-3 sm:grid-cols-2">
           <li>
             <Link
               href="/qa/rules"
               className="block rounded-xl border border-[var(--border-color)] bg-boing-navy-mid/40 px-4 py-3 text-sm text-network-cyan hover:border-network-cyan/50"
             >
-              QA gate rules (PDF + catalog)
+              QA gate rules (catalog + PDF)
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/tools/rpc-catalog"
+              className="block rounded-xl border border-[var(--border-color)] bg-boing-navy-mid/40 px-4 py-3 text-sm text-network-cyan hover:border-network-cyan/50"
+            >
+              Live RPC method catalog
             </Link>
           </li>
           <li>
@@ -102,13 +114,13 @@ export default function AboutPage() {
           </li>
         </ul>
         <p className="text-sm text-[var(--text-muted)]">
-          Live pool status:{" "}
+          Live QA pool:{" "}
           <Link href="/qa" className="text-network-cyan hover:underline">
             QA transparency
           </Link>
           . Policy source:{" "}
           <a href={QA_DOC_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
-            QUALITY-ASSURANCE-NETWORK.md
+            Quality Assurance Network
           </a>
           .
         </p>
@@ -119,14 +131,15 @@ export default function AboutPage() {
           This explorer
         </h2>
         <p className="leading-relaxed text-[var(--text-secondary)]">
-          Search by height, 64-character hex (tx id, block hash, or account), or use{" "}
+          Search by block height, transaction, or account address. Use{" "}
           <Link href="/tools" className="text-network-cyan hover:underline">
             Tools
-          </Link>
-          .{" "}
+          </Link>{" "}
+          for builder helpers, or return{" "}
           <Link href="/" className="text-network-cyan hover:underline">
             Home
           </Link>
+          .
         </p>
       </section>
     </article>

@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE_URL } from "@/lib/constants";
+import { OBSERVER_HOSTED_SERVICE_URL, SITE_URL } from "@/lib/constants";
+import { TechnicalDetails } from "@/components/technical-details";
 import { TokensIndexPanel } from "./tokens-index-panel";
 
 export const metadata: Metadata = {
   title: "Token & asset index",
   description:
-    "Discover Boing assets: scan recent blocks for deploys and DEX register_pair logs, with optional on-disk snapshot cache between requests.",
+    "Browse recent Boing assets discovered from on-chain deploys and DEX listings on the selected network.",
   alternates: { canonical: `${SITE_URL}/tokens` },
 };
 
@@ -26,38 +27,40 @@ export default function TokensIndexPage() {
       </nav>
 
       <header className="space-y-3">
-        <h1 className="page-title font-display">
-          Token &amp; asset index
-        </h1>
-        <p className="max-w-3xl text-[var(--text-secondary)] leading-relaxed">
-          Built from your selected RPC: successful contract deployments included in blocks (new account id from receipt
-          return data when present, otherwise CREATE2 / nonce-derived) plus token accounts from native DEX{" "}
-          <code className="rounded bg-white/10 px-1 text-sm">register_pair</code> logs when a live canonical factory is
-          published. A <strong className="text-[var(--text-primary)]">Deploy submitted</strong> toast on boing.finance
-          means mempool accept — this page stays empty until that tx is in a block. The{" "}
-          <Link href="/dex/tokens" className="text-network-cyan hover:underline">
-            DEX token directory
-          </Link>{" "}
-          is a different list (registered pools only). Each{" "}
-          <code className="rounded bg-white/10 px-1 text-sm">network + block window</code> snapshot is written to disk
-          (default <code className="rounded bg-white/10 px-1 text-sm">.cache/token-index</code>, TTL{" "}
-          <code className="rounded bg-white/10 px-1 text-sm">TOKEN_INDEX_CACHE_TTL_SEC</code>, default 600s) so repeat loads
-          do not re-walk the chain until expiry or <strong className="text-[var(--text-primary)]">Rescan</strong>. That is
-          still not OBS-1: use a dedicated indexer for reorg-safe, planet-scale history.
+        <h1 className="page-title font-display">Token &amp; asset index</h1>
+        <p className="max-w-2xl text-[var(--text-secondary)] leading-relaxed">
+          Recent assets from contract deploys and DEX listings on the selected network. A token only appears after its
+          deploy is included in a block — not when it is merely submitted.
         </p>
         <p className="text-sm">
           <Link href="/dex/tokens" className="text-network-cyan hover:underline">
-            DEX token directory (RPC)
+            DEX tokens
           </Link>
           {" · "}
           <Link href="/dex/pools" className="text-network-cyan hover:underline">
-            DEX directory
+            DEX pools
           </Link>
           {" · "}
-          <Link href="/tools" className="text-network-cyan hover:underline">
-            Tools
+          <Link href="/about" className="text-network-cyan hover:underline">
+            About &amp; docs
           </Link>
         </p>
+        <TechnicalDetails summary="How this index is built">
+          <p>
+            Scans successful contract deployments in a recent block window and merges tokens from native DEX pair
+            registrations when a factory is published. Snapshots may be cached briefly between requests; use Rescan for
+            a fresh walk. Durable, reorg-safe history belongs in a hosted indexer — see{" "}
+            <a
+              href={OBSERVER_HOSTED_SERVICE_URL}
+              className="text-network-cyan hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              OBSERVER-HOSTED-SERVICE
+            </a>
+            .
+          </p>
+        </TechnicalDetails>
       </header>
 
       <TokensIndexPanel />

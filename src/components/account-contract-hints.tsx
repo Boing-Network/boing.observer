@@ -6,6 +6,7 @@ import { fetchNetworkInfo, tryFetchContractStorageWord } from "@/lib/rpc-methods
 import type { BoingNetworkInfo, NetworkId } from "@/lib/rpc-types";
 import { normalizeHex64, shortenHash } from "@/lib/rpc-types";
 import { CopyButton } from "@/components/copy-button";
+import { TechnicalDetails } from "@/components/technical-details";
 import { HANDOFF_DEPENDENT_PROJECTS_URL, OBSERVER_HOSTED_SERVICE_URL, RPC_SPEC_URL } from "@/lib/constants";
 
 function canonHex64(h: string | null | undefined): string {
@@ -72,26 +73,20 @@ export function AccountContractHints({
       <h2 id="account-contract-hints-heading" className="font-display text-lg font-semibold text-[var(--text-primary)]">
         Contract &amp; network hints
       </h2>
-      <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-        Uses <code className="rounded bg-white/10 px-1">boing_getNetworkInfo</code> and a single{" "}
-        <code className="rounded bg-white/10 px-1">boing_getContractStorage</code> read at slot{" "}
-        <code className="rounded bg-white/10 px-1">0…0</code> (see{" "}
-        <a href={RPC_SPEC_URL} className="text-network-cyan hover:underline" target="_blank" rel="noopener noreferrer">
-          RPC-API-SPEC
-        </a>
-        ). A zero word or failed read does not prove an account is an EOA.
+      <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+        Roles published by the network and a quick storage peek for this account.
       </p>
 
       {(isCanonicalPool || isCanonicalFactory) && (
         <ul className="flex flex-wrap gap-2 text-sm">
           {isCanonicalPool && (
             <li className="rounded-full border border-network-cyan/50 bg-network-cyan/10 px-3 py-1 text-network-cyan">
-              Canonical native CP pool (RPC <code className="text-xs">end_user</code>)
+              Canonical liquidity pool
             </li>
           )}
           {isCanonicalFactory && (
             <li className="rounded-full border border-network-cyan/50 bg-network-cyan/10 px-3 py-1 text-network-cyan">
-              Canonical native DEX factory (RPC <code className="text-xs">end_user</code>)
+              Canonical DEX factory
             </li>
           )}
         </ul>
@@ -99,12 +94,9 @@ export function AccountContractHints({
 
       {storageValue !== undefined && (
         <div className="space-y-2 text-sm">
-          <h3 className="font-medium text-[var(--text-primary)]">Storage word (slot 0)</h3>
+          <h3 className="font-medium text-[var(--text-primary)]">Primary storage word</h3>
           {storageValue === null ? (
-            <p className="text-[var(--text-muted)]">
-              Could not read storage at the zero key — method missing, node error, or account may not expose contract
-              storage on this RPC.
-            </p>
+            <p className="text-[var(--text-muted)]">No storage word available for this account on the selected network.</p>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <code className="hash break-all rounded bg-black/30 px-2 py-1 font-mono text-xs text-[var(--text-secondary)]">
@@ -116,86 +108,73 @@ export function AccountContractHints({
         </div>
       )}
 
+      {rpcInteractionHints?.inDexUniverse && (
+        <p className="text-sm text-[var(--text-secondary)]">
+          Listed in the native DEX
+          {typeof rpcInteractionHints.poolCount === "number" ? (
+            <>
+              {" "}
+              ({rpcInteractionHints.poolCount} pool{rpcInteractionHints.poolCount === 1 ? "" : "s"})
+            </>
+          ) : null}
+          . This explorer does not submit swaps.
+        </p>
+      )}
+
+      {rpcInteractionHints?.tokenKind && rpcInteractionHints.tokenKind !== "other" && (
+        <p className="text-sm text-[var(--text-secondary)]">
+          Kind: <span className="text-[var(--text-primary)]">{rpcInteractionHints.tokenKind}</span>
+          {rpcInteractionHints.purposeCategory ? (
+            <>
+              {" "}
+              · <span className="break-words">{rpcInteractionHints.purposeCategory}</span>
+            </>
+          ) : null}
+        </p>
+      )}
+
       <p className="text-xs text-[var(--text-muted)]">
-        Native DEX tools:{" "}
         <Link href="/dex/pools" className="text-network-cyan hover:underline">
-          directory
+          DEX pools
         </Link>
         {" · "}
         <Link href="/dex/quote" className="text-network-cyan hover:underline">
-          quotes
+          Quotes
+        </Link>
+        {" · "}
+        <Link href="/about" className="text-network-cyan hover:underline">
+          Docs
         </Link>
       </p>
 
-      <div className="space-y-2 border-t border-[var(--border-color)] pt-4 text-sm text-[var(--text-secondary)]">
-        <h3 className="font-medium text-[var(--text-primary)]">Interaction &amp; capabilities (RPC)</h3>
-        <ul className="list-disc space-y-1 pl-5 text-xs leading-relaxed text-[var(--text-muted)]">
-          <li>
-            <code className="rounded bg-white/10 px-1">boing_simulateContractCall</code> — dry-run reads or
-            state-changing calls with explicit calldata (see{" "}
-            <a href={RPC_SPEC_URL} className="text-network-cyan hover:underline" target="_blank" rel="noopener noreferrer">
-              RPC-API-SPEC
-            </a>
-            ).
-          </li>
-          <li>
-            <code className="rounded bg-white/10 px-1">boing_getContractStorage</code> — keyed storage reads for
-            contracts that expose the map API (slot shown above is only key{" "}
-            <code className="rounded bg-white/10 px-1">0…0</code>).
-          </li>
-          {rpcInteractionHints?.inDexUniverse && (
-            <li>
-              Listed on the native DEX for this factory
-              {typeof rpcInteractionHints.poolCount === "number" ? (
-                <> ({rpcInteractionHints.poolCount} pool{rpcInteractionHints.poolCount === 1 ? "" : "s"} in discovery)</>
-              ) : null}
-              . Swaps and liquidity routes are exercised through the node&apos;s DEX transaction family — this explorer does
-              not submit trades.
-            </li>
-          )}
-          {rpcInteractionHints?.tokenKind && rpcInteractionHints.tokenKind !== "other" && (
-            <li>
-              Deploy / index kind: <span className="text-[var(--text-secondary)]">{rpcInteractionHints.tokenKind}</span>
-              {rpcInteractionHints.purposeCategory ? (
-                <>
-                  {" "}
-                  (<span className="break-words">{rpcInteractionHints.purposeCategory}</span>)
-                </>
-              ) : null}
-              . Concrete entrypoints still depend on the contract bytecode; use simulation with the program&apos;s documented
-              selectors where available.
-            </li>
-          )}
-        </ul>
-      </div>
-
-      <div className="border-t border-[var(--border-color)] pt-4 text-xs leading-relaxed text-[var(--text-muted)]">
-        <p className="font-medium text-[var(--text-secondary)]">Indexer &amp; bytecode scope</p>
-        <p className="mt-1">
-          This explorer stays <strong className="text-[var(--text-secondary)]">RPC-only</strong>: there is no dedicated
-          JSON-RPC method here to dump full contract bytecode for every account. Historical search, reorg-safe indexing,
-          and a durable read API are described in{" "}
+      <TechnicalDetails summary="Technical details">
+        <p>
+          Network roles come from published chain metadata; storage is a single keyed read. Simulate calls and deeper
+          contract APIs are in the{" "}
+          <a href={RPC_SPEC_URL} className="text-network-cyan hover:underline" target="_blank" rel="noopener noreferrer">
+            RPC API spec
+          </a>
+          . Durable bytecode and history indexing:{" "}
           <a
             href={OBSERVER_HOSTED_SERVICE_URL}
             className="text-network-cyan hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >
-            OBSERVER-HOSTED-SERVICE.md
-          </a>{" "}
-          (OBS-1) and ship as a <strong className="text-[var(--text-secondary)]">separate service</strong>, not inside
-          this Next app. Cross-repo backlog:{" "}
+            hosted observer service notes
+          </a>
+          ; backlog:{" "}
           <a
             href={HANDOFF_DEPENDENT_PROJECTS_URL}
             className="text-network-cyan hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >
-            HANDOFF-DEPENDENT-PROJECTS
+            dependent projects
           </a>
           .
         </p>
-      </div>
+      </TechnicalDetails>
     </section>
   );
 }

@@ -210,8 +210,7 @@ export function QaTransparencyDashboard() {
           Rule registry
         </h2>
         <p className="max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)]">
-          From <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs">boing_getQaRegistry</code>. Repo JSON is a
-          comparison baseline; live networks may differ.
+          Rules this network is enforcing for deploys. Compare against the published baseline if you need diffs.
         </p>
         <div className="flex flex-wrap gap-2">
           <a
@@ -220,7 +219,7 @@ export function QaTransparencyDashboard() {
             rel="noopener noreferrer"
             className="inline-flex items-center rounded-lg border border-network-cyan/50 bg-network-cyan/10 px-3 py-2 text-sm font-medium text-network-cyan hover:bg-network-cyan/20"
           >
-            Canonical QA config (docs) →
+            Canonical QA docs →
           </a>
           <a
             href={CANONICAL_QA_REGISTRY_JSON_URL}
@@ -228,7 +227,7 @@ export function QaTransparencyDashboard() {
             rel="noopener noreferrer"
             className="inline-flex items-center rounded-lg border border-[var(--border-color)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:border-network-cyan/50 hover:text-[var(--text-primary)]"
           >
-            qa_registry.canonical.json (raw) →
+            Baseline registry JSON →
           </a>
           <a
             href={CANONICAL_QA_POOL_CONFIG_JSON_URL}
@@ -236,7 +235,7 @@ export function QaTransparencyDashboard() {
             rel="noopener noreferrer"
             className="inline-flex items-center rounded-lg border border-[var(--border-color)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:border-network-cyan/50 hover:text-[var(--text-primary)]"
           >
-            qa_pool_config.canonical.json (raw) →
+            Baseline pool config JSON →
           </a>
           <a
             href={RPC_SPEC_URL}
@@ -244,8 +243,14 @@ export function QaTransparencyDashboard() {
             rel="noopener noreferrer"
             className="inline-flex items-center rounded-lg border border-[var(--border-color)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:border-network-cyan/50 hover:text-[var(--text-primary)]"
           >
-            RPC-API-SPEC →
+            RPC API spec →
           </a>
+          <Link
+            href="/qa/rules"
+            className="inline-flex items-center rounded-lg border border-[var(--border-color)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:border-network-cyan/50 hover:text-[var(--text-primary)]"
+          >
+            Rule catalog →
+          </Link>
         </div>
 
         {registryError && (
@@ -284,9 +289,9 @@ export function QaTransparencyDashboard() {
               />
               <ConfigStat label="Content blocklist terms" value={registry.content_blocklist?.length ?? 0} hint="Name/symbol filter." />
             </dl>
-            <details open className="group rounded-lg border border-[var(--border-color)] bg-boing-black/40">
+            <details className="group rounded-lg border border-[var(--border-color)] bg-boing-black/40">
               <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-[var(--text-primary)] hover:bg-white/5">
-                Full JSON from <code className="text-network-cyan">boing_getQaRegistry</code>
+                Full registry JSON
               </summary>
               <div className="border-t border-[var(--border-color)] p-4 space-y-2">
                 <div className="flex justify-end">

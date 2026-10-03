@@ -80,7 +80,7 @@ export function QuotePanel() {
       <form onSubmit={onSubmit} className="glass-card space-y-4 p-4 sm:p-6">
         <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">Inputs</h2>
         <p className="text-sm text-[var(--text-secondary)]">
-          32-byte Boing AccountIds (0x + 64 hex). Amount is smallest units (decimal string, e.g. u128).
+          Token addresses (0x + 64 hex). Amount is in the token&apos;s smallest units (whole number string).
         </p>
         <label htmlFor="quote-token-in" className="block space-y-1">
           <span className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Token in</span>

@@ -90,8 +90,7 @@ export function NetworkChainContext() {
                 </dd>
               </div>
               <p className="pt-2 text-xs leading-relaxed text-[var(--text-muted)]">
-                From <code className="rounded bg-white/10 px-1 py-0.5 text-[0.7rem]">boing_getSyncState</code>. Head
-                and finalized match today; they may diverge if the node exposes optimistic data later.
+                Head is the latest committed height. Finalized may diverge later if the network exposes optimistic tips.
               </p>
             </dl>
           ) : (
@@ -102,23 +101,20 @@ export function NetworkChainContext() {
         <div className="glass-card space-y-3 p-4">
           <h4 className="text-sm font-medium text-[var(--text-muted)]">Circulating &amp; total supply</h4>
           <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-            The public Boing JSON-RPC used by this explorer exposes blocks, accounts, and receipts — not
-            network-level aggregates such as <strong className="text-[var(--text-primary)]">total minted supply</strong>
-            , <strong className="text-[var(--text-primary)]">circulating supply</strong>, or{" "}
-            <strong className="text-[var(--text-primary)]">total staked BOING</strong>. Those figures need an indexer,
-            archive API, or a future RPC field so they stay consistent with protocol rules (fees, rewards, burns).
+            This explorer shows per-account balances and stake. Network-wide circulating, minted, or total-staked
+            figures are not published here yet — they need a consistent indexer or economy feed.
           </p>
           <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-            High-level token allocation and economics are described on the{" "}
+            Allocation and tokenomics:{" "}
             <a
               href={WEBSITE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="text-network-cyan hover:underline"
             >
-              Boing Network
-            </a>{" "}
-            site; method-level detail is in the{" "}
+              boing.network
+            </a>
+            . Protocol RPC reference:{" "}
             <a
               href={RPC_SPEC_URL}
               target="_blank"
@@ -128,11 +124,6 @@ export function NetworkChainContext() {
               RPC API spec
             </a>
             .
-          </p>
-          <p className="text-xs leading-relaxed text-[var(--text-muted)]">
-            Per-account <strong className="text-[var(--text-secondary)]">balance</strong> and{" "}
-            <strong className="text-[var(--text-secondary)]">stake</strong> are available via{" "}
-            <code className="rounded bg-white/10 px-1 py-0.5">boing_getAccount</code> on the asset or account page.
           </p>
         </div>
       </div>
