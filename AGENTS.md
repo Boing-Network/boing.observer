@@ -1,6 +1,7 @@
 ## Learned User Preferences
 
 - After substantive work, the user often wants changes committed and pushed to GitHub for deployment.
+- Prefer committing and pushing directly on `main` unless explicitly asked for a feature branch or PR workflow.
 - Cloudflare deployment for this app: env and `wrangler.toml` wiring matter; secrets are sometimes created or managed through the Cloudflare dashboard when that fits the workflow.
 - The home page “latest blocks” section should auto-refresh on a slower cadence than headline stats (roughly 30 seconds to one minute was the settled range).
 - Sitewide typography: Comfortaa font.
