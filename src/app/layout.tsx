@@ -5,6 +5,7 @@ import { NetworkProvider } from "@/context/network-context";
 import { AppEngraveBackground } from "@/components/app-engrave-background";
 import { Header } from "@/components/header";
 import { SidebarNav } from "@/components/sidebar-nav";
+import { CollaborationBanner } from "@/components/collaboration-banner";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
 import Link from "next/link";
 import { SITE_URL, WEBSITE_URL, WALLET_URL } from "@/lib/constants";
@@ -167,6 +168,7 @@ export default function RootLayout({
               >
                 Skip to main content
               </a>
+              <CollaborationBanner />
               <Header />
               <NetworkStatusBanner />
               <main
