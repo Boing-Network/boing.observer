@@ -85,8 +85,11 @@ export default function QaCheckPage() {
       <header>
         <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">QA pre-flight</h1>
         <p className="mt-2 max-w-2xl text-[var(--text-secondary)]">
-          Dry-run <code className="rounded bg-white/10 px-1.5 py-0.5 text-sm">boing_qaCheck</code> before deploy. Optional
-          fields mirror the live RPC parameter order.
+          Preview whether bytecode would pass deploy QA on the selected network before you submit. Full rule catalog:{" "}
+          <Link href="/qa/rules" className="text-network-cyan hover:underline">
+            QA gate rules
+          </Link>
+          .
         </p>
       </header>
 

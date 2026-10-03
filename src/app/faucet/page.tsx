@@ -22,11 +22,11 @@ export default function FaucetPage() {
     setResult(null);
     const hex = toPrefixedHex64(accountId);
     if (!accountId.trim()) {
-      setError("Enter your account ID (32-byte hex).");
+      setError("Enter your account address.");
       return;
     }
     if (!hex) {
-      setError("Account ID must be 32 bytes (64 hex chars + 0x).");
+      setError("Address must be 64 hex characters (with or without 0x).");
       return;
     }
     if (network === "mainnet") {
@@ -64,13 +64,10 @@ export default function FaucetPage() {
         </ol>
       </nav>
 
-      <header>
-        <h1 className="page-title font-display">
-          Testnet faucet helper
-        </h1>
+      <header className="space-y-2">
+        <h1 className="page-title font-display">Testnet faucet helper</h1>
         <p className="mt-2 text-[var(--text-secondary)]">
-          Calls <code className="rounded bg-white/10 px-1.5 py-0.5 text-sm">boing_faucetRequest</code> — 10
-          BOING per request, max once per 60s per account. Prefer the{" "}
+          Request 10 testnet BOING (once per 60 seconds per account). Prefer the{" "}
           <a href={NETWORK_FAUCET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
             public faucet
           </a>{" "}
@@ -91,8 +88,9 @@ export default function FaucetPage() {
       <form className="glass-card space-y-4 p-4 sm:p-6" onSubmit={(e) => void handleRequest(e)} noValidate>
         <div>
           <label htmlFor="account-id" className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">
-            Account ID (32-byte hex)
+            Account address
           </label>
+          <p className="mb-2 text-xs text-[var(--text-muted)]">64 hex characters (with or without 0x).</p>
           <input
             id="account-id"
             name="account-id"

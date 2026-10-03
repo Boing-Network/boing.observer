@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { HANDOFF_DEPENDENT_PROJECTS_URL, NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL, SITE_URL } from "@/lib/constants";
+import {
+  HANDOFF_DEPENDENT_PROJECTS_URL,
+  NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL,
+  SITE_URL,
+} from "@/lib/constants";
+import { TechnicalDetails } from "@/components/technical-details";
 import { PoolsPanel } from "./pools-panel";
 
 export const metadata: Metadata = {
   title: "Native DEX directory",
-  description:
-    "Read-only native constant-product pool directory from Boing RPC via boing-sdk — factory hints, pair counts, optional register_pair logs.",
+  description: "Browse native Boing liquidity pools and factory contracts on the selected network.",
   alternates: { canonical: `${SITE_URL}/dex/pools` },
 };
 
@@ -21,60 +25,57 @@ export default function DexPoolsPage() {
             </Link>
           </li>
           <li aria-hidden="true">/</li>
-          <li>
-            <Link href="/tools" className="text-network-cyan hover:underline">
-              Tools
-            </Link>
-          </li>
-          <li aria-hidden="true">/</li>
-          <li className="text-[var(--text-primary)]">DEX directory</li>
+          <li className="text-[var(--text-primary)]">DEX pools</li>
         </ol>
       </nav>
 
       <header className="space-y-2">
-        <h1 className="page-title font-display">
-          Native DEX directory
-        </h1>
+        <h1 className="page-title font-display">Native DEX directory</h1>
         <p className="max-w-2xl text-[var(--text-secondary)] leading-relaxed">
-          Includes cursor-paginated <code className="rounded bg-white/10 px-1 text-sm">boing_listDexPools</code> rows
-          (reserves, fee, decimals) using the canonical factory from network info, plus the older snapshot view below.
-          Bounded, read-only view aligned with{" "}
-          <a
-            href={HANDOFF_DEPENDENT_PROJECTS_URL}
-            className="text-network-cyan hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            HANDOFF-DEPENDENT-PROJECTS
-          </a>{" "}
-          (Observer §3). Uses <code className="rounded bg-white/10 px-1 text-sm">boing-sdk</code>{" "}
-          <code className="rounded bg-white/10 px-1 text-sm">fetchNativeDexDirectorySnapshot</code> on the server
-          (same configured RPC as the rest of the explorer). An optional Worker directory API (
-          <code className="rounded bg-white/10 px-1 text-sm">GET /v1/directory/meta</code>,{" "}
-          <code className="rounded bg-white/10 px-1 text-sm">/v1/directory/pools</code>) is documented in{" "}
-          <a
-            href={NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL}
-            className="text-network-cyan hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN
-          </a>{" "}
-          for teams that want pagination without walking RPC logs.
+          Browse native pools and factory contracts for this network — reserves, fees, and pair listings when a factory
+          is published.
         </p>
         <p className="text-sm">
           <Link href="/tokens" className="text-network-cyan hover:underline">
-            Token &amp; asset index
+            Token index
           </Link>
           {" · "}
           <Link href="/dex/tokens" className="text-network-cyan hover:underline">
-            DEX token directory
+            DEX tokens
           </Link>
           {" · "}
           <Link href="/dex/quote" className="text-network-cyan hover:underline">
-            CP route quotes →
+            Quotes
           </Link>
         </p>
+        <TechnicalDetails summary="For integrators">
+          <p>
+            Pool rows come from on-chain discovery for the network&apos;s canonical factory. Optional log scanning and
+            indexer directory APIs are documented in{" "}
+            <a
+              href={HANDOFF_DEPENDENT_PROJECTS_URL}
+              className="text-network-cyan hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              dependent-project handoff
+            </a>{" "}
+            and{" "}
+            <a
+              href={NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL}
+              className="text-network-cyan hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              native DEX directory handoff
+            </a>
+            . Method catalog:{" "}
+            <Link href="/tools/rpc-catalog" className="text-network-cyan hover:underline">
+              RPC catalog
+            </Link>
+            .
+          </p>
+        </TechnicalDetails>
       </header>
 
       <PoolsPanel />
