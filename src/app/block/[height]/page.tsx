@@ -87,7 +87,6 @@ export default function BlockByHeightPage() {
           <BlockDetails
             block={block}
             network={network}
-            explainerVariant="by-height"
             consensusHint={{
               validatorCount: netInfo?.consensus?.validator_count ?? null,
               model: netInfo?.consensus?.model,

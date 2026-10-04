@@ -5,18 +5,15 @@ import { explorerAccountHref } from "@/lib/explorer-href";
 import type { Block } from "@/lib/rpc-types";
 import { shortenHash, hexForLink, toPrefixedHex64 } from "@/lib/rpc-types";
 import { CopyButton } from "@/components/copy-button";
-import { BlockExplainerBanner } from "@/components/block-explainer";
 import { TransactionInsight } from "@/components/transaction-insight";
 
 export function BlockDetails({
   block,
   network,
-  explainerVariant,
   consensusHint,
 }: {
   block: Block;
   network: string;
-  explainerVariant?: "by-hash" | "by-height";
   /** From `boing_getNetworkInfo.consensus` on the same RPC (optional). */
   consensusHint?: { validatorCount: number | null; model?: string };
 }) {
@@ -29,7 +26,6 @@ export function BlockDetails({
 
   return (
     <>
-      {explainerVariant ? <BlockExplainerBanner variant={explainerVariant} /> : null}
       <section className="glass-card space-y-4 p-4 sm:p-6" aria-labelledby="block-header-heading">
         <h2 id="block-header-heading" className="font-display text-lg font-semibold text-[var(--text-primary)]">
           Block header

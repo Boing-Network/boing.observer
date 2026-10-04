@@ -70,7 +70,9 @@ export default function BlockByHashPage() {
       <header className="space-y-3">
         <ExplorerCrumbs items={[{ label: "Home", href: "/" }, { label: "Block" }]} />
         <h1 className="font-display text-xl font-bold text-[var(--text-primary)] sm:text-2xl">Block by hash</h1>
-        <p className="max-w-2xl text-sm text-[var(--text-muted)]">BLAKE3 block id (64 hex). Transfers live under Transactions.</p>
+        <p className="max-w-2xl text-sm text-[var(--text-muted)]">
+          Block identified by hash. Transactions in this block are listed below.
+        </p>
         <div className="flex flex-wrap items-center gap-2">
           <p className="hash break-all text-sm text-[var(--text-secondary)]">0x{hash}</p>
           <CopyButton value={`0x${hash}`} label="Copy hash" />
@@ -92,7 +94,6 @@ export default function BlockByHashPage() {
           <BlockDetails
             block={block}
             network={network}
-            explainerVariant="by-hash"
             consensusHint={{
               validatorCount: netInfo?.consensus?.validator_count ?? null,
               model: netInfo?.consensus?.model,
