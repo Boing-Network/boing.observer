@@ -165,7 +165,7 @@ The explorer is still mostly read-only. The `/qa` public vote is the exception: 
 The explorer is usable today, but there are several notable limitations:
 
 - No validator page, proposer page, or staking leaderboard.
-- No contract page, token page, NFT page, or asset metadata layer.
+- **Shipped (partial):** `/asset/:address` metadata + reference NFT storage probes; `/tokens` index. Still no dedicated NFT marketplace UX. Batch mints (`mint_batch` on template v2) appear as one receipt + XOR storage writes — poll `tx_id` ([BOING-REFERENCE-NFT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-REFERENCE-NFT.md)).
 - No indexed search beyond height/hash/account heuristics.
 - No server-side caching or indexer-backed querying.
 - No historical analytics beyond the recent block samples fetched in-browser.
