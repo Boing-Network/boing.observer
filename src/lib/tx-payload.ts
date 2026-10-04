@@ -6,6 +6,7 @@
 import type { TxPayloadKind } from "./rpc-types";
 import { toSafeHexString } from "./rpc-types";
 import { TESTNET_FAUCET_ACCOUNT_HEX } from "./testnet-constants";
+import { formatPurposeLabel } from "./asset-kind-label";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "./extract-media-url";
 
 /** Serde-style tagged enums: `{ "Bond": { "amount": "1" } }` — unwrap to inner body + kind. */
@@ -144,8 +145,7 @@ function formatShortAddr(value: unknown): string {
 }
 
 function formatPurpose(cat: string): string {
-  if (!cat || cat === "other") return "other";
-  return cat.toLowerCase();
+  return formatPurposeLabel(cat);
 }
 
 /** Whole BOING units from RPC (u128 string). No fractional display — decimals must stay 0 here. */

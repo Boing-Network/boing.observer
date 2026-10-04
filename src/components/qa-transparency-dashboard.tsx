@@ -18,6 +18,7 @@ import { fetchQaPoolConfig, fetchQaPoolList, fetchQaRegistry } from "@/lib/rpc-m
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import type { QaPoolConfigResult, QaPoolItemSummary, QaRegistryResult } from "@/lib/rpc-types";
 import { explorerAccountHref } from "@/lib/explorer-href";
+import { formatPurposeLabel } from "@/lib/asset-kind-label";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { hexForLink, normalizeHex64, shortenHash } from "@/lib/rpc-types";
 import {
@@ -449,7 +450,9 @@ export function QaTransparencyDashboard() {
                     </div>
                     <div className="data-card__row">
                       <span className="data-card__label">Purpose</span>
-                      <span className="data-card__value">{row.purpose_category || "—"}</span>
+                      <span className="data-card__value">
+                        {row.purpose_category ? formatPurposeLabel(row.purpose_category) : "—"}
+                      </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-medium text-[var(--text-muted)]">Transaction</span>
@@ -534,7 +537,9 @@ export function QaTransparencyDashboard() {
                             );
                           })()}
                         </td>
-                        <td className="p-3 align-top text-[var(--text-secondary)]">{row.purpose_category || "—"}</td>
+                        <td className="p-3 align-top text-[var(--text-secondary)]">
+                          {row.purpose_category ? formatPurposeLabel(row.purpose_category) : "—"}
+                        </td>
                         <td className="p-3 align-top">
                           <div className="flex flex-wrap items-center gap-2">
                             {txPath ? (

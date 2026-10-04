@@ -17,6 +17,7 @@ import { AccountTxHistory } from "@/components/account-tx-history";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
 import { AssetMetadataSection, type ExplorerAssetProfilePayload } from "@/components/asset-metadata-section";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
+import { formatAssetKindLabel } from "@/lib/asset-kind-label";
 import { ADDRESS_FORMAT_ALIGNMENT_URL, NETWORK_FAUCET_URL } from "@/lib/constants";
 
 export function AddressExplorerView({ variant }: { variant: "account" | "asset" }) {
@@ -30,11 +31,12 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
   const [profileLoading, setProfileLoading] = useState(true);
   const [assetProfile, setAssetProfile] = useState<ExplorerAssetProfilePayload | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [wantDeployScan, setWantDeployScan] = useState(variant === "asset");
+  // Auto-scan deploy metadata on both account and asset pages so NFT collection previews can load.
+  const [wantDeployScan, setWantDeployScan] = useState(true);
   const [profileScope, setProfileScope] = useState({ network, address });
   if (profileScope.network !== network || profileScope.address !== address) {
     setProfileScope({ network, address });
-    if (wantDeployScan) setWantDeployScan(false);
+    setWantDeployScan(true);
   }
 
   useEffect(() => {
@@ -73,10 +75,14 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
     setProfileLoading(true);
     setProfileError(null);
     const hexId = encodeURIComponent(toPrefixedHex64(address));
-    const scan = variant === "asset" && wantDeployScan ? "1" : "0";
-    fetch(`/api/asset/profile?network=${encodeURIComponent(network)}&id=${hexId}&scan=${scan}`, {
-      headers: { Accept: "application/json" },
-    })
+    const scan = wantDeployScan ? "1" : "0";
+    const nftProbe = wantDeployScan ? "1" : "0";
+    fetch(
+      `/api/asset/profile?network=${encodeURIComponent(network)}&id=${hexId}&scan=${scan}&nftProbe=${nftProbe}`,
+      {
+        headers: { Accept: "application/json" },
+      },
+    )
       .then(async (res) => {
         const j = (await res.json()) as { error?: string } & Partial<ExplorerAssetProfilePayload>;
         if (cancelled) return;
@@ -143,11 +149,15 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
           assetProfile.tokenIndex?.assetName ?? assetProfile.dexToken?.name ?? null,
           assetProfile.tokenIndex?.assetSymbol ?? assetProfile.dexToken?.symbol ?? null,
         );
+        const kindFromSamples =
+          !assetProfile.tokenIndex?.kind && assetProfile.nftSamples && assetProfile.nftSamples.length > 0
+            ? "nft"
+            : null;
         return {
           ...parsed,
           imageUrl: assetProfile.imageUrl ?? parsed.imageUrl,
           description: assetProfile.description ?? parsed.description,
-          kind: assetProfile.tokenIndex?.kind ?? null,
+          kind: assetProfile.tokenIndex?.kind ?? kindFromSamples,
         };
       })()
     : null;
@@ -193,8 +203,8 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
                 {identityLabel || title}
               </h1>
               {identity?.kind ? (
-                <span className="rounded-full border border-[var(--border-color)] bg-white/5 px-2 py-0.5 text-xs capitalize text-[var(--text-secondary)]">
-                  {identity.kind}
+                <span className="rounded-full border border-[var(--border-color)] bg-white/5 px-2 py-0.5 text-xs text-[var(--text-secondary)]">
+                  {formatAssetKindLabel(identity.kind)}
                 </span>
               ) : (
                 <span className="rounded-full border border-[var(--border-color)] bg-white/5 px-2 py-0.5 text-xs text-[var(--text-secondary)]">
@@ -276,7 +286,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
           profile={assetProfile}
           scanUsed={wantDeployScan}
           onRequestScan={
-            variant === "asset" && !wantDeployScan
+            !wantDeployScan
               ? () => setWantDeployScan(true)
               : undefined
           }

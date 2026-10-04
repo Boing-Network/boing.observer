@@ -23,14 +23,14 @@ import {
 import { CopyButton } from "@/components/copy-button";
 import { TESTNET_FAUCET_ACCOUNT_HEX } from "@/lib/testnet-constants";
 import type { TxPayloadKind } from "@/lib/rpc-types";
+import { formatPurposeLabel, isNftPurposeOrKind } from "@/lib/asset-kind-label";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
 
 type VisualScale = "standard" | "featured";
 
 function formatPurposeHeadline(cat: string): string {
-  if (!cat || cat === "other") return "other";
-  return cat.toLowerCase();
+  return formatPurposeLabel(cat);
 }
 
 function SignedPayloadHeadlineRich({
@@ -589,6 +589,11 @@ export function TransactionInsight({
     typeof payloadInner.asset_symbol === "string" ? payloadInner.asset_symbol : null,
   );
   const [offchainImage, setOffchainImage] = useState<string | null>(null);
+  const [nftSampleImage, setNftSampleImage] = useState<string | null>(null);
+  const purposeCategory =
+    typeof payloadInner.purpose_category === "string" ? payloadInner.purpose_category : "";
+  const deployKindHint = isNftPurposeOrKind(purposeCategory) ? "nft" : purposeCategory || null;
+
   useEffect(() => {
     if (deployDisplay.imageUrl) {
       setOffchainImage(null);
@@ -622,7 +627,37 @@ export function TransactionInsight({
       cancelled = true;
     };
   }, [deployDisplay.imageUrl, payloadInner.description_hash]);
-  const deployImageUrl = deployDisplay.imageUrl || offchainImage;
+
+  useEffect(() => {
+    if (!deployedAssetHex || !isNftPurposeOrKind(purposeCategory)) {
+      setNftSampleImage(null);
+      return;
+    }
+    if (deployDisplay.imageUrl || offchainImage) {
+      setNftSampleImage(null);
+      return;
+    }
+    let cancelled = false;
+    const id = encodeURIComponent(toPrefixedHex64(deployedAssetHex));
+    void fetch(
+      `/api/asset/profile?network=${encodeURIComponent(network)}&id=${id}&scan=0&nftProbe=1`,
+      { headers: { Accept: "application/json" } },
+    )
+      .then(async (res) => (await res.json()) as { imageUrl?: string | null; nftSamples?: Array<{ imageUrl?: string | null }> })
+      .then((json) => {
+        if (cancelled) return;
+        const fromSamples = json.nftSamples?.find((s) => s.imageUrl)?.imageUrl ?? null;
+        setNftSampleImage(json.imageUrl || fromSamples || null);
+      })
+      .catch(() => {
+        if (!cancelled) setNftSampleImage(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [deployedAssetHex, purposeCategory, deployDisplay.imageUrl, offchainImage, network]);
+
+  const deployImageUrl = deployDisplay.imageUrl || offchainImage || nftSampleImage;
   const deployLabel = formatAssetDisplayLabel(deployDisplay, "");
   const featured = visualScale === "featured";
 
@@ -682,15 +717,19 @@ export function TransactionInsight({
               imageUrl={deployImageUrl}
               alt={deployLabel || "Deployed asset"}
               size="lg"
-              kind={String(payloadInner.purpose_category ?? "")}
+              kind={deployKindHint}
             />
             <div className="min-w-0 space-y-2">
               {deployLabel ? (
                 <p className="font-display text-lg font-semibold text-[var(--text-primary)]">{deployLabel}</p>
               ) : null}
+              {isNftPurposeOrKind(purposeCategory) ? (
+                <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-200/80">NFT collection</p>
+              ) : null}
               <p className="text-sm text-[var(--text-secondary)]">
-                New on-chain account created by this deployment (token, NFT, or contract). Open the asset page for
-                balances, nonce, and contract hints.
+                {isNftPurposeOrKind(purposeCategory)
+                  ? "New NFT collection account created by this deployment. Open the asset page for minted token previews, balances, and contract hints."
+                  : "New on-chain account created by this deployment (token, NFT collection, or contract). Open the asset page for balances, nonce, and contract hints."}
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 <Link href={explorerAssetHref(deployedAssetHex, network)} className="address-link text-sm font-semibold">

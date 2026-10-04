@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { explorerAccountHref, explorerAssetHref, explorerBlockHeightHref, explorerTxHref } from "@/lib/explorer-href";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
+import { formatAssetKindLabel, formatPurposeLabel } from "@/lib/asset-kind-label";
 import type { NetworkId } from "@/lib/rpc-types";
 import { shortenHash } from "@/lib/rpc-types";
 import type { TokenIndexJsonEntry } from "@/lib/token-index/types";
@@ -176,7 +177,7 @@ export function AssetMetadataSection({
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Kind</dt>
-              <dd className="capitalize">{tokenIndex.kind}</dd>
+              <dd>{formatAssetKindLabel(tokenIndex.kind)}</dd>
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Sources</dt>
@@ -194,7 +195,11 @@ export function AssetMetadataSection({
             </div>
             <div className="flex flex-wrap gap-x-2 sm:col-span-2">
               <dt className="text-[var(--text-muted)]">Purpose</dt>
-              <dd className="break-words">{tokenIndex.purposeCategory ?? "—"}</dd>
+              <dd className="break-words">
+                {tokenIndex.purposeCategory
+                  ? formatPurposeLabel(tokenIndex.purposeCategory)
+                  : "—"}
+              </dd>
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">First block</dt>
@@ -235,7 +240,7 @@ export function AssetMetadataSection({
 
       {nftSamples && nftSamples.length > 0 && (
         <div className="space-y-3 border-t border-[var(--border-color)] pt-4">
-          <h3 className="text-sm font-medium text-[var(--text-primary)]">NFT previews</h3>
+          <h3 className="text-sm font-medium text-[var(--text-primary)]">NFT collection previews</h3>
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {nftSamples.map((sample) => (
               <li

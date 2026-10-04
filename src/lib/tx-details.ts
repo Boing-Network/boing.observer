@@ -5,6 +5,7 @@
 import type { TxPayloadKind } from "./rpc-types";
 import { hexForLink, shortenHash, toSafeHexString } from "./rpc-types";
 import { formatBoingAmount, getTxPayloadKind, getTxPayloadInner } from "./tx-payload";
+import { formatPurposeLabel } from "./asset-kind-label";
 import { parseAssetDisplayMetadata } from "./extract-media-url";
 
 export type TxDetailLine = {
@@ -104,7 +105,10 @@ export function buildPayloadDetailLines(payload: unknown): TxDetailLine[] {
         }
       }
       if ("purpose_category" in p) {
-        lines.push({ label: "Purpose category", value: String(p.purpose_category ?? "—") });
+        lines.push({
+          label: "Purpose category",
+          value: formatPurposeLabel(String(p.purpose_category ?? "other")),
+        });
       }
       if (p.description_hash != null && p.description_hash !== undefined) {
         const dh = normalizeHexData(p.description_hash);

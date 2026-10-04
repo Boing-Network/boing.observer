@@ -7,6 +7,7 @@ import type { BoingNetworkInfo, NetworkId } from "@/lib/rpc-types";
 import { normalizeHex64, shortenHash } from "@/lib/rpc-types";
 import { CopyButton } from "@/components/copy-button";
 import { TechnicalDetails } from "@/components/technical-details";
+import { formatAssetKindLabel, formatPurposeLabel } from "@/lib/asset-kind-label";
 import { HANDOFF_DEPENDENT_PROJECTS_URL, OBSERVER_HOSTED_SERVICE_URL, RPC_SPEC_URL } from "@/lib/constants";
 
 function canonHex64(h: string | null | undefined): string {
@@ -123,11 +124,14 @@ export function AccountContractHints({
 
       {rpcInteractionHints?.tokenKind && rpcInteractionHints.tokenKind !== "other" && (
         <p className="text-sm text-[var(--text-secondary)]">
-          Kind: <span className="text-[var(--text-primary)]">{rpcInteractionHints.tokenKind}</span>
+          Kind:{" "}
+          <span className="text-[var(--text-primary)]">
+            {formatAssetKindLabel(rpcInteractionHints.tokenKind)}
+          </span>
           {rpcInteractionHints.purposeCategory ? (
             <>
               {" "}
-              · <span className="break-words">{rpcInteractionHints.purposeCategory}</span>
+              · <span className="break-words">{formatPurposeLabel(rpcInteractionHints.purposeCategory)}</span>
             </>
           ) : null}
         </p>

@@ -18,7 +18,9 @@ function placeholderLabel(alt: string, kind?: string | null): string {
   if (words.length >= 2) return `${words[0]![0]!}${words[1]![0]!}`.toUpperCase();
   if (words[0] && words[0].length >= 2) return words[0].slice(0, 2).toUpperCase();
   if (words[0]) return words[0].slice(0, 1).toUpperCase();
-  return (kind ?? "").toLowerCase() === "nft" ? "NFT" : "TKN";
+  const k = (kind ?? "").toLowerCase();
+  if (k === "nft" || k.includes("nft") || k.includes("collection")) return "NFT";
+  return "TKN";
 }
 
 export function AssetMediaThumb({

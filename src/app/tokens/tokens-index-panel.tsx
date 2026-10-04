@@ -6,6 +6,7 @@ import { useNetwork } from "@/context/network-context";
 import { ExplorerHexLink } from "@/components/explorer-hex-link";
 import { explorerAssetHref, explorerBlockHeightHref, explorerTxHref } from "@/lib/explorer-href";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
+import { formatAssetKindLabel, formatPurposeLabel } from "@/lib/asset-kind-label";
 import { shortenHash } from "@/lib/rpc-types";
 import type { TokenIndexCacheMeta, TokenIndexJsonEntry, TokenIndexResult } from "@/lib/token-index/types";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
@@ -384,7 +385,7 @@ function TokenCard({
       </div>
       <div className="data-card__row">
         <span className="data-card__label">Kind</span>
-        <span className="data-card__value font-mono">{row.kind}</span>
+        <span className="data-card__value">{formatAssetKindLabel(row.kind)}</span>
       </div>
       <div className="data-card__row">
         <span className="data-card__label">Sources</span>
@@ -451,14 +452,14 @@ function TokenRow({
           </Link>
           <ExplorerHexLink value={row.address} network={network} kind="asset" head={12} tail={10} copy />
           {row.purposeCategory ? (
-            <p className="text-xs text-[var(--text-muted)]">Purpose: {row.purposeCategory}</p>
+            <p className="text-xs text-[var(--text-muted)]">Purpose: {formatPurposeLabel(row.purposeCategory)}</p>
           ) : null}
           {display.description ? (
             <p className="line-clamp-2 text-xs leading-relaxed text-[var(--text-secondary)]">{display.description}</p>
           ) : null}
         </div>
       </td>
-      <td className="py-2 pr-3 align-top font-mono text-xs text-[var(--text-secondary)]">{row.kind}</td>
+      <td className="py-2 pr-3 align-top text-xs text-[var(--text-secondary)]">{formatAssetKindLabel(row.kind)}</td>
       <td className="py-2 pr-3 align-top text-xs text-[var(--text-secondary)]">{row.sources.join(", ")}</td>
       <td className="py-2 pr-3 align-top font-mono text-xs">
         <Link href={explorerBlockHeightHref(row.firstSeenBlock, network)} className="text-network-cyan hover:underline">

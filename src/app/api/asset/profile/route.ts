@@ -3,6 +3,7 @@ import { BoingRpcError, validateHex32 } from "boing-sdk";
 import { createServerBoingClient } from "@/lib/server-boing-client";
 import { resolveNativeDexFactoryForExplorer } from "@/lib/resolve-native-dex-factory";
 import { resolveImageUrlFromSources } from "@/lib/extract-media-url";
+import { isNftPurposeOrKind } from "@/lib/asset-kind-label";
 import { buildTokenIndexForHeightRange } from "@/lib/token-index/build-token-index";
 import { resolveOffchainTokenMetadata } from "@/lib/token-metadata-lookup";
 import { probeReferenceNftCollectionSamples } from "@/lib/reference-nft-probe";
@@ -57,6 +58,9 @@ export async function GET(req: NextRequest) {
 
   const wantIndexScan =
     req.nextUrl.searchParams.get("scan") === "1" || req.nextUrl.searchParams.get("scan") === "true";
+  const wantNftProbe =
+    req.nextUrl.searchParams.get("nftProbe") === "1" ||
+    req.nextUrl.searchParams.get("nftProbe") === "true";
 
   try {
     const client = createServerBoingClient(network);
@@ -104,11 +108,22 @@ export async function GET(req: NextRequest) {
 
     const isNftCollection =
       tokenIndex?.kind === "nft" ||
-      (tokenIndex?.purposeCategory ?? "").toLowerCase().includes("nft");
+      isNftPurposeOrKind(tokenIndex?.purposeCategory) ||
+      wantNftProbe;
 
     let nftSamples: Awaited<ReturnType<typeof probeReferenceNftCollectionSamples>> = [];
     if (isNftCollection) {
-      nftSamples = await probeReferenceNftCollectionSamples(client, idPrefixed, { maxProbe: 8 });
+      // Light probe when only nftProbe is set; fuller sample window after a deploy scan hit.
+      const maxProbe =
+        wantIndexScan && (tokenIndex?.kind === "nft" || isNftPurposeOrKind(tokenIndex?.purposeCategory))
+          ? 8
+          : 4;
+      nftSamples = await probeReferenceNftCollectionSamples(client, idPrefixed, { maxProbe });
+    }
+
+    // Promote index kind when minted samples prove a reference NFT collection layout.
+    if (nftSamples.length > 0 && tokenIndex && tokenIndex.kind !== "nft") {
+      tokenIndex = { ...tokenIndex, kind: "nft" };
     }
 
     const nftPreviewImage =
