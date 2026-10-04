@@ -80,6 +80,7 @@ export async function GET(req: NextRequest) {
     }
 
     let tokenIndex: TokenIndexJsonEntry | null = null;
+    let deployedByAccount: TokenIndexJsonEntry[] = [];
     let indexWarnings: string[] | undefined;
     let tokenIndexScan: { fromHeight: number; toHeight: number } | null = null;
 
@@ -90,6 +91,9 @@ export async function GET(req: NextRequest) {
       tokenIndexScan = { fromHeight, toHeight };
       indexWarnings = indexResult.indexWarnings;
       tokenIndex = indexResult.entries.find((e) => e.address === address64) ?? null;
+      deployedByAccount = indexResult.entries.filter(
+        (e) => (e.deployer ?? "").toLowerCase() === address64.toLowerCase() && e.address !== address64,
+      );
     }
 
     const onChainImage = resolveImageUrlFromSources(
@@ -106,18 +110,17 @@ export async function GET(req: NextRequest) {
       resolvedDescription = off?.description ?? null;
     }
 
-    const isNftCollection =
+    // Probe NFT samples only when this address looks like a collection, or when a
+    // caller explicitly asks without a deploy scan (e.g. deploy tx insight).
+    const shouldProbeNft =
       tokenIndex?.kind === "nft" ||
       isNftPurposeOrKind(tokenIndex?.purposeCategory) ||
-      wantNftProbe;
+      (wantNftProbe && !wantIndexScan);
 
     let nftSamples: Awaited<ReturnType<typeof probeReferenceNftCollectionSamples>> = [];
-    if (isNftCollection) {
-      // Light probe when only nftProbe is set; fuller sample window after a deploy scan hit.
+    if (shouldProbeNft) {
       const maxProbe =
-        wantIndexScan && (tokenIndex?.kind === "nft" || isNftPurposeOrKind(tokenIndex?.purposeCategory))
-          ? 8
-          : 4;
+        tokenIndex?.kind === "nft" || isNftPurposeOrKind(tokenIndex?.purposeCategory) ? 8 : 4;
       nftSamples = await probeReferenceNftCollectionSamples(client, idPrefixed, { maxProbe });
     }
 
@@ -142,6 +145,7 @@ export async function GET(req: NextRequest) {
       imageUrl: nftPreviewImage,
       description: resolvedDescription,
       nftSamples: nftSamples.length ? nftSamples : undefined,
+      deployedByAccount: deployedByAccount.length ? deployedByAccount : undefined,
       ...(indexWarnings && indexWarnings.length ? { indexWarnings } : {}),
     });
   } catch (e) {

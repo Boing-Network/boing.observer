@@ -22,6 +22,7 @@ type DexTokenProfile = {
 export type NftSamplePreview = {
   tokenIdU64: number;
   metadataHash: string;
+  owner?: string | null;
   imageUrl: string | null;
   metadataUrl: string | null;
   metadataName: string | null;
@@ -40,6 +41,8 @@ export type ExplorerAssetProfilePayload = {
   imageUrl: string | null;
   description?: string | null;
   nftSamples?: NftSamplePreview[];
+  /** Assets this account deployed (from the recent-block index scan). */
+  deployedByAccount?: TokenIndexJsonEntry[];
   indexWarnings?: string[];
 };
 
@@ -55,13 +58,14 @@ export function AssetMetadataSection({
   /** When set, shows a control to run the bounded deploy/receipt scan. */
   onRequestScan?: () => void;
 }) {
-  const { dexToken, tokenIndex, tokenIndexScan, indexWarnings, nftSamples, imageUrl, factory } = profile;
+  const { dexToken, tokenIndex, tokenIndexScan, indexWarnings, nftSamples, imageUrl, factory, deployedByAccount } =
+    profile;
   const dexDisplay = dexToken ? parseAssetDisplayMetadata(dexToken.name, dexToken.symbol) : null;
   const indexDisplay = tokenIndex
     ? parseAssetDisplayMetadata(tokenIndex.assetName, tokenIndex.assetSymbol)
     : null;
   const heroImage = imageUrl || dexDisplay?.imageUrl || indexDisplay?.imageUrl || tokenIndex?.imageUrl || null;
-  const hasBody = Boolean(dexToken || tokenIndex || nftSamples?.length);
+  const hasBody = Boolean(dexToken || tokenIndex || nftSamples?.length || deployedByAccount?.length);
 
   return (
     <section className="glass-card space-y-4 p-4 sm:p-6" aria-labelledby="asset-metadata-heading">
@@ -238,37 +242,85 @@ export function AssetMetadataSection({
         </div>
       )}
 
+      {deployedByAccount && deployedByAccount.length > 0 && (
+        <div className="space-y-3 border-t border-[var(--border-color)] pt-4">
+          <h3 className="text-sm font-medium text-[var(--text-primary)]">Deployed by this account</h3>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {deployedByAccount.map((row) => {
+              const display = parseAssetDisplayMetadata(row.assetName, row.assetSymbol);
+              const label = formatAssetDisplayLabel(display, row.address.slice(0, 10));
+              return (
+                <li
+                  key={row.address}
+                  className="flex items-start gap-3 rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/30 p-3"
+                >
+                  <AssetMediaThumb
+                    imageUrl={row.imageUrl ?? display.imageUrl}
+                    alt={label}
+                    size="md"
+                    kind={row.kind}
+                  />
+                  <div className="min-w-0 space-y-1">
+                    <Link
+                      href={explorerAssetHref(row.address, network)}
+                      className="font-medium text-network-cyan hover:underline"
+                    >
+                      {label}
+                    </Link>
+                    <p className="text-xs text-[var(--text-muted)]">{formatAssetKindLabel(row.kind)}</p>
+                    {row.purposeCategory ? (
+                      <p className="text-xs text-[var(--text-secondary)]">
+                        Purpose: {formatPurposeLabel(row.purposeCategory)}
+                      </p>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       {nftSamples && nftSamples.length > 0 && (
         <div className="space-y-3 border-t border-[var(--border-color)] pt-4">
           <h3 className="text-sm font-medium text-[var(--text-primary)]">NFT collection previews</h3>
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {nftSamples.map((sample) => (
-              <li
-                key={sample.tokenIdU64}
-                className="rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/30 p-3"
-              >
-                <p className="text-xs font-medium text-[var(--text-secondary)]">
-                  Token #{sample.tokenIdU64}
-                  {sample.metadataName
-                    ? ` · ${parseAssetDisplayMetadata(sample.metadataName).displayName ?? sample.metadataName}`
-                    : ""}
-                </p>
-                {sample.imageUrl ? (
+            {nftSamples.map((sample) => {
+              const title =
+                sample.metadataName != null
+                  ? parseAssetDisplayMetadata(sample.metadataName).displayName ?? sample.metadataName
+                  : null;
+              const metaHex =
+                typeof sample.metadataHash === "string" ? sample.metadataHash.replace(/^0x/i, "") : "";
+              return (
+                <li
+                  key={sample.tokenIdU64}
+                  className="rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/30 p-3"
+                >
+                  <p className="text-xs font-medium text-[var(--text-secondary)]">
+                    Token #{sample.tokenIdU64}
+                    {title ? ` · ${title}` : ""}
+                  </p>
                   <div className="mt-2">
                     <AssetMediaThumb
                       imageUrl={sample.imageUrl}
-                      alt={sample.metadataName ?? `NFT #${sample.tokenIdU64}`}
+                      alt={title ?? `NFT #${sample.tokenIdU64}`}
                       size="md"
                       kind="nft"
                     />
                   </div>
-                ) : (
-                  <p className="mt-2 text-xs text-[var(--text-muted)] font-mono break-all">
-                    metadata: {shortenHash(sample.metadataHash.replace(/^0x/i, ""), 12, 10)}
-                  </p>
-                )}
-              </li>
-            ))}
+                  {!sample.imageUrl ? (
+                    <p className="mt-2 text-xs text-[var(--text-muted)] font-mono break-all">
+                      {metaHex.length === 64
+                        ? `metadata: ${shortenHash(metaHex, 12, 10)}`
+                        : sample.owner
+                          ? "Minted · no metadata URI set"
+                          : "No image metadata"}
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

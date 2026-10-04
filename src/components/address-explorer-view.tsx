@@ -149,8 +149,11 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
           assetProfile.tokenIndex?.assetName ?? assetProfile.dexToken?.name ?? null,
           assetProfile.tokenIndex?.assetSymbol ?? assetProfile.dexToken?.symbol ?? null,
         );
+        // Only treat as NFT collection when deploy index says so, or real samples exist.
         const kindFromSamples =
-          !assetProfile.tokenIndex?.kind && assetProfile.nftSamples && assetProfile.nftSamples.length > 0
+          !assetProfile.tokenIndex?.kind &&
+          assetProfile.nftSamples &&
+          assetProfile.nftSamples.length > 0
             ? "nft"
             : null;
         return {
