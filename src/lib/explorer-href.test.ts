@@ -4,10 +4,12 @@ import {
   explorerAssetHref,
   explorerBlockHashHref,
   explorerBlockHeightHref,
+  explorerNftItemHref,
   explorerTxHref,
 } from "./explorer-href";
 
 const HEX = "a".repeat(64);
+const TOKEN = "b".repeat(64);
 
 describe("explorer hrefs", () => {
   it("routes assets, accounts, and txs with the network query", () => {
@@ -15,6 +17,13 @@ describe("explorer hrefs", () => {
     expect(explorerAccountHref(HEX, "testnet")).toBe(`/account/${HEX}?network=testnet`);
     expect(explorerTxHref(`0x${HEX}`, "mainnet")).toBe(`/tx/${HEX}?network=mainnet`);
     expect(explorerBlockHashHref(HEX, "testnet")).toBe(`/block/hash/${HEX}?network=testnet`);
+  });
+
+  it("routes individual NFT item profiles", () => {
+    expect(explorerNftItemHref(`0x${HEX}`, `0x${TOKEN}`, "testnet")).toBe(
+      `/asset/${HEX}/item/${TOKEN}?network=testnet`,
+    );
+    expect(explorerNftItemHref("nope", TOKEN, "testnet")).toBe("/");
   });
 
   it("anchors transaction slots on block-height URLs", () => {

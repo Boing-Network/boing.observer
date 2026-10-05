@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { explorerAccountHref, explorerAssetHref, explorerBlockHeightHref, explorerTxHref } from "@/lib/explorer-href";
+import { explorerAccountHref, explorerAssetHref, explorerBlockHeightHref, explorerNftItemHref, explorerTxHref } from "@/lib/explorer-href";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { formatAssetKindLabel, formatPurposeLabel } from "@/lib/asset-kind-label";
 import type { NetworkId } from "@/lib/rpc-types";
@@ -20,7 +20,8 @@ type DexTokenProfile = {
 };
 
 export type NftSamplePreview = {
-  tokenIdU64: number;
+  tokenIdU64: number | null;
+  tokenIdWord: string;
   metadataHash: string;
   owner?: string | null;
   imageUrl: string | null;
@@ -41,6 +42,7 @@ export type ExplorerAssetProfilePayload = {
   imageUrl: string | null;
   description?: string | null;
   nftSamples?: NftSamplePreview[];
+  nftDiscoverNote?: string;
   /** Assets this account deployed (from the recent-block index scan). */
   deployedByAccount?: TokenIndexJsonEntry[];
   indexWarnings?: string[];
@@ -58,7 +60,7 @@ export function AssetMetadataSection({
   /** When set, shows a control to run the bounded deploy/receipt scan. */
   onRequestScan?: () => void;
 }) {
-  const { dexToken, tokenIndex, tokenIndexScan, indexWarnings, nftSamples, imageUrl, factory, deployedByAccount } =
+  const { dexToken, tokenIndex, tokenIndexScan, indexWarnings, nftSamples, nftDiscoverNote, imageUrl, factory, deployedByAccount } =
     profile;
   const dexDisplay = dexToken ? parseAssetDisplayMetadata(dexToken.name, dexToken.symbol) : null;
   const indexDisplay = tokenIndex
@@ -283,7 +285,14 @@ export function AssetMetadataSection({
 
       {nftSamples && nftSamples.length > 0 && (
         <div className="space-y-3 border-t border-[var(--border-color)] pt-4">
-          <h3 className="text-sm font-medium text-[var(--text-primary)]">NFT collection previews</h3>
+          <h3 className="text-sm font-medium text-[var(--text-primary)]">Minted NFTs</h3>
+          <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+            Each tile opens that token&apos;s profile (collection + opaque token id). Hash-based ids
+            (FreshMint) appear when their mint calldata is in the recent scan window.
+          </p>
+          {nftDiscoverNote ? (
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{nftDiscoverNote}</p>
+          ) : null}
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {nftSamples.map((sample) => {
               const title =
@@ -292,19 +301,30 @@ export function AssetMetadataSection({
                   : null;
               const metaHex =
                 typeof sample.metadataHash === "string" ? sample.metadataHash.replace(/^0x/i, "") : "";
-              return (
-                <li
-                  key={sample.tokenIdU64}
-                  className="rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/30 p-3"
-                >
+              const tokenWord =
+                typeof sample.tokenIdWord === "string"
+                  ? sample.tokenIdWord.replace(/^0x/i, "").toLowerCase()
+                  : "";
+              const label =
+                sample.tokenIdU64 != null
+                  ? `Token #${sample.tokenIdU64}`
+                  : tokenWord
+                    ? `Token ${shortenHash(tokenWord, 8, 6)}`
+                    : "Token";
+              const href =
+                tokenWord.length === 64
+                  ? explorerNftItemHref(profile.address, tokenWord, network)
+                  : null;
+              const body = (
+                <>
                   <p className="text-xs font-medium text-[var(--text-secondary)]">
-                    Token #{sample.tokenIdU64}
+                    {label}
                     {title ? ` · ${title}` : ""}
                   </p>
                   <div className="mt-2">
                     <AssetMediaThumb
                       imageUrl={sample.imageUrl}
-                      alt={title ?? `NFT #${sample.tokenIdU64}`}
+                      alt={title ?? label}
                       size="md"
                       kind="nft"
                     />
@@ -318,6 +338,34 @@ export function AssetMetadataSection({
                           : "No image metadata"}
                     </p>
                   ) : null}
+                  {sample.owner ? (
+                    <p className="mt-2 text-xs text-[var(--text-muted)]">
+                      Owner{" "}
+                      <Link
+                        href={explorerAccountHref(sample.owner, network)}
+                        className="font-mono text-network-cyan hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {shortenHash(sample.owner)}
+                      </Link>
+                    </p>
+                  ) : null}
+                </>
+              );
+              return (
+                <li key={tokenWord || String(sample.tokenIdU64) || metaHex}>
+                  {href ? (
+                    <Link
+                      href={href}
+                      className="block rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/30 p-3 transition hover:border-network-cyan/50 hover:bg-boing-navy-mid/50"
+                    >
+                      {body}
+                    </Link>
+                  ) : (
+                    <div className="rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/30 p-3">
+                      {body}
+                    </div>
+                  )}
                 </li>
               );
             })}

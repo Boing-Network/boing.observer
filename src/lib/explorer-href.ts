@@ -12,6 +12,21 @@ export function explorerAssetHref(addressHex64: string, network: string): string
   return withNetwork(`/asset/${h}`, network);
 }
 
+/**
+ * Individual minted reference NFT profile: collection AccountId + opaque 32-byte token id word.
+ * Token ids may be sequential (low u64) or FreshMint-style hash words.
+ */
+export function explorerNftItemHref(
+  collectionHex64: string,
+  tokenIdHex64: string,
+  network: string,
+): string {
+  const collection = normalizeHex64(collectionHex64);
+  const tokenId = normalizeHex64(tokenIdHex64);
+  if (!collection || !tokenId) return "/";
+  return withNetwork(`/asset/${collection}/item/${tokenId}`, network);
+}
+
 /** Account view (balances, nonce, transaction history) for a 32-byte AccountId. */
 export function explorerAccountHref(addressHex64: string, network: string): string {
   const h = normalizeHex64(addressHex64);
