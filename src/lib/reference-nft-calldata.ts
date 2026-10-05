@@ -33,9 +33,9 @@ function readBeU64Low8(word: Uint8Array): number | null {
   for (let i = 0; i < 24; i++) {
     if (word[i] !== 0) return null;
   }
-  let n = 0n;
+  let n = BigInt(0);
   for (let i = 24; i < 32; i++) {
-    n = (n << 8n) | BigInt(word[i]!);
+    n = (n << BigInt(8)) | BigInt(word[i]!);
   }
   if (n > BigInt(Number.MAX_SAFE_INTEGER)) return null;
   return Number(n);

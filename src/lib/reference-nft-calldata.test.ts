@@ -26,8 +26,8 @@ function u64Word(n: number): Uint8Array {
   const out = new Uint8Array(32);
   let x = BigInt(n);
   for (let i = 31; i >= 24; i--) {
-    out[i] = Number(x & 0xffn);
-    x >>= 8n;
+    out[i] = Number(x & BigInt(0xff));
+    x >>= BigInt(8);
   }
   return out;
 }
