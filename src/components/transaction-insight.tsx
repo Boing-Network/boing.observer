@@ -4,8 +4,14 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import type { BlockTransaction, TransactionReceipt } from "@/lib/rpc-types";
 import { hexForLink, shortenHash, toPrefixedHex64, normalizeHex64 } from "@/lib/rpc-types";
-import { explorerAccountHref, explorerAssetHref, explorerBlockHeightHref, explorerTxHref } from "@/lib/explorer-href";
+import { explorerAccountHref, explorerAssetHref, explorerBlockHeightHref, explorerNftItemHref, explorerTxHref } from "@/lib/explorer-href";
 import { tryParseCreatedAccountIdFromDeployReturnData } from "@/lib/deploy-receipt";
+import {
+  decodeReferenceNftCalldata,
+  REF_NFT_SELECTOR_MINT_BATCH,
+  REF_NFT_SELECTOR_TRANSFER_NFT,
+  tryReferenceNftTokenIdU64,
+} from "@/lib/reference-nft-calldata";
 import {
   formatBoingAmount,
   getTxExplorerNarrative,
@@ -352,6 +358,21 @@ function ContractCallFeaturedVisual({ payload, network }: { payload: unknown; ne
   const p = payload as Record<string, unknown>;
   const contract = hexForLink(p.contract);
   const cd = normalizeHexData(p.calldata);
+  const decoded =
+    typeof p.calldata === "string" ? decodeReferenceNftCalldata(p.calldata) : null;
+  const nftTokenIds =
+    decoded?.selector === REF_NFT_SELECTOR_MINT_BATCH
+      ? decoded.tokenIds
+      : decoded?.selector === REF_NFT_SELECTOR_TRANSFER_NFT
+        ? [decoded.tokenId]
+        : [];
+  const nftOpLabel =
+    decoded?.selector === REF_NFT_SELECTOR_MINT_BATCH
+      ? `mint_batch · ${decoded.n} token${decoded.n === 1 ? "" : "s"}`
+      : decoded?.selector === REF_NFT_SELECTOR_TRANSFER_NFT
+        ? "transfer_nft / mint"
+        : null;
+
   return (
     <div className="rounded-xl border border-amber-500/35 bg-gradient-to-br from-amber-950/40 via-boing-navy-mid/50 to-boing-black/40 p-5 sm:p-8">
       <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-amber-200/90">
@@ -377,7 +398,41 @@ function ContractCallFeaturedVisual({ payload, network }: { payload: unknown; ne
         ) : null}
         <p className="mt-4 text-sm text-[var(--text-secondary)]">
           Calldata: <span className="font-mono text-network-cyan">{cd.bytes}</span> bytes
+          {nftOpLabel ? (
+            <>
+              {" "}
+              · <span className="text-amber-100/90">{nftOpLabel}</span>
+            </>
+          ) : null}
         </p>
+        {contract && nftTokenIds.length > 0 ? (
+          <div className="mt-4 text-left">
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
+              Minted / transferred NFTs
+            </p>
+            <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-xs">
+              {nftTokenIds.slice(0, 32).map((id) => {
+                const id64 = normalizeHex64(id.replace(/^0x/i, ""));
+                if (!id64) return null;
+                const u64 = tryReferenceNftTokenIdU64(id);
+                const label = u64 != null ? `#${u64}` : shortenHash(id64, 8, 6);
+                return (
+                  <li key={id64}>
+                    <Link
+                      href={explorerNftItemHref(contract, id64, network)}
+                      className="font-mono text-network-cyan hover:underline"
+                    >
+                      NFT {label}
+                    </Link>
+                  </li>
+                );
+              })}
+              {nftTokenIds.length > 32 ? (
+                <li className="text-[var(--text-muted)]">…and {nftTokenIds.length - 32} more</li>
+              ) : null}
+            </ul>
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { isNftPurposeOrKind } from "@/lib/asset-kind-label";
 import { buildTokenIndexForHeightRange } from "@/lib/token-index/build-token-index";
 import { resolveOffchainTokenMetadata } from "@/lib/token-metadata-lookup";
 import { probeReferenceNftCollectionSamples } from "@/lib/reference-nft-probe";
+import { discoverReferenceNftTokenIdsFromHeightRange } from "@/lib/reference-nft-discover";
 import { getRpcBaseUrl, isMainnetConfigured } from "@/lib/rpc-client";
 import { normalizeHex64 } from "@/lib/rpc-types";
 import type { NetworkId } from "@/lib/rpc-types";
@@ -110,18 +111,40 @@ export async function GET(req: NextRequest) {
       resolvedDescription = off?.description ?? null;
     }
 
-    // Probe NFT samples only when this address looks like a collection, or when a
-    // caller explicitly asks without a deploy scan (e.g. deploy tx insight).
+    // Probe NFT samples when this looks like a collection, or the client asked
+    // (`nftProbe=1` on asset/account pages — including alongside deploy scan).
     const shouldProbeNft =
+      wantNftProbe ||
       tokenIndex?.kind === "nft" ||
-      isNftPurposeOrKind(tokenIndex?.purposeCategory) ||
-      (wantNftProbe && !wantIndexScan);
+      isNftPurposeOrKind(tokenIndex?.purposeCategory);
 
     let nftSamples: Awaited<ReturnType<typeof probeReferenceNftCollectionSamples>> = [];
+    let nftDiscoverNote: string | undefined;
     if (shouldProbeNft) {
       const maxProbe =
         tokenIndex?.kind === "nft" || isNftPurposeOrKind(tokenIndex?.purposeCategory) ? 8 : 4;
-      nftSamples = await probeReferenceNftCollectionSamples(client, idPrefixed, { maxProbe });
+      let extraTokenIdWords: string[] = [];
+      if (wantIndexScan && tokenIndexScan) {
+        try {
+          const discovered = await discoverReferenceNftTokenIdsFromHeightRange(
+            client,
+            idPrefixed,
+            tokenIndexScan.fromHeight,
+            tokenIndexScan.toHeight,
+            { maxConcurrent: 8, maxTokenIds: 48 },
+          );
+          extraTokenIdWords = discovered.tokenIdWords;
+          if (extraTokenIdWords.length > 0) {
+            nftDiscoverNote = `Also listed ${extraTokenIdWords.length} token id(s) decoded from ContractCall calldata in the same block window (covers FreshMint-style hash token ids).`;
+          }
+        } catch {
+          /* discovery is best-effort; sequential probe still runs */
+        }
+      }
+      nftSamples = await probeReferenceNftCollectionSamples(client, idPrefixed, {
+        maxProbe,
+        extraTokenIdWords,
+      });
     }
 
     // Promote index kind when minted samples prove a reference NFT collection layout.
@@ -145,6 +168,7 @@ export async function GET(req: NextRequest) {
       imageUrl: nftPreviewImage,
       description: resolvedDescription,
       nftSamples: nftSamples.length ? nftSamples : undefined,
+      ...(nftDiscoverNote ? { nftDiscoverNote } : {}),
       deployedByAccount: deployedByAccount.length ? deployedByAccount : undefined,
       ...(indexWarnings && indexWarnings.length ? { indexWarnings } : {}),
     });
