@@ -126,6 +126,8 @@ Normative specs for ingestion, SQL storage, reorgs, and a read API live in **`bo
 
 **This explorer** stays on **bounded RPC + SDK** for DEX-style and similar views until a real index exists; that matches the spec and does **not** push OBS-1 work back onto **boing.network** or **boing.express**.
 
+**Reference NFT owner list:** **`GET /api/account/nfts?network=&id=`** proxies **`boing.network` `workers/nft-owner-indexer`** when **`NFT_OWNER_INDEXER_URL`** is set ([HANDOFF_NFT_OWNER_INDEX.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NFT_OWNER_INDEX.md)). Without that env, the route returns **503** (RPC-only discovery remains on Express/asset pages).
+
 ### Deployment and infra
 
 - Target deployment is `Cloudflare Workers`.
