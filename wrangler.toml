@@ -23,3 +23,5 @@ service = "boing-observer"
 #   BOING_NATIVE_VM_DEX_FACTORY or BOING_DEX_FACTORY_HEX = 0x + 64 hex (see boing-sdk mergeNativeDexIntegrationDefaults).
 [vars]
 BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS = "1"
+# Public origin of workers/nft-owner-indexer (never a boolean like "1").
+NFT_OWNER_INDEXER_URL = "https://boing-nft-owner-indexer.nico-chikuji.workers.dev"
