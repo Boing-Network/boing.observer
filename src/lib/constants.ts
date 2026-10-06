@@ -50,6 +50,9 @@ export const NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL = `${DOCS_BASE}/HANDOFF_NAT
 /** Hosted indexer / durable read path (OBS-1); not implemented in this explorer repo by default. */
 export const OBSERVER_HOSTED_SERVICE_URL = `${DOCS_BASE}/OBSERVER-HOSTED-SERVICE.md`;
 
+/** Durable reference-NFT owner index (D1 Worker) — deploy steps, API, `NFT_OWNER_INDEXER_URL`. */
+export const NFT_OWNER_INDEX_HANDOFF_DOC_URL = `${DOCS_BASE}/HANDOFF_NFT_OWNER_INDEX.md`;
+
 /** §4 — 32-byte AccountId (64 hex), not 20-byte Ethereum addresses. */
 export const ADDRESS_FORMAT_ALIGNMENT_URL = `${THREE_CODEBASE_ALIGNMENT_URL}#4-token-and-address-format`;
 

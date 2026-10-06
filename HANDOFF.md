@@ -126,7 +126,7 @@ Normative specs for ingestion, SQL storage, reorgs, and a read API live in **`bo
 
 **This explorer** stays on **bounded RPC + SDK** for DEX-style and similar views until a real index exists; that matches the spec and does **not** push OBS-1 work back onto **boing.network** or **boing.express**.
 
-**Reference NFT owner list:** **`GET /api/account/nfts?network=&id=`** proxies **`boing.network` `workers/nft-owner-indexer`** when **`NFT_OWNER_INDEXER_URL`** is set ([HANDOFF_NFT_OWNER_INDEX.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NFT_OWNER_INDEX.md)). Without that env, the route returns **503** (RPC-only discovery remains on Express/asset pages).
+**Reference NFT owner list:** **`GET /api/account/nfts?network=&id=`** proxies **`boing.network` `workers/nft-owner-indexer`** when **`NFT_OWNER_INDEXER_URL`** is set ([HANDOFF_NFT_OWNER_INDEX.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NFT_OWNER_INDEX.md)). Without that env, the route returns **503** (RPC-only discovery remains on Express/asset pages). The account page (`/account/[address]`) renders this as an **NFTs held** gallery (`AccountNftGallery`) with cursor-based "Load more" and the indexer's `lastCommittedHeight`; when the env is unset it collapses to a muted setup hint instead of an error. That worker also tracks pruned-RPC scan gaps (`block_height_gaps`, `GET /v1/gaps`) so its `lastCommittedHeight` never silently skips over a hole — see that doc's "Pruned RPC / scan gaps" section.
 
 ### Deployment and infra
 
