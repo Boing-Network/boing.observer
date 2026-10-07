@@ -25,11 +25,12 @@
     "@noble/hashes": "^1.6.0",
     "boing-network-root": "git+https://github.com/Boing-Network/boing.network.git",
     "boing-sdk": "^0.3.0",
-    "next": "15.5.23",
+    "next": "15.5.27",
     "pdfjs-dist": "^4.10.38",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "recharts": "^3.7.0"
+    "recharts": "^3.7.0",
+    "source-map-js": "1.2.2"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.20.2",
@@ -39,11 +40,11 @@
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
-    "eslint-config-next": "15.5.23",
+    "eslint-config-next": "15.5.27",
     "postcss": "^8.5.26",
+    "sharp": "0.35.5",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.7.2",
-    "sharp": "0.35.5",
     "vitest": "^5.0.0",
     "wrangler": "^4.125.0"
   },
@@ -67,6 +68,7 @@
     "minimatch@^10.0.0": "10.2.3",
     "brace-expansion@^1.0.0": "1.1.18",
     "brace-expansion@^2.0.0": "2.1.4",
-    "brace-expansion@^5.0.0": "5.0.9"
+    "brace-expansion@^5.0.0": "5.0.9",
+    "proxy-addr": "2.0.8"
   }
 }
