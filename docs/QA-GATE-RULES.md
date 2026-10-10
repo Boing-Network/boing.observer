@@ -322,7 +322,7 @@ The following are **not** reasons to Reject or Unsure in shipped automation:
 - Meme / community / entertainment with little or no description.
 - Novel bytecode that does not match a blocklist hash or scam pattern (new patterns **Allow** if hard rules pass).
 - Jump-target alignment, stack-depth, or “looks suspicious” heuristics (not implemented).
-- Token/NFT ABI layout (`BOING-REFERENCE-TOKEN.md` / `BOING-REFERENCE-NFT.md`) — interoperability convention, not a deploy reject. NFT template **v3** ships `mint_batch` (`0x06`, n≤500); that is calldata/bytecode convention, not a QA rule.
+- Token/NFT ABI layout (`BOING-REFERENCE-TOKEN.md` / `BOING-REFERENCE-NFT.md`) — interoperability convention, not a deploy reject. NFT template **v3** ships `mint_batch` (`0x06`, n≤500); that is calldata/bytecode convention, not a QA rule. Official NFT↔fungible **linked pairs** are a separate on-chain registry (`BOING-LINKED-NFT-TOKEN.md`); QA does not validate or mint those links at deploy time.
 - Off-chain metadata, websites, social accounts.
 - Vulgarity **inside bytecode** or storage (only deploy-time name/symbol vs `content_blocklist`).
 - Upgrade-proxy *product* pattern of a hub that `CALL`s a separately QA’d implementation (permitted). Opaque patterns meant to hide what users execute may be judged by the pool under malice rules, not a dedicated opcode ban.

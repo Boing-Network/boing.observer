@@ -128,6 +128,8 @@ Normative specs for ingestion, SQL storage, reorgs, and a read API live in **`bo
 
 **Reference NFT owner list:** **`GET /api/account/nfts?network=&id=`** proxies **`boing.network` `workers/nft-owner-indexer`** when **`NFT_OWNER_INDEXER_URL`** is set ([HANDOFF_NFT_OWNER_INDEX.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NFT_OWNER_INDEX.md)). Without that env, the route returns **503** (RPC-only discovery remains on Express/asset pages). The account page (`/account/[address]`) renders this as an **NFTs held** gallery (`AccountNftGallery`) with cursor-based "Load more" and the indexer's `lastCommittedHeight`; when the env is unset it collapses to a muted setup hint instead of an error. That worker also tracks pruned-RPC scan gaps (`block_height_gaps`, `GET /v1/gaps`) so its `lastCommittedHeight` never silently skips over a hole — see that doc's "Pruned RPC / scan gaps" section.
 
+**Linked NFT↔fungible token pairs:** Protocol authority is the on-chain **`linked_nft_token_registry`** (dual asset-claimer; many-to-many; mutable register/unlink). Canonical protocol + SDK docs: [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md) and `boing-sdk` **`linkedNftTokenRegistry.ts`**. **Public testnet** registry AccountId: `0xebf9f0190f415852f90d0e60343126201248ab96273fdbf8acc5fe5fa03c3dd8` (CREATE2 salt `BOING_NFT_TOKEN_LINK_REG_V1`; selectors `0xE0`–`0xE6`). Optional off-chain schema `boing.linked_nft_token.v1` is a **cache only**. This explorer’s `/asset` and account NFT gallery do **not** yet resolve or display peer links — treat peer UI as a later Observer follow-up; do not invent soft “linked” claims from metadata alone.
+
 ### Deployment and infra
 
 - Target deployment is `Cloudflare Workers`.
@@ -167,7 +169,7 @@ The explorer is still mostly read-only. The `/qa` public vote is the exception: 
 The explorer is usable today, but there are several notable limitations:
 
 - No validator page, proposer page, or staking leaderboard.
-- **Shipped (partial):** `/asset/:address` collection metadata + reference NFT probes; **`/asset/:address/item/:tokenId`** per minted NFT profile (owner + metadata XOR slots; FreshMint hash ids via mint calldata decode in the recent scan window). `/tokens` index. Still no dedicated NFT marketplace UX. Batch mints (`mint_batch` on template v3, n≤500) appear as one receipt + XOR storage writes — poll `tx_id` ([BOING-REFERENCE-NFT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-REFERENCE-NFT.md)).
+- **Shipped (partial):** `/asset/:address` collection metadata + reference NFT probes; **`/asset/:address/item/:tokenId`** per minted NFT profile (owner + metadata XOR slots; FreshMint hash ids via mint calldata decode in the recent scan window). `/tokens` index. Still no dedicated NFT marketplace UX and **no** linked NFT↔token peer UI (registry is live on public testnet — see [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md)). Batch mints (`mint_batch` on template v3, n≤500) appear as one receipt + XOR storage writes — poll `tx_id` ([BOING-REFERENCE-NFT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-REFERENCE-NFT.md)).
 - No indexed search beyond height/hash/account heuristics.
 - No server-side caching or indexer-backed querying.
 - No historical analytics beyond the recent block samples fetched in-browser.

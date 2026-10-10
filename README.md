@@ -29,7 +29,7 @@ flowchart LR
 | 📜 QA gate rules | [`/qa/rules`](https://boing.observer/qa/rules) | Every Allow / Reject / Unsure rule + PDF |
 | 🧪 QA check | `/tools/qa-check` | Pre-flight `boing_qaCheck` |
 | 💱 DEX | `/dex/pools`, `/dex/quote` | Read-only directory + CP quotes via `boing-sdk` |
-| 🖼️ Asset | `/asset/:address`, `/asset/:address/item/:tokenId`, `/tokens` | Metadata scan; reference NFT collection + **per-item** profiles (owner/metadata XOR slots). FreshMint-style hash token ids via mint calldata decode in recent blocks ([BOING-REFERENCE-NFT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-REFERENCE-NFT.md) — v3 `mint_batch` n≤500 is one receipt) |
+| 🖼️ Asset | `/asset/:address`, `/asset/:address/item/:tokenId`, `/tokens` | Metadata scan; reference NFT collection + **per-item** profiles (owner/metadata XOR slots). FreshMint-style hash token ids via mint calldata decode in recent blocks ([BOING-REFERENCE-NFT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-REFERENCE-NFT.md) — v3 `mint_batch` n≤500 is one receipt). Official NFT↔fungible **linked pairs** are enforced on-chain (public testnet registry); this explorer does **not** yet render peer links — see [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md) |
 | 📡 RPC catalog | `/tools/rpc-catalog` | Live `boing_getRpcMethodCatalog` |
 | ❤️ Node health | `/tools/node-health` | Height, sync, optional `boing_health` |
 | 📖 About | [`/about`](https://boing.observer/about) | Six pillars PDF |
@@ -104,6 +104,7 @@ GitHub Actions deploys on `main` **after** CI (lint, unit tests, production buil
 
 - Protocol docs: `Boing-Network/boing.network` on `main` under `docs/`
 - Alignment: [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md)
+- Linked NFT↔token pairs (on-chain registry): [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md) — public testnet registry `0xebf9f0190f415852f90d0e60343126201248ab96273fdbf8acc5fe5fa03c3dd8` (salt `BOING_NFT_TOKEN_LINK_REG_V1`, selectors `0xE0`–`0xE6`)
 - Local handoff: [HANDOFF.md](HANDOFF.md)
 
 ---
