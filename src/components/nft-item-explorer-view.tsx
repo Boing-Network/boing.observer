@@ -7,6 +7,7 @@ import { useNetwork } from "@/context/network-context";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
 import { CopyButton } from "@/components/copy-button";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
+import { LinkedCompanionsSection } from "@/components/linked-companions-section";
 import {
   explorerAccountHref,
   explorerAssetHref,
@@ -242,6 +243,10 @@ export function NftItemExplorerView() {
             </div>
           </div>
         </section>
+      ) : null}
+
+      {isHex64(collection) ? (
+        <LinkedCompanionsSection network={network} address64={collection} />
       ) : null}
     </div>
   );

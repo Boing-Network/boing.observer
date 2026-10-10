@@ -7,6 +7,15 @@ export const WEBSITE_URL = "https://boing.network";
 /** Canonical Boing Wallet (boing.express). */
 export const WALLET_URL = "https://boing.express";
 
+/** Canonical DeFi / token + NFT create surfaces (boing.finance). */
+export const FINANCE_URL = "https://boing.finance";
+
+/** Linked NFT↔token project hub on boing.finance (write / claim / register). */
+export const FINANCE_LINKED_PROJECT_URL = `${FINANCE_URL}/linked-project`;
+
+/** FreshMint marketplace (collection linked-token write surface). */
+export const FRESHMINT_URL = "https://fresh-mint-marketplace.vercel.app";
+
 /**
  * GitHub `owner/repo` where `main` contains `docs/` (RPC spec, canonical QA JSON, alignment docs).
  * Default is the repo that actually hosts these paths today. Override at build time when docs live
@@ -19,6 +28,9 @@ export const BOING_PROTOCOL_DOCS_REPO =
 
 /** Base URL for external Boing Network docs (GitHub blob UI). */
 export const DOCS_BASE = `https://github.com/${BOING_PROTOCOL_DOCS_REPO}/blob/main/docs`;
+
+/** Protocol doc for the on-chain linked NFT↔fungible token registry. */
+export const LINKED_NFT_TOKEN_DOC_URL = `${DOCS_BASE}/BOING-LINKED-NFT-TOKEN.md`;
 
 /** Canonical QA documentation page in the Boing Network repo. */
 export const QA_DOC_URL = `${DOCS_BASE}/QUALITY-ASSURANCE-NETWORK.md`;

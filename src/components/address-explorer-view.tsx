@@ -17,6 +17,7 @@ import { AccountNftGallery } from "@/components/account-nft-gallery";
 import { AccountTxHistory } from "@/components/account-tx-history";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
 import { AssetMetadataSection, type ExplorerAssetProfilePayload } from "@/components/asset-metadata-section";
+import { LinkedCompanionsSection } from "@/components/linked-companions-section";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { formatAssetKindLabel } from "@/lib/asset-kind-label";
 import { ADDRESS_FORMAT_ALIGNMENT_URL, NETWORK_FAUCET_URL } from "@/lib/constants";
@@ -296,6 +297,8 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
           }
         />
       )}
+
+      {isHex64(address) ? <LinkedCompanionsSection network={network} address64={address} /> : null}
 
       {loading && (
         <div className="space-y-4 animate-pulse" aria-busy="true">

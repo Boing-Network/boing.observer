@@ -12,3 +12,11 @@ export const TESTNET_FAUCET_ACCOUNT_HEX =
  */
 export const CANONICAL_TESTNET_NATIVE_CP_POOL_HEX =
   "7247ddc3180fdc4d3fd1e716229bfa16bad334a07d28aa9fda9ad1bfa7bdacc3";
+
+/**
+ * Public testnet linked NFT↔fungible token registry (CREATE2 salt `BOING_NFT_TOKEN_LINK_REG_V1`).
+ * Selectors `0xE0`–`0xE6`; query via `links_count` / `get_link_at` (`0xE3` / `0xE4`).
+ * See BOING-LINKED-NFT-TOKEN.md. Override with `NEXT_PUBLIC_BOING_LINKED_NFT_TOKEN_REGISTRY`.
+ */
+export const CANONICAL_BOING_TESTNET_LINKED_NFT_TOKEN_REGISTRY_HEX =
+  "0xebf9f0190f415852f90d0e60343126201248ab96273fdbf8acc5fe5fa03c3dd8";
