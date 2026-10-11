@@ -29,7 +29,7 @@ flowchart LR
 | 📜 QA gate rules | [`/qa/rules`](https://boing.observer/qa/rules) | Every Allow / Reject / Unsure rule + PDF |
 | 🧪 QA check | `/tools/qa-check` | Pre-flight `boing_qaCheck` |
 | 💱 DEX | `/dex/pools`, `/dex/quote` | Read-only directory + CP quotes via `boing-sdk` |
-| 🖼️ Asset | `/asset/:address`, `/asset/:address/item/:tokenId`, `/tokens` | Metadata scan; reference NFT collection + **per-item** profiles (owner/metadata XOR slots). FreshMint-style hash token ids via mint calldata decode in recent blocks ([BOING-REFERENCE-NFT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-REFERENCE-NFT.md) — v3 `mint_batch` n≤500 is one receipt). **Linked tokens & collections** (plain-language UI) resolve official NFT↔fungible links from the on-chain registry on asset, account, and NFT item pages (read-only; `links_count` / `get_link_at`, tombstones skipped) — see [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md) |
+| 🖼️ Asset | `/asset/:address`, `/asset/:address/item/:tokenId`, `/tokens` | Metadata scan; reference NFT collection + **per-item** profiles (owner/metadata XOR slots). FreshMint-style hash token ids via mint calldata decode in recent blocks ([BOING-REFERENCE-NFT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-REFERENCE-NFT.md) — v3 `mint_batch` n≤500 is one receipt). **Linked tokens & collections** (plain-language UI) resolve official NFT↔fungible links from the on-chain registry on asset, account, and NFT item pages (read-only; `links_count` / `get_link_at`, tombstones skipped) — see [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md). **Builder attested** (planned read-only): optional builder signal from a separate on-chain registry when an active attestation exists for a companion pair — see [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md) |
 | 📡 RPC catalog | `/tools/rpc-catalog` | Live `boing_getRpcMethodCatalog` |
 | ❤️ Node health | `/tools/node-health` | Height, sync, optional `boing_health` |
 | 📖 About | [`/about`](https://boing.observer/about) | Six pillars PDF |
@@ -72,6 +72,8 @@ npm run test:e2e
 | `BOING_OPERATOR_RPC_TOKEN` | Server-only; must match validator `X-Boing-Operator`. Never `NEXT_PUBLIC_` |
 | `BOING_QA_VOTE_RPC` | Validator JSON-RPC for `boing_qaPoolVote` (defaults to `https://boing-testnet-1.fly.dev`). Signed Express votes normally submit through the wallet RPC. |
 | `NFT_OWNER_INDEXER_URL` | Origin of `workers/nft-owner-indexer` (no trailing slash). Enables **`GET /api/account/nfts?network=&id=`**. |
+| `NEXT_PUBLIC_BOING_LINKED_NFT_TOKEN_REGISTRY` | Optional override for companions registry AccountId (public testnet default baked in) |
+| `NEXT_PUBLIC_BOING_BUILDER_ATTESTATION_REGISTRY` | Optional override for builder attestation registry AccountId (public testnet `0x734077a9…1816`; for future read-only **Builder attested** UI) |
 
 No API keys for read-only RPC. Do not hardcode production RPC URLs.
 
@@ -105,6 +107,7 @@ GitHub Actions deploys on `main` **after** CI (lint, unit tests, production buil
 - Protocol docs: `Boing-Network/boing.network` on `main` under `docs/`
 - Alignment: [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md)
 - Linked NFT↔token companions (on-chain registry, read-only on asset/account/NFT item pages): [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md) — public testnet registry `0xebf9f0190f415852f90d0e60343126201248ab96273fdbf8acc5fe5fa03c3dd8` (salt `BOING_NFT_TOKEN_LINK_REG_V1`, selectors `0xE0`–`0xE6`; explorer queries `0xE3`/`0xE4`)
+- Builder attestation (on-chain builder signal; companions remain project authority): [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md) — public testnet registry `0x734077a9f926077d39e84ec278b77b7b600c840f7101809646d8797a6a9e1816` (salt `BOING_BUILDER_ATTEST_REG_V1`, selectors `0xE0`–`0xE6`; read via `attestations_count` / `get_attestation_at`). Explorer UI for **Builder attested** is not shipped yet — document the AccountId here for implementers.
 - Local handoff: [HANDOFF.md](HANDOFF.md)
 
 ---
