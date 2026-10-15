@@ -8,6 +8,14 @@ import { NETWORK_FAUCET_URL, NETWORK_TESTNET_URL } from "@/lib/constants";
 import { faucetRequest, type FaucetResult } from "@/lib/rpc-methods";
 import { toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
+import {
+  BOING_EXPRESS_CHROME_STORE_URL,
+  firstAccountHex,
+  getInjectedBoingProvider,
+  mapWalletErrorToUi,
+  walletMissingMessage,
+  walletRequestAccounts,
+} from "@/lib/boing-wallet";
 
 export default function FaucetPage() {
   const { network } = useNetwork();
@@ -67,7 +75,7 @@ export default function FaucetPage() {
       <header className="space-y-2">
         <h1 className="page-title font-display">Testnet faucet helper</h1>
         <p className="mt-2 text-[var(--text-secondary)]">
-          Request 10 testnet BOING (once per 60 seconds per account). Prefer the{" "}
+          Request testnet BOING (once per 60 seconds per account). The canonical faucet is the{" "}
           <a href={NETWORK_FAUCET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
             public faucet
           </a>{" "}
@@ -75,7 +83,7 @@ export default function FaucetPage() {
           <a href={NETWORK_TESTNET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
             testnet hub
           </a>{" "}
-          for onboarding.
+          .
         </p>
       </header>
 
@@ -108,7 +116,7 @@ export default function FaucetPage() {
           disabled={loading || network === "mainnet"}
           className="rounded-lg bg-network-cyan px-4 py-2 font-semibold text-boing-black hover:bg-network-cyan-light disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Requesting…" : "Request 10 testnet BOING"}
+          {loading ? "Requesting…" : "Request testnet BOING"}
         </button>
       </form>
 
@@ -128,7 +136,7 @@ export default function FaucetPage() {
           {result.ok ? (
             <div className="space-y-2 text-green-200">
               <p>
-                {result.amount ?? "10"} testnet BOING sent. {result.message ?? ""}
+                {result.amount != null ? `${result.amount} testnet BOING sent.` : "Testnet BOING sent."} {result.message ?? ""}
               </p>
               {toPrefixedHex64(accountId) ? (
                 <p>
