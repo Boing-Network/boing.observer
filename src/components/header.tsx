@@ -4,6 +4,7 @@ import { MobileMenu } from "@/components/mobile-menu";
 import { SiteLogo } from "@/components/site-logo";
 import { NetworkSelector } from "./network-selector";
 import { SearchBar } from "./search-bar";
+import { BoingAppsMenu } from "./boing-apps-menu";
 
 export function Header() {
   return (
@@ -20,6 +21,9 @@ export function Header() {
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:ml-0 sm:gap-2">
           <NetworkSelector />
+          <div className="hidden sm:block">
+            <BoingAppsMenu />
+          </div>
           <MobileMenu />
         </div>
       </div>

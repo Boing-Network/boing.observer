@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SearchBar } from "@/components/search-bar";
 import { NAV_GROUPS, navItemIsActive } from "@/lib/nav";
+import { BOING_APPS } from "@/components/boing-apps-menu";
 
 export function MobileMenu() {
   const [open, setOpen] = useState(false);
@@ -164,6 +165,18 @@ export function MobileMenu() {
                     </ul>
                   </nav>
                 ))}
+                <nav aria-label="Boing apps" className="pt-2">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Boing apps</p>
+                  <ul>
+                    {BOING_APPS.map((a) => (
+                      <li key={a.href}>
+                        <a href={a.href} rel="noopener" className="block rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-network-cyan">
+                          {a.name} <span className="text-xs text-[var(--text-muted)]">{a.desc}</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
               </div>
             </div>
           </div>
