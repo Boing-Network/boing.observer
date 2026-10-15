@@ -98,6 +98,7 @@ export function PdfDocument({
           </p>
         ) : null}
         {pages.map((pageSrc, index) => (
+          // eslint-disable-next-line @next/next/no-img-element -- rendered PDF page images (data URLs), not optimizable
           <img
             key={`${href}-${index}`}
             src={pageSrc}
