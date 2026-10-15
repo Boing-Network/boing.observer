@@ -1,9 +1,10 @@
 /**
- * Optional overlay: copies boing-sdk from the cloned boing.network monorepo into
- * node_modules/boing-sdk when BOING_OBSERVER_USE_MONOREPO_SDK=1.
+ * Copies boing-sdk from the boing.network monorepo (dependency `boing-network-root`, pinned to a
+ * commit in package.json, like boing.express pins its git SDK) over node_modules/boing-sdk.
  *
- * Default: keep the npm `boing-sdk` package (see package.json) so JSON-RPC surfaces
- * match published releases (e.g. listDexPoolsPage / boing_listDexPools on ^0.3.0).
+ * Default: overlay from the pinned monorepo commit (npm `boing-sdk` lags the repo: 0.3.x vs 0.5.x).
+ * Set BOING_OBSERVER_USE_NPM_SDK=1 to keep the published npm package instead.
+ * To bump the SDK: change the commit in package.json "boing-network-root", then npm install.
  */
 import { cpSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -12,21 +13,21 @@ const cwd = process.cwd();
 const src = join(cwd, "node_modules", "boing-network-root", "boing-sdk");
 const dst = join(cwd, "node_modules", "boing-sdk");
 
-if (process.env.BOING_OBSERVER_USE_MONOREPO_SDK === "1") {
+if (process.env.BOING_OBSERVER_USE_NPM_SDK !== "1") {
   if (!existsSync(join(src, "package.json"))) {
-    console.warn("[sync-boing-sdk] BOING_OBSERVER_USE_MONOREPO_SDK=1 but node_modules/boing-network-root/boing-sdk not found.");
+    console.warn("[sync-boing-sdk] node_modules/boing-network-root/boing-sdk not found; keeping npm boing-sdk.");
     process.exit(0);
   }
   if (existsSync(dst)) {
     rmSync(dst, { recursive: true, force: true });
   }
   cpSync(src, dst, { recursive: true });
-  console.log("[sync-boing-sdk] Overlaid boing-sdk from boing-network-root");
+  console.log("[sync-boing-sdk] Overlaid boing-sdk from pinned boing-network-root");
   process.exit(0);
 }
 
 if (existsSync(join(dst, "package.json"))) {
-  console.log("[sync-boing-sdk] Using npm boing-sdk (set BOING_OBSERVER_USE_MONOREPO_SDK=1 to overlay from monorepo)");
+  console.log("[sync-boing-sdk] Using npm boing-sdk (BOING_OBSERVER_USE_NPM_SDK=1)");
   process.exit(0);
 }
 
