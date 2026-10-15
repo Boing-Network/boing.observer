@@ -9,6 +9,7 @@ import { fetchSyncState } from "@/lib/rpc-methods";
 import type { BoingSyncState } from "@/lib/rpc-types";
 import { hexForLink, shortenHash } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
+import { RpcDownNotice, Skeleton } from "@/components/loading-states";
 
 const REFRESH_INTERVAL_MS = 20_000;
 
@@ -53,11 +54,9 @@ export function NetworkChainContext() {
         <div className="glass-card space-y-3 p-4">
           <h4 className="text-sm font-medium text-[var(--text-muted)]">Committed tip</h4>
           {error ? (
-            <p className="text-sm text-amber-200" role="alert">
-              {error}
-            </p>
+            <RpcDownNotice message={error} onRetry={() => void load()} />
           ) : loading ? (
-            <p className="animate-pulse text-sm text-[var(--text-muted)]">Loading sync state…</p>
+            <div className="space-y-2" aria-busy="true" aria-label="Loading sync state"><Skeleton className="h-4 w-40" /><Skeleton className="h-4 w-32" /><Skeleton className="h-4 w-56" /></div>
           ) : sync ? (
             <dl className="space-y-2 text-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-2">

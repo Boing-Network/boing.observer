@@ -8,6 +8,7 @@ import { explorerBlockHeightHref } from "@/lib/explorer-href";
 import { formatIntervalLabel } from "@/lib/block-economics";
 import { computeNetworkStats, type NetworkStats as NetworkStatsData } from "@/lib/network-stats";
 import { formatBoingAmount } from "@/lib/tx-payload";
+import { RpcDownNotice, Skeleton } from "@/components/loading-states";
 
 const BLOCKS_TO_SAMPLE = 20;
 
@@ -25,7 +26,7 @@ function StatCard({
   href?: string;
 }) {
   const valueNode = loading ? (
-    <span className="animate-pulse font-mono text-lg text-[var(--text-muted)]">—</span>
+    <Skeleton className="mt-1 h-6 w-20" />
   ) : href ? (
     <Link href={href} className="font-mono text-lg font-semibold text-network-cyan hover:underline">
       {value}
@@ -58,9 +59,7 @@ export function NetworkStats() {
   if (error && !stats) {
     return (
       <div className="py-2" role="region" aria-label="Network statistics">
-        <div className="glass-card border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-200" role="alert">
-          {error}
-        </div>
+        <RpcDownNotice message={error} />
       </div>
     );
   }
