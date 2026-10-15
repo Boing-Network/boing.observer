@@ -6,6 +6,7 @@ import {
   isWalletUserRejected,
   mapWalletErrorToUi,
   qaPoolVoteTxRequest,
+  walletMissingMessage,
 } from "./boing-wallet";
 
 describe("boing-wallet helpers", () => {
@@ -39,5 +40,17 @@ describe("boing-wallet helpers", () => {
     expect(
       mapWalletErrorToUi(new Error("Unsupported transaction type: qa_pool_vote"))
     ).toMatch(/Update the wallet/);
+  });
+});
+
+describe("walletMissingMessage", () => {
+  it("explains mobile browsers", () => {
+    expect(walletMissingMessage("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Mobile Safari")).toMatch(/mobile/i);
+  });
+  it("explains non-Chromium desktop browsers", () => {
+    expect(walletMissingMessage("Mozilla/5.0 (Windows NT 10.0; rv:120.0) Gecko/20100101 Firefox/120.0")).toMatch(/Chrome extension/);
+  });
+  it("asks desktop Chrome users to install", () => {
+    expect(walletMissingMessage("Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/130.0 Safari/537.36")).toMatch(/Chrome Web Store/);
   });
 });

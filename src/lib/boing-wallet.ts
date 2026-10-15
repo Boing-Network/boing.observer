@@ -159,3 +159,25 @@ export function firstAccountHex(accounts: string[]): string | null {
   const hex = accounts[0] ? normalizeVoterHex(accounts[0]) : "";
   return isAccountHex(hex) ? hex : null;
 }
+
+/** Chrome Web Store listing for the Boing Express extension. */
+export const BOING_EXPRESS_CHROME_STORE_URL =
+  "https://chromewebstore.google.com/detail/hhknjdhknnghccmfnfafbkapjljicbfh";
+
+/**
+ * User-facing explanation when no `window.boing` provider is present.
+ * Distinguishes mobile / non-Chromium browsers (extension cannot run there) from desktop Chrome
+ * where the extension is simply not installed.
+ */
+export function walletMissingMessage(userAgent: string = typeof navigator !== "undefined" ? navigator.userAgent : ""): string {
+  const ua = userAgent || "";
+  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  if (mobile) {
+    return "Boing Express runs as a desktop Chrome extension, so it can't connect on this mobile browser. Open this page in Chrome on a computer, or use the web wallet at boing.express to view balances and send BOING.";
+  }
+  const chromium = /Chrome\/|Chromium\/|Edg\//.test(ua) && !/Firefox\//.test(ua);
+  if (!chromium) {
+    return "Boing Express is a Chrome extension. Open this page in Chrome, Edge, or Brave with the extension installed, or use the web wallet at boing.express.";
+  }
+  return "Boing Express isn't installed in this browser. Install it from the Chrome Web Store, then reload this page.";
+}

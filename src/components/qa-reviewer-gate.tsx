@@ -18,6 +18,7 @@ import {
   walletSendTransaction,
   walletSignTransaction,
   type BoingInjectedProvider,
+  walletMissingMessage,
 } from "@/lib/boing-wallet";
 import { isAccountHex, normalizeVoterHex } from "@/lib/qa-reviewer-auth";
 import type { NetworkId } from "@/lib/rpc-types";
@@ -199,7 +200,7 @@ export function useQaReviewerSession(): {
   const connectWallet = useCallback(async () => {
     const provider = getInjectedBoingProvider();
     if (!provider) {
-      throw new Error("Boing Express is not installed in this browser.");
+      throw new Error(walletMissingMessage());
     }
     const accounts = await walletRequestAccounts(provider);
     await ensureWalletChain(provider, network);
@@ -210,7 +211,7 @@ export function useQaReviewerSession(): {
 
   const switchWalletChain = useCallback(async () => {
     const provider = getInjectedBoingProvider();
-    if (!provider) throw new Error("Boing Express is not installed in this browser.");
+    if (!provider) throw new Error(walletMissingMessage());
     await ensureWalletChain(provider, network);
     const chainId = await walletChainIdHex(provider).catch(() => null);
     setWalletChainId(chainId);
