@@ -7,6 +7,7 @@ import {
   chainIdHexForNetwork,
   ensureWalletChain,
   firstAccountHex,
+  getBoingProviderWithWebFallback,
   getInjectedBoingProvider,
   isQaPoolVoteUnsupported,
   isWalletUserRejected,
@@ -198,7 +199,7 @@ export function useQaReviewerSession(): {
   }, []);
 
   const connectWallet = useCallback(async () => {
-    const provider = getInjectedBoingProvider();
+    const provider = getBoingProviderWithWebFallback(network);
     if (!provider) {
       throw new Error(walletMissingMessage());
     }
@@ -210,7 +211,7 @@ export function useQaReviewerSession(): {
   }, [applyAccounts, network]);
 
   const switchWalletChain = useCallback(async () => {
-    const provider = getInjectedBoingProvider();
+    const provider = getBoingProviderWithWebFallback(network);
     if (!provider) throw new Error(walletMissingMessage());
     await ensureWalletChain(provider, network);
     const chainId = await walletChainIdHex(provider).catch(() => null);
@@ -355,7 +356,7 @@ export function QaReviewerSessionPanel({
           <code className="rounded bg-white/10 px-1">BOING_OPERATOR_RPC_TOKEN</code>.
         </p>
       ) : null}
-      {session.walletDetected ? (
+      {/* Extension when injected; otherwise the boing.express web wallet (popup approvals). */}
         <button
           type="button"
           disabled={busy}
@@ -368,9 +369,9 @@ export function QaReviewerSessionPanel({
           }}
           className="rounded-lg bg-network-cyan px-4 py-2 font-semibold text-boing-black hover:bg-network-cyan-light disabled:opacity-60"
         >
-          {busy ? "Connecting…" : "Connect Boing Express"}
+          {busy ? "Connecting…" : session.walletDetected ? "Connect Boing Express" : "Connect with boing.express web wallet"}
         </button>
-      ) : (
+      {!session.walletDetected ? (
         <a
           href={WALLET_URL}
           target="_blank"
@@ -379,7 +380,7 @@ export function QaReviewerSessionPanel({
         >
           Install Boing Express
         </a>
-      )}
+      ) : null}
       {formError ? (
         <p className="text-xs text-rose-300" role="alert">
           {formError}
@@ -508,7 +509,7 @@ export function QaReviewerVoteButtons({
     setNote(null);
     try {
       if (session.viaWallet) {
-        const provider = getInjectedBoingProvider();
+        const provider = getBoingProviderWithWebFallback(network);
         if (!provider) {
           throw new Error("Boing Express is no longer available. Reconnect the wallet.");
         }

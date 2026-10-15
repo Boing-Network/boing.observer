@@ -9,6 +9,7 @@ import {
 } from "./chain-ids";
 import { isAccountHex, normalizeVoterHex } from "./qa-reviewer-auth";
 import type { NetworkId } from "./rpc-types";
+import { createBoingWebWalletProvider } from "./boing-web-wallet";
 
 export type QaVoteKind = "allow" | "reject" | "abstain";
 
@@ -33,6 +34,29 @@ export function getInjectedBoingProvider(
     return raw as BoingInjectedProvider;
   }
   return null;
+}
+
+const webProviders = new Map<string, BoingInjectedProvider>();
+
+/**
+ * Extension provider when injected (primary); otherwise the boing.express web wallet, which opens a
+ * boing.express popup where the user approves each connect / signature (docs/WEB-SIGNING-FLOW.md).
+ * Call from a click handler so the popup is not blocked.
+ */
+export function getBoingProviderWithWebFallback(
+  network: NetworkId,
+  globalObj: typeof globalThis = globalThis
+): BoingInjectedProvider | null {
+  const injected = getInjectedBoingProvider(globalObj);
+  if (injected) return injected;
+  if (typeof window === "undefined") return null;
+  const chainId = chainIdHexForNetwork(network).toLowerCase();
+  let p = webProviders.get(chainId);
+  if (!p) {
+    p = createBoingWebWalletProvider({ chainId, mode: "popup" }) as BoingInjectedProvider;
+    webProviders.set(chainId, p);
+  }
+  return p;
 }
 
 export function qaPoolVoteTxRequest(subjectTxHash: string, vote: QaVoteKind): {
@@ -173,7 +197,7 @@ export function walletMissingMessage(userAgent: string = typeof navigator !== "u
   const ua = userAgent || "";
   const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
   if (mobile) {
-    return "Boing Express runs as a desktop Chrome extension, so it can't connect on this mobile browser. Open this page in Chrome on a computer, or use the web wallet at boing.express to view balances and send BOING.";
+    return "Boing Express runs as a desktop Chrome extension, so it can't connect on this mobile browser. Connect with the boing.express web wallet instead: a boing.express window opens for each approval (allow popups for this site).";
   }
   const chromium = /Chrome\/|Chromium\/|Edg\//.test(ua) && !/Firefox\//.test(ua);
   if (!chromium) {
