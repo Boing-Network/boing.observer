@@ -11,7 +11,7 @@ export const TESTNET_FAUCET_ACCOUNT_HEX =
  * See THREE-CODEBASE-ALIGNMENT.md §3.1.
  */
 export const CANONICAL_TESTNET_NATIVE_CP_POOL_HEX =
-  "7247ddc3180fdc4d3fd1e716229bfa16bad334a07d28aa9fda9ad1bfa7bdacc3";
+  "5b60d6f8514d1a8a40340fa354951d778b0821cd3ff7e534d0bea50f67d38976";
 
 /**
  * Public testnet linked NFT↔fungible token registry (CREATE2 salt `BOING_NFT_TOKEN_LINK_REG_V1`).
