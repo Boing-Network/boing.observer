@@ -95,10 +95,3 @@ export async function resolveOffchainTokenMetadata(
   }
   return null;
 }
-
-export function mergeAssetImageUrl(
-  fromOnChain: string | null | undefined,
-  fromOffchain: OffchainTokenMetadata | null,
-): string | null {
-  return fromOnChain || fromOffchain?.imageUrl || null;
-}

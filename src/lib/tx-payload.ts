@@ -165,41 +165,6 @@ export function formatBoingAmount(raw: string): string {
   return raw.replace(/^0+/, "") || "0";
 }
 
-/**
- * Short, user-facing sentence for the signed payload (complements badges and charts).
- */
-export function getSignedPayloadHeadline(kind: TxPayloadKind, inner: Record<string, unknown>): string {
-  const amt = (k: string) => formatBoingAmount(String(inner[k] ?? "0"));
-  switch (kind) {
-    case "Bond":
-      return `You signed a bond (stake) of ${amt("amount")} BOING — it moves from liquid balance into validator stake when executed.`;
-    case "Unbond":
-      return `You signed an unbond of ${amt("amount")} BOING — stake begins leaving per protocol rules when executed.`;
-    case "Transfer":
-      return `You signed a transfer of ${amt("amount")} BOING to ${formatShortAddr(inner.to)}.`;
-    case "ContractCall":
-      return `You signed a call to contract ${formatShortAddr(inner.contract)}${inner.calldata ? " with calldata" : ""}.`;
-    case "ContractDeploy":
-      return "You signed a contract deployment (bytecode in payload).";
-    case "ContractDeployWithPurpose":
-      return `You signed a contract deployment with purpose ${formatPurpose(String(inner.purpose_category ?? "other"))}.`;
-    case "ContractDeployWithPurposeAndMetadata": {
-      const meta = deployAssetLabel(inner);
-      return `You signed a deployment (${formatPurpose(String(inner.purpose_category ?? "other"))}${meta ? ` · ${meta}` : ""}).`;
-    }
-    case "ClaimUnbond":
-      return "You signed a claim_unbond — pending unbond stake returns to liquid balance when unlock height is reached.";
-    case "QaPoolVote":
-      return `You signed a QA pool vote (${String(inner.vote ?? "")}) on subject ${formatShortAddr(inner.subject ?? inner.subject_hex)}.`;
-    case "Unknown":
-      return "";
-    default: {
-      const _ex: never = kind;
-      return _ex;
-    }
-  }
-}
-
 function senderHexNormalized(sender: unknown): string {
   const s = toSafeHexString(sender);
   const h = s.startsWith("0x") ? s.slice(2) : s;

@@ -41,13 +41,6 @@ function readBeU64Low8(word: Uint8Array): number | null {
   return Number(n);
 }
 
-/** Selector byte is the last byte of the first 32-byte word. */
-export function referenceNftCalldataSelector(calldata: string | Uint8Array): number | null {
-  const bytes = normalizeCalldataBytes(calldata);
-  if (!bytes) return null;
-  return bytes[31] ?? null;
-}
-
 /**
  * If `tokenId` is a sequential reference id (high 24 bytes zero), return that u64.
  * FreshMint-style opaque hash ids return null.
