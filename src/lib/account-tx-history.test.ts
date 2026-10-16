@@ -98,3 +98,23 @@ describe("collectAccountTxHistory", () => {
     ]);
   });
 });
+
+describe("failed receipts (security fix #3)", () => {
+  it("flags rows whose receipt has success: false", () => {
+    const items = collectAccountTxHistory(WALLET, [
+      {
+        height: 901,
+        timestamp: 1,
+        transactions: [
+          { sender: `0x${WALLET}`, payload: { Transfer: { to: `0x${OTHER}`, amount: "999999999" } } },
+          { sender: `0x${WALLET}`, payload: { Transfer: { to: `0x${OTHER}`, amount: "1" } } },
+        ],
+        receipts: [
+          { tx_id: `0x${"1".repeat(64)}`, success: false },
+          { tx_id: `0x${"2".repeat(64)}`, success: true },
+        ],
+      },
+    ]);
+    expect(items.map((r) => r.failed)).toEqual([false, true]);
+  });
+});

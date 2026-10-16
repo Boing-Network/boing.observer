@@ -136,6 +136,11 @@ export function AccountTxHistory({ address64, network }: { address64: string; ne
                         </span>
                       ))}
                       <span className="font-mono text-xs text-[var(--text-muted)]">{row.kind}</span>
+                      {row.failed ? (
+                        <span className="rounded-full bg-red-500/25 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-200" data-testid="tx-failed-badge">
+                          Failed
+                        </span>
+                      ) : null}
                     </div>
                     <p className="text-sm text-[var(--text-primary)]">{row.summary}</p>
                     <div className="data-card__row">
@@ -209,7 +214,12 @@ export function AccountTxHistory({ address64, network }: { address64: string; ne
                             ))}
                           </div>
                         </td>
-                        <td className="p-3 align-top font-mono text-xs">{row.kind}</td>
+                        <td className="p-3 align-top font-mono text-xs">
+                          {row.kind}
+                          {row.failed ? (
+                            <span className="ml-2 rounded-full bg-red-500/25 px-2 py-0.5 text-[10px] font-semibold uppercase text-red-200">Failed</span>
+                          ) : null}
+                        </td>
                         <td className="p-3 align-top text-[var(--text-primary)]">{row.summary}</td>
                         <td className="p-3 align-top">
                           {row.sender ? (

@@ -580,6 +580,14 @@ function ReceiptPanel({
             </dd>
           </div>
         ) : null}
+        {!ok && receipt.gas_used ? (
+          <div className="flex flex-wrap gap-x-2" data-testid="failed-tx-fee">
+            <dt className="text-[var(--text-muted)]">Fee charged</dt>
+            <dd className="text-[var(--text-primary)]">
+              {Math.ceil(receipt.gas_used / 21000).toLocaleString()} BOING (failed transactions still pay a fee; state was reverted)
+            </dd>
+          </div>
+        ) : null}
         {!ok && receipt.error ? (
           <div>
             <dt className="text-[var(--text-muted)]">Revert / error</dt>

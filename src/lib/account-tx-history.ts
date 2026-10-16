@@ -23,6 +23,8 @@ export type AccountTxHistoryItem = {
   kind: TxPayloadKind;
   summary: string;
   roles: AccountTxRole[];
+  /** Receipt `success: false` (included, state reverted; since security fix #3 the sender still pays a fee). */
+  failed?: boolean;
 };
 
 export type AccountTxHistoryScanBlock = {
@@ -121,6 +123,7 @@ export function collectAccountTxHistory(
         kind: getTxPayloadKind(tx.payload),
         summary: getTxPayloadSummary(tx.payload),
         roles,
+        failed: receipt?.success === false,
       });
     }
   }
