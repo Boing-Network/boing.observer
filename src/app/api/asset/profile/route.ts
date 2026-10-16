@@ -5,6 +5,7 @@ import { resolveNativeDexFactoryForExplorer } from "@/lib/resolve-native-dex-fac
 import { resolveImageUrlFromSources } from "@/lib/extract-media-url";
 import { isNftPurposeOrKind } from "@/lib/asset-kind-label";
 import { buildTokenIndexForHeightRange } from "@/lib/token-index/build-token-index";
+import { fetchAccountDeployHeights } from "@/lib/account-deploy-heights";
 import { resolveOffchainTokenMetadata } from "@/lib/token-metadata-lookup";
 import { probeReferenceNftCollectionSamples } from "@/lib/reference-nft-probe";
 import { discoverReferenceNftTokenIdsFromHeightRange } from "@/lib/reference-nft-discover";
@@ -95,6 +96,34 @@ export async function GET(req: NextRequest) {
       deployedByAccount = indexResult.entries.filter(
         (e) => (e.deployer ?? "").toLowerCase() === address64.toLowerCase() && e.address !== address64,
       );
+
+      // Wallet pages: the bounded window above misses older deploys. Use the node's indexed account
+      // history to find this account's deploy blocks across the whole chain and index exactly those.
+      let fromAccountHistory = false;
+      const hist = await fetchAccountDeployHeights(getRpcBaseUrl(network), idPrefixed);
+      if (hist.supported && hist.heights.length > 0) {
+        fromAccountHistory = true;
+        const seen = new Set(deployedByAccount.map((e) => e.address));
+        for (const h of hist.heights.slice(-64)) {
+          if (h >= fromHeight) continue;
+          const r = await buildTokenIndexForHeightRange(client, h, h, { maxConcurrent: 2 });
+          for (const e of r.entries) {
+            if ((e.deployer ?? "").toLowerCase() !== address64.toLowerCase() || e.address === address64) continue;
+            if (seen.has(e.address)) continue;
+            seen.add(e.address);
+            deployedByAccount.push(e);
+          }
+        }
+      }
+      // The "empty return_data" line is an always-on implementation note, not a problem with this
+      // address; window-only notes are moot once full account history found the deploys.
+      indexWarnings = (indexWarnings ?? []).filter((w) => {
+        if (w.startsWith("Boing deploy receipts use empty return_data")) return false;
+        if (fromAccountHistory && (w.startsWith("No ContractDeploy transactions in this window") || w.startsWith("No register_pair events in this block window"))) {
+          return false;
+        }
+        return true;
+      });
     }
 
     const onChainImage = resolveImageUrlFromSources(

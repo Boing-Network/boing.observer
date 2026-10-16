@@ -5,6 +5,9 @@ import {
   encodeLinkedNftTokenGetLinkAtCalldataHex,
   encodeLinkedNftTokenLinksCountCalldataHex,
   resolveLinkedNftTokenRegistryId,
+  listLinkedCompanionsForAsset,
+  encodeLinkedNftTokenGetAssetClaimerCalldataHex,
+  decodeLinkedNftTokenAssetClaimerReturnData,
   SELECTOR_LINKED_NFT_TOKEN_GET_LINK_AT,
   SELECTOR_LINKED_NFT_TOKEN_LINKS_COUNT,
 } from "./linked-nft-token-registry";
@@ -72,5 +75,54 @@ describe("resolveLinkedNftTokenRegistryId", () => {
     const r = resolveLinkedNftTokenRegistryId({ network: "mainnet", envRegistryHex: "" });
     expect(r.registryId).toBeNull();
     expect(r.source).toBeNull();
+  });
+});
+
+describe("managed links (wallet view via get_asset_claimer 0xE5)", () => {
+  const ME = "d6".repeat(32);
+  const COL = "63".repeat(32);
+  const TOK = "98".repeat(32);
+  const OTHER_COL = "11".repeat(32);
+  const OTHER_TOK = "22".repeat(32);
+  const word = (n: number) => `${"00".repeat(31)}${n.toString(16).padStart(2, "0")}`;
+  function fakeClient() {
+    const links = [
+      [COL, TOK],
+      ["00".repeat(32), "00".repeat(32)],
+      [OTHER_COL, OTHER_TOK],
+    ];
+    const claimers: Record<string, string> = { [COL]: ME, [TOK]: ME, [OTHER_COL]: "33".repeat(32) };
+    return {
+      async simulateContractCall(_reg: string, calldata: string) {
+        const h = calldata.replace(/^0x/, "");
+        const sel = parseInt(h.slice(62, 64), 16);
+        if (sel === 0xe3) return { success: true, return_data: `0x${word(links.length)}` };
+        if (sel === 0xe4) {
+          const i = parseInt(h.slice(-16), 16);
+          return { success: true, return_data: `0x${links[i]![0]}${links[i]![1]}` };
+        }
+        if (sel === 0xe5) return { success: true, return_data: `0x${claimers[h.slice(64)] ?? "00".repeat(32)}` };
+        return { success: false };
+      },
+    } as unknown as Parameters<typeof listLinkedCompanionsForAsset>[0]["client"];
+  }
+
+  it("encodes get_asset_claimer and decodes claimers", () => {
+    const hex = encodeLinkedNftTokenGetAssetClaimerCalldataHex(`0x${COL}`);
+    expect(hex).toHaveLength(130);
+    expect(hex.slice(64, 66)).toBe("e5");
+    expect(decodeLinkedNftTokenAssetClaimerReturnData(`0x${"00".repeat(32)}`)).toBeNull();
+    expect(decodeLinkedNftTokenAssetClaimerReturnData(`0x${ME}`)).toBe(`0x${ME}`);
+  });
+
+  it("a wallet sees the links it claimed; an asset still sees its peer", async () => {
+    const reg = `0x${"eb".repeat(32)}`;
+    const wallet = await listLinkedCompanionsForAsset({ client: fakeClient(), registryId: reg, assetId: `0x${ME}` });
+    expect(wallet.companions).toEqual([]);
+    expect(wallet.managedLinks).toEqual([{ index: 0, collectionId: `0x${COL}`, tokenId: `0x${TOK}`, claimer: `0x${ME}` }]);
+    const asset = await listLinkedCompanionsForAsset({ client: fakeClient(), registryId: reg, assetId: `0x${COL}` });
+    expect(asset.companions).toHaveLength(1);
+    expect(asset.companions[0]!.peerId).toBe(`0x${TOK}`);
+    expect(asset.managedLinks).toEqual([]);
   });
 });

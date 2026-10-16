@@ -5,6 +5,7 @@ import {
   listLinkedCompanionsForAsset,
   resolveLinkedNftTokenRegistryId,
   type LinkedCompanionPeer,
+  type LinkedManagedLink,
 } from "@/lib/linked-nft-token-registry";
 import { getRpcBaseUrl, isMainnetConfigured } from "@/lib/rpc-client";
 import { normalizeHex64 } from "@/lib/rpc-types";
@@ -34,6 +35,8 @@ export type CompanionsApiResponse = {
   registrySource: string | null;
   slotCount: number;
   companions: LinkedCompanionPeer[];
+  /** Links whose assets this AccountId claims (wallet pages; links are keyed by asset). */
+  managedLinks: LinkedManagedLink[];
   rpcHost: string;
   note?: string;
 };
@@ -93,6 +96,7 @@ export async function GET(req: NextRequest) {
           registrySource: null,
           slotCount: 0,
           companions: [],
+          managedLinks: [],
           rpcHost,
           note:
             "No linked NFT↔token registry AccountId for this network. Set NEXT_PUBLIC_BOING_LINKED_NFT_TOKEN_REGISTRY or wait for end_user.canonical_linked_nft_token_registry.",
@@ -100,7 +104,7 @@ export async function GET(req: NextRequest) {
         return empty;
       }
 
-      const { companions, slotCount } = await listLinkedCompanionsForAsset({
+      const { companions, managedLinks, slotCount } = await listLinkedCompanionsForAsset({
         client,
         registryId,
         assetId: idPrefixed,
@@ -114,9 +118,10 @@ export async function GET(req: NextRequest) {
         registrySource: source,
         slotCount,
         companions,
+        managedLinks,
         rpcHost,
         note:
-          companions.length === 0
+          companions.length === 0 && managedLinks.length === 0
             ? "No active companion links for this AccountId in the on-chain registry (tombstones skipped)."
             : undefined,
       };

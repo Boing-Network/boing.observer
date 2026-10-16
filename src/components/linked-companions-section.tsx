@@ -10,7 +10,7 @@ import {
   LINKED_NFT_TOKEN_DOC_URL,
   WALLET_URL,
 } from "@/lib/constants";
-import type { LinkedCompanionPeer } from "@/lib/linked-nft-token-registry";
+import type { LinkedCompanionPeer, LinkedManagedLink } from "@/lib/linked-nft-token-registry";
 import type { NetworkId } from "@/lib/rpc-types";
 import { shortenHash, toPrefixedHex64 } from "@/lib/rpc-types";
 
@@ -20,6 +20,7 @@ type CompanionsPayload = {
   registrySource: string | null;
   slotCount: number;
   companions: LinkedCompanionPeer[];
+  managedLinks?: LinkedManagedLink[];
   note?: string;
   error?: string;
 };
@@ -157,6 +158,38 @@ export function LinkedCompanionsSection({
             </li>
           ))}
         </ul>
+      ) : payload?.managedLinks?.length ? (
+        <div className="space-y-2">
+          <p className="text-xs text-[var(--text-muted)]">Links managed by this account (it claimed both sides in the registry).</p>
+          <ul className="space-y-3" data-testid="linked-companions-managed">
+            {payload.managedLinks.map((l) => (
+              <li
+                key={`managed-${l.index}`}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--border-color)] pt-3 first:border-t-0 first:pt-0"
+              >
+                <span className="rounded-full border border-[var(--border-color)] bg-white/5 px-2 py-0.5 text-xs text-[var(--text-secondary)]">
+                  Collection
+                </span>
+                <Link
+                  href={explorerAssetHref(l.collectionId, network)}
+                  className="font-mono text-sm text-network-cyan hover:underline break-all"
+                >
+                  {shortenHash(l.collectionId, 10, 8)}
+                </Link>
+                <span aria-hidden="true" className="text-[var(--text-muted)]">↔</span>
+                <span className="rounded-full border border-[var(--border-color)] bg-white/5 px-2 py-0.5 text-xs text-[var(--text-secondary)]">
+                  Coin
+                </span>
+                <Link
+                  href={explorerAssetHref(l.tokenId, network)}
+                  className="font-mono text-sm text-network-cyan hover:underline break-all"
+                >
+                  {shortenHash(l.tokenId, 10, 8)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : (
         <p className="text-sm text-[var(--text-secondary)]" role="status" data-testid="linked-companions-empty">
           Nothing linked to this yet.
