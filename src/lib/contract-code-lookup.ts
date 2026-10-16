@@ -78,7 +78,9 @@ export async function resolveContractCode(
     return { ...hist, code: hist.code ? { ...hist.code, via: "history" } : null, codeVia: hist.code ? "history" : "none" };
   }
   if (direct == null) return { ...hist, code: null, codeVia: "none" };
-  const sameDeploy = hist.code && h64(hist.code.bytecodeHex) === direct.bytecodeHex ? hist.code : null;
+  // History found the deploy tx whose predicted address is this contract: the deployer is proven even if the
+  // stored code differs from the deploy payload.
+  const sameDeploy = hist.code;
   return {
     ...hist,
     code: {

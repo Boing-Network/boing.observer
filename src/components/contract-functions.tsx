@@ -11,6 +11,7 @@ import type { NetworkId } from "@/lib/rpc-types";
 import { shortenHash } from "@/lib/rpc-types";
 
 const SOURCE_LABEL: Record<ContractInterfaceResponse["source"], string> = {
+  published: "Interface published on-chain by the contract deployer (hash verified)",
   canonical: "Canonical deployment",
   bytecode: "Exact bytecode match with a canonical template",
   selectors: "Selectors decoded from bytecode",
@@ -170,6 +171,18 @@ export function ContractFunctions({ network, address64 }: { network: NetworkId; 
         <div className="space-y-1">
           <p className="font-medium text-[var(--text-primary)]" data-testid="contract-interface-label">
             {data.label ?? "Unrecognised contract"}
+            {data.published?.verified ? (
+              <a
+                href={data.published.uri}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`Recorded in the interface registry by the deployer 0x${data.published.publisher}; BLAKE3 0x${data.published.interfaceHash} matches the file`}
+                className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 align-middle text-xs font-medium text-emerald-300 hover:bg-emerald-400/20"
+                data-testid="published-by-deployer-badge"
+              >
+                <span aria-hidden="true">✓</span> Published by deployer
+              </a>
+            ) : null}
           </p>
           {data.summary ? <p className="text-sm text-[var(--text-secondary)]">{data.summary}</p> : null}
           <p className="text-xs text-[var(--text-muted)]" data-testid="contract-interface-source">

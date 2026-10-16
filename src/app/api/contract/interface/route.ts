@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CANONICAL_BOING_TESTNET_NATIVE_DEX_DEPLOYER_HEX, validateHex32 } from "boing-sdk";
 import { resolveContractCode, type ContractCodeLookup } from "@/lib/contract-code-lookup";
-import { identifyContract, type IdentifiedContract } from "@/lib/contract-identify";
+import { applyPublishedInterface, identifyContract, type IdentifiedContract, type PublishedInfo } from "@/lib/contract-identify";
+import { resolvePublishedInterface } from "@/lib/published-interface";
 import { getRpcBaseUrl, isMainnetConfigured, rpcCall } from "@/lib/rpc-client";
 import { normalizeHex64, type NetworkId } from "@/lib/rpc-types";
 
@@ -12,6 +13,7 @@ export type ContractInterfaceResponse = IdentifiedContract & {
   calledAsContract: boolean;
   callCount: number;
   historyUnsupported?: boolean;
+  published?: PublishedInfo;
 };
 
 const TTL_MS = 10 * 60_000;
@@ -44,8 +46,16 @@ export async function GET(req: NextRequest) {
   } catch {
     lookup = { calledAsContract: false, callCount: 0, code: null };
   }
+  let published: Awaited<ReturnType<typeof resolvePublishedInterface>> = null;
+  if (network === "testnet") {
+    try {
+      published = await resolvePublishedInterface(rpc, address64, { knownDeployer: lookup.code?.deployer ?? null });
+    } catch {
+      published = null;
+    }
+  }
   const value: ContractInterfaceResponse = {
-    ...identifyContract({ network, address64, code: lookup.code }),
+    ...applyPublishedInterface(identifyContract({ network, address64, code: lookup.code }), published),
     calledAsContract: lookup.calledAsContract,
     callCount: lookup.callCount,
     ...(lookup.historyUnsupported ? { historyUnsupported: true } : {}),

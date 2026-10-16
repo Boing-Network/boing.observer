@@ -91,7 +91,7 @@ export type ContractCodeInfo = {
 export type IdentifiedContract = {
   address: string;
   /** How the interface was determined. */
-  source: "canonical" | "bytecode" | "selectors" | "none";
+  source: "published" | "canonical" | "bytecode" | "selectors" | "none";
   interfaceId: string | null;
   label: string | null;
   summary: string | null;
@@ -104,6 +104,43 @@ export type IdentifiedContract = {
   code: (Omit<ContractCodeInfo, "bytecodeHex"> & { sizeBytes: number }) | null;
   notes: string[];
 };
+
+/** Public fields of a registry record attached to the API response. */
+export type PublishedInfo = {
+  registry: string;
+  claimer: string;
+  publisher: string;
+  interfaceHash: string;
+  uri: string;
+  verified: boolean;
+  deployerVerified: boolean;
+  hashVerified: boolean;
+};
+
+/**
+ * Apply a published interface: when verified (claimer = deployer, hash matches) its names override the decoded or
+ * guessed ones; otherwise it is only reported with a note.
+ */
+export function applyPublishedInterface<T extends IdentifiedContract>(
+  id: T,
+  pub: (PublishedInfo & { problem?: string; doc?: { name: string | null; summary: string | null; functions: ContractFunction[] } }) | null,
+): T & { published?: PublishedInfo } {
+  if (!pub) return id;
+  const { doc, problem, ...info } = pub;
+  if (!pub.verified || !doc) {
+    return { ...id, published: info, notes: problem ? [...id.notes, problem] : id.notes };
+  }
+  const described = new Set(doc.functions.map((f) => f.selector));
+  return {
+    ...id,
+    source: "published",
+    label: doc.name ?? id.label,
+    summary: doc.summary ?? id.summary,
+    functions: doc.functions,
+    unknownSelectors: id.decodedSelectors.filter((s) => !described.has(s)),
+    published: info,
+  };
+}
 
 export function identifyContract(input: {
   network: NetworkId;

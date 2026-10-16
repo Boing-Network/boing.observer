@@ -45,6 +45,36 @@ test.describe("contract functions (mocked API)", () => {
     await expect(section.getByTestId("contract-fn-name")).toHaveText("transfer(to: account, amount: u128)");
     await expect(section.getByTestId("contract-unknown-selectors")).toContainText("0x42");
     await expect(section.getByTestId("contract-code-info")).toContainText("321 bytes");
+    await expect(section.getByTestId("published-by-deployer-badge")).toHaveCount(0);
+  });
+
+  test("verified published interface shows the deployer badge", async ({ page }) => {
+    await page.route("**/api/contract/interface**", (route) =>
+      route.fulfill({
+        json: {
+          address: "ab".repeat(32),
+          source: "published",
+          interfaceId: null,
+          label: "My published pool",
+          summary: null,
+          docsUrl: null,
+          functions: [{ selector: 16, name: "swap", params: [], kind: "write", description: "Swap.", access: "Anyone." }],
+          decodedSelectors: [16],
+          unknownSelectors: [],
+          code: { deployer: null, height: null, txIndex: null, codeHash: "ef".repeat(32), via: "rpc", sizeBytes: 99 },
+          notes: [],
+          calledAsContract: true,
+          callCount: 1,
+          published: { registry: "bd".repeat(32), claimer: "cd".repeat(32), publisher: "cd".repeat(32), interfaceHash: "aa".repeat(32), uri: "https://boing.network/interfaces/testnet/x.json", verified: true, deployerVerified: true, hashVerified: true },
+        },
+      }),
+    );
+    await page.goto(`/account/${"ab".repeat(32)}?network=testnet`);
+    const section = page.getByTestId("contract-functions");
+    await expect(section.getByTestId("published-by-deployer-badge")).toBeVisible({ timeout: 20_000 });
+    await expect(section.getByTestId("published-by-deployer-badge")).toHaveAttribute("href", /interfaces\/testnet/);
+    await expect(section.getByTestId("contract-code-hash")).toBeVisible();
+    await expect(section.getByTestId("contract-code-info")).not.toContainText("Deployed by");
   });
 });
 
@@ -60,6 +90,10 @@ test.describe("contract functions (live testnet)", () => {
       const names = await section.getByTestId("contract-fn-name").allTextContents();
       expect(names.map((n) => n.split("(")[0])).toEqual(c.fns);
       await expect(section.getByTestId("contract-code-info")).toContainText(`${c.selectors} dispatch selector`);
+      // Interface published on-chain by the deployer (hash + deployer verified) and exact code via boing_getContractCode.
+      await expect(section.getByTestId("published-by-deployer-badge")).toBeVisible();
+      await expect(section.getByTestId("contract-interface-source")).toContainText("published on-chain by the contract deployer");
+      await expect(section.getByTestId("contract-code-hash")).toBeVisible();
       if (c.slug === "usdc-token") {
         await section.getByTestId("contract-fn-toggle-allowance").click();
         await section.getByTestId("contract-fn-input-allowance-owner").fill(`0x${"80".repeat(32)}`);
@@ -68,7 +102,7 @@ test.describe("contract functions (live testnet)", () => {
         await expect(section.getByTestId("contract-fn-result-allowance")).toContainText("word 0", { timeout: 20_000 });
       }
       await section.scrollIntoViewIfNeeded();
-      if (SHOTS) await section.screenshot({ path: `${SHOTS}/after-16-${c.slug}.png` });
+      if (SHOTS) await section.screenshot({ path: `${SHOTS}/after-17-${c.slug}.png` });
     });
   }
 });
