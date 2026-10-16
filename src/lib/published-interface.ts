@@ -27,6 +27,12 @@ function asciiWord(s: string): Uint8Array {
 const CLAIMER_XOR = asciiWord("BOING_IFACE_CLAIMER_V1");
 const FIELD_XOR = asciiWord("BOING_IFACE_FIELD_V1");
 
+/** Built-in hosting ("Host on Boing"): interface blob store (boing.network interface_blob_store). */
+export const TESTNET_INTERFACE_BLOB_STORE = "a524837577e67228bf676257e861d29e510a3eddd1a4dbd607f613bbcd37904d";
+export const IFACE_BLOB_URI_PREFIX = "boing://iface-blob/";
+const BLOB_TAG = asciiWord("BOING_IFACE_BLOB_V1");
+const BLOB_MAX_STORED_BYTES = 24 * 1024;
+
 export function hexToBytes(h: string): Uint8Array {
   const s = h64(h);
   const out = new Uint8Array(s.length / 2);
@@ -44,6 +50,64 @@ export function fieldKey(address64: string, field: number): string {
   const m = FIELD_XOR.slice();
   m[31] = field;
   return xorKey(address64, m);
+}
+
+/** Storage key of word `index` of blob `id` by `writer`: writer ^ TAG ^ (id << 32) ^ index. */
+export function blobKey(writer64: string, id: bigint, index: number): string {
+  const k = hexToBytes(writer64).map((x, i) => x ^ BLOB_TAG[i]!);
+  let v = BigInt.asUintN(64, id);
+  for (let i = 27; i >= 20; i--) {
+    k[i] = k[i]! ^ Number(v & BigInt(0xff));
+    v >>= BigInt(8);
+  }
+  let x = index >>> 0;
+  for (let i = 31; i >= 28; i--) {
+    k[i] = k[i]! ^ (x & 0xff);
+    x >>>= 8;
+  }
+  return bytesToHex(k);
+}
+
+export function parseBlobUri(uri: string): { writer: string; id: bigint } | null {
+  if (!uri.startsWith(IFACE_BLOB_URI_PREFIX)) return null;
+  const m = /^0x([0-9a-fA-F]{64})\/([0-9a-fA-F]{16})$/.exec(uri.slice(IFACE_BLOB_URI_PREFIX.length));
+  return m ? { writer: m[1]!.toLowerCase(), id: BigInt(`0x${m[2]}`) } : null;
+}
+
+async function inflateRaw(b: Uint8Array): Promise<Uint8Array> {
+  if (typeof DecompressionStream !== "undefined") {
+    try {
+      const ds = new DecompressionStream("deflate-raw" as CompressionFormat);
+      const w = ds.writable.getWriter();
+      w.write(b as unknown as BufferSource).then(() => w.close()).catch(() => undefined);
+      return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+    } catch {
+      /* fall through to node:zlib */
+    }
+  }
+  const zlib = await import("node:zlib");
+  return new Uint8Array(zlib.inflateRawSync(b, { maxOutputLength: MAX_JSON_BYTES }));
+}
+
+/** Read a boing://iface-blob/ URI from chain storage and return the exact JSON bytes. */
+export async function readInterfaceBlob(rpc: Rpc, uri: string, store64: string = TESTNET_INTERFACE_BLOB_STORE): Promise<Uint8Array> {
+  const p = parseBlobUri(uri);
+  if (!p) throw new Error("bad boing:// URI");
+  const word = async (i: number) =>
+    h64((await rpc<{ value?: string } | null>("boing_getContractStorage", [`0x${store64}`, `0x${blobKey(p.writer, p.id, i)}`]))?.value ?? "").padStart(64, "0");
+  const header = hexToBytes(await word(0));
+  if (new TextDecoder().decode(header.slice(0, 4)) !== "BIF1") throw new Error("blob not found");
+  const len = Number(BigInt(`0x${bytesToHex(header.slice(24))}`));
+  if (len <= 0 || len > BLOB_MAX_STORED_BYTES) throw new Error("bad blob length");
+  const n = Math.ceil(len / 32);
+  const words: string[] = [];
+  for (let i = 0; i < n; i += 16) {
+    words.push(...(await Promise.all(Array.from({ length: Math.min(16, n - i) }, (_, j) => word(i + j + 1)))));
+  }
+  const stored = hexToBytes(words.join("")).slice(0, len);
+  if (header[4] === 0) return stored;
+  if (header[4] === 1) return inflateRaw(stored);
+  throw new Error(`unknown blob encoding ${header[4]}`);
 }
 
 export type RegistryRecord = { claimer: string; publisher: string; interfaceHash: string; uri: string };
@@ -136,6 +200,8 @@ export type PublishedInterface = {
   verified: boolean;
   deployerVerified: boolean;
   hashVerified: boolean;
+  /** "boing" when the file is stored on-chain in the interface blob store (built-in hosting). */
+  hosting?: "boing" | "https";
   problem?: string;
   doc?: PublishedDoc;
 };
@@ -157,7 +223,7 @@ const defaultFetcher: Fetcher = async (url) => {
 export async function resolvePublishedInterface(
   rpc: Rpc,
   address64: string,
-  opts: { registry64?: string; knownDeployer?: string | null; fetcher?: Fetcher } = {},
+  opts: { registry64?: string; blobStore64?: string; knownDeployer?: string | null; fetcher?: Fetcher } = {},
 ): Promise<PublishedInterface | null> {
   const registry = h64(opts.registry64 ?? TESTNET_INTERFACE_REGISTRY);
   const rec = await readRegistryRecord(rpc, registry, h64(address64));
@@ -168,26 +234,32 @@ export async function resolvePublishedInterface(
   if (!deployerVerified) {
     return { ...base, verified: false, deployerVerified, hashVerified: false, problem: "Registry claimer is not the contract's deployer; ignored." };
   }
-  if (!/^https:\/\//i.test(rec.uri)) {
-    return { ...base, verified: false, deployerVerified, hashVerified: false, problem: "Interface URI is not https; not fetched." };
+  const onChain = rec.uri.startsWith(IFACE_BLOB_URI_PREFIX);
+  if (!onChain && !/^https:\/\//i.test(rec.uri)) {
+    return { ...base, verified: false, deployerVerified, hashVerified: false, problem: "Interface URI is not https or boing://iface-blob/; not fetched." };
   }
+  const hosting = onChain ? ("boing" as const) : ("https" as const);
   let bytes: Uint8Array;
   try {
-    const r = await (opts.fetcher ?? defaultFetcher)(rec.uri);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    if (r.bytes.length > MAX_JSON_BYTES) throw new Error("too large");
-    bytes = r.bytes;
+    if (onChain) {
+      bytes = await readInterfaceBlob(rpc, rec.uri, h64(opts.blobStore64 ?? TESTNET_INTERFACE_BLOB_STORE));
+    } else {
+      const r = await (opts.fetcher ?? defaultFetcher)(rec.uri);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      bytes = r.bytes;
+    }
+    if (bytes.length > MAX_JSON_BYTES) throw new Error("too large");
   } catch (e) {
-    return { ...base, verified: false, deployerVerified, hashVerified: false, problem: `Published interface could not be fetched (${(e as Error).message}).` };
+    return { ...base, hosting, verified: false, deployerVerified, hashVerified: false, problem: `Published interface could not be fetched (${(e as Error).message}).` };
   }
   const hashVerified = bytesToHex(blake3(bytes)) === rec.interfaceHash;
   if (!hashVerified) {
-    return { ...base, verified: false, deployerVerified, hashVerified, problem: "Published interface hash does not match the file at its URI; ignored." };
+    return { ...base, hosting, verified: false, deployerVerified, hashVerified, problem: "Published interface hash does not match the file at its URI; ignored." };
   }
   try {
     const doc = parsePublishedDoc(new TextDecoder().decode(bytes));
-    return { ...base, verified: true, deployerVerified, hashVerified, doc };
+    return { ...base, hosting, verified: true, deployerVerified, hashVerified, doc };
   } catch (e) {
-    return { ...base, verified: false, deployerVerified, hashVerified, problem: `Published interface JSON is invalid (${(e as Error).message}).` };
+    return { ...base, hosting, verified: false, deployerVerified, hashVerified, problem: `Published interface JSON is invalid (${(e as Error).message}).` };
   }
 }

@@ -107,6 +107,8 @@ export type IdentifiedContract = {
 
 /** Public fields of a registry record attached to the API response. */
 export type PublishedInfo = {
+  /** "boing" when served from the on-chain interface blob store (built-in hosting). */
+  hosting?: "boing" | "https";
   registry: string;
   claimer: string;
   publisher: string;

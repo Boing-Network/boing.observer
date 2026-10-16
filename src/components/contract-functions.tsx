@@ -173,14 +173,17 @@ export function ContractFunctions({ network, address64 }: { network: NetworkId; 
             {data.label ?? "Unrecognised contract"}
             {data.published?.verified ? (
               <a
-                href={data.published.uri}
+                href={data.published.hosting === "boing" ? `/api/contract/interface?network=${network}&id=0x${address64}` : data.published.uri}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={`Recorded in the interface registry by the deployer 0x${data.published.publisher}; BLAKE3 0x${data.published.interfaceHash} matches the file`}
+                title={`Recorded in the interface registry by the deployer 0x${data.published.publisher}; BLAKE3 0x${data.published.interfaceHash} matches the file${data.published.hosting === "boing" ? " stored on-chain (hosted on Boing)" : ""}`}
                 className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 align-middle text-xs font-medium text-emerald-300 hover:bg-emerald-400/20"
                 data-testid="published-by-deployer-badge"
               >
                 <span aria-hidden="true">✓</span> Published by deployer
+                {data.published.hosting === "boing" ? (
+                  <span className="text-emerald-200/80" data-testid="published-hosted-on-boing"> · hosted on Boing</span>
+                ) : null}
               </a>
             ) : null}
           </p>

@@ -91,3 +91,56 @@ describe("published interfaces", () => {
     expect(await resolvePublishedInterface(rpc, CONTRACT)).toBeNull();
   });
 });
+
+describe("built-in hosting (boing://iface-blob/)", () => {
+  it("reads the deflated JSON from the blob store, verifies the hash and marks hosting=boing", async () => {
+    const zlib = await import("node:zlib");
+    const { blobKey, TESTNET_INTERFACE_BLOB_STORE } = await import("./published-interface");
+    const json = new TextEncoder().encode(JSON_TEXT);
+    const hash = bytesToHex(blake3(json));
+    const id = BigInt(`0x${hash.slice(0, 16)}`);
+    const uri = `boing://iface-blob/0x${DEPLOYER}/${hash.slice(0, 16)}`;
+    const stored = new Uint8Array(zlib.deflateRawSync(json));
+    const blob = new Map<string, string>();
+    const header = new Uint8Array(32);
+    header.set(new TextEncoder().encode("BIF1"));
+    header[4] = 1;
+    header[30] = stored.length >> 8;
+    header[31] = stored.length & 0xff;
+    blob.set(blobKey(DEPLOYER, id, 0), bytesToHex(header));
+    for (let i = 0; i * 32 < stored.length; i++) {
+      const w = new Uint8Array(32);
+      w.set(stored.slice(i * 32, i * 32 + 32));
+      blob.set(blobKey(DEPLOYER, id, i + 1), bytesToHex(w));
+    }
+    const reg = new Map<string, string>();
+    reg.set(claimerKey(CONTRACT), DEPLOYER);
+    reg.set(fieldKey(CONTRACT, 8), DEPLOYER);
+    reg.set(fieldKey(CONTRACT, 0), hash);
+    const u = new TextEncoder().encode(uri);
+    const len = new Uint8Array(32);
+    len[31] = u.length;
+    reg.set(fieldKey(CONTRACT, 1), bytesToHex(len));
+    for (let i = 0; i * 32 < u.length; i++) {
+      const w = new Uint8Array(32);
+      w.set(u.slice(i * 32, i * 32 + 32));
+      reg.set(fieldKey(CONTRACT, 2 + i), bytesToHex(w));
+    }
+    const rpc = async <T,>(method: string, params: unknown[]): Promise<T> => {
+      if (method === "boing_getContractStorage") {
+        const map = params[0] === `0x${TESTNET_INTERFACE_BLOB_STORE}` ? blob : reg;
+        return { value: `0x${map.get(String(params[1]).slice(2)) ?? "0".repeat(64)}` } as T;
+      }
+      if (method === "boing_getAccount") return { nonce: 20 } as T;
+      throw new Error(method);
+    };
+    const pub = await resolvePublishedInterface(rpc, CONTRACT, { fetcher: async () => { throw new Error("must not fetch"); } });
+    expect(pub?.verified).toBe(true);
+    expect(pub?.hosting).toBe("boing");
+    expect(pub?.doc?.name).toBe("My pool");
+    // tampered blob -> hash mismatch, not verified
+    blob.set(blobKey(DEPLOYER, id, 1), "ff".repeat(32));
+    const bad = await resolvePublishedInterface(rpc, CONTRACT, {});
+    expect(bad?.verified).toBe(false);
+  });
+});
