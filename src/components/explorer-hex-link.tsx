@@ -10,6 +10,7 @@ import {
 } from "@/lib/explorer-href";
 import { normalizeHex64, shortenHash, toPrefixedHex64 } from "@/lib/rpc-types";
 import { CopyButton } from "@/components/copy-button";
+import { BoingNameTag } from "@/components/boing-name-tag";
 
 export type ExplorerHexKind = "account" | "asset" | "tx" | "block-hash";
 
@@ -64,6 +65,7 @@ export function ExplorerHexLink({
       >
         {label}
       </Link>
+      {kind === "account" && !children ? <BoingNameTag address={hex} network={network} /> : null}
       {copy ? <CopyButton value={toPrefixedHex64(hex)} label="Copy" /> : null}
     </span>
   );

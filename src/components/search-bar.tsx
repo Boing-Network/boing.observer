@@ -6,6 +6,7 @@ import { useNetwork } from "@/context/network-context";
 import { fetchBlockByHash, fetchTransactionReceipt } from "@/lib/rpc-methods";
 import { explorerAssetHref } from "@/lib/explorer-href";
 import { isHex64, normalizeHex64, type NetworkId } from "@/lib/rpc-types";
+import { looksLikeBoingName, nameHref, normalizeBoingName } from "@/lib/boing-names";
 
 const HEIGHT = /^\d+$/;
 
@@ -32,6 +33,13 @@ export function SearchBar({ layout = "inline", className = "max-w-lg", size = "m
     const q = value.trim();
     setError("");
     if (!q) return;
+    if (looksLikeBoingName(q)) {
+      const v = normalizeBoingName(q);
+      if (v.ok) {
+        router.push(nameHref(v.label, network));
+        return;
+      }
+    }
     if (HEIGHT.test(q)) {
       router.push(`/block/${q}?network=${network}`);
       return;
@@ -61,7 +69,7 @@ export function SearchBar({ layout = "inline", className = "max-w-lg", size = "m
       return;
     }
     setError(
-      "Enter a block height (number), or 64 hex (transaction id, block hash, or asset / account address — we try tx first)."
+      "Enter a block height (number), 64 hex (transaction id, block hash, or address), or a name like alice.boing."
     );
   }, [value, network, router]);
 
@@ -87,15 +95,15 @@ export function SearchBar({ layout = "inline", className = "max-w-lg", size = "m
           onChange={(e) => setValue(e.target.value)}
           placeholder={
             stacked
-              ? "Height or 64-char hex (tx / block / asset address)"
-              : "Block height, tx, block hash, or asset"
+              ? "Height, 64-char hex, or name.boing"
+              : "Block, tx, address, or name.boing"
           }
           className={
             size === "sm"
               ? "hash min-h-9 w-full flex-1 rounded-md border border-[var(--border-color)] bg-boing-navy-mid/80 px-2.5 py-1.5 font-mono text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-network-primary focus:outline-none focus:ring-1 focus:ring-network-primary"
               : "hash min-h-10 w-full flex-1 rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/80 px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-network-primary focus:outline-none focus:ring-1 focus:ring-network-primary"
           }
-          aria-label="Search by block height, transaction id, block hash, or asset address"
+          aria-label="Search by block height, transaction id, block hash, address, or .boing name"
           autoComplete="off"
           data-testid="explorer-search-input"
         />

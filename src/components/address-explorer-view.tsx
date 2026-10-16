@@ -15,6 +15,8 @@ import { AccountBalanceMix } from "@/components/account-balance-mix";
 import { AccountContractHints } from "@/components/account-contract-hints";
 import { AccountNftGallery } from "@/components/account-nft-gallery";
 import { AccountTxHistory } from "@/components/account-tx-history";
+import { AccountNames } from "@/components/account-names";
+import { BoingNameTag } from "@/components/boing-name-tag";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
 import { AssetMetadataSection, type ExplorerAssetProfilePayload } from "@/components/asset-metadata-section";
 import { LinkedCompanionsSection } from "@/components/linked-companions-section";
@@ -216,6 +218,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
                   {title}
                 </span>
               )}
+              {variant === "account" ? <BoingNameTag address={address} network={network} /> : null}
             </div>
             {identityLabel && identityLabel !== title ? (
               <p className="sr-only">
@@ -367,6 +370,8 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
           />
         </section>
       )}
+
+      {variant === "account" && isHex64(address) ? <AccountNames address64={address} network={network} /> : null}
 
       {variant === "account" && isHex64(address) ? (
         <AccountNftGallery address64={address} network={network} />

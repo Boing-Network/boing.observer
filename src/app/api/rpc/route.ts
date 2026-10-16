@@ -23,6 +23,12 @@ const ALLOWED_RPC_METHODS = new Set([
   "boing_getRpcMethodCatalog",
   "boing_qaCheck",
   "boing_faucetRequest",
+  // .boing name registry (read-only)
+  "boing_resolveName",
+  "boing_reverseName",
+  "boing_getNameInfo",
+  "boing_checkNames",
+  "boing_namesOwnedBy",
 ]);
 
 const UPSTREAM_TIMEOUT_MS = 30_000;
