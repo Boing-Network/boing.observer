@@ -142,8 +142,8 @@ export function identifyContract(input: {
 
   const iface = known ? CONTRACT_INTERFACES[known.interfaceId] ?? null : null;
   let functions = iface?.functions ?? [];
-  // When we only have a selector match, show just the selectors the bytecode really dispatches on.
-  if (source === "selectors" && decoded.length > 0) {
+  // Show only the selectors the bytecode really dispatches on (older pool versions implement a subset).
+  if (decoded.length > 0) {
     const have = new Set(decoded);
     functions = functions.filter((f) => have.has(f.selector));
   }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fixture from "./__fixtures__/testnet-contracts-rpc.json";
 import { lookupContractCode } from "./contract-code-lookup";
 import { identifyContract } from "./contract-identify";
-import { CANONICAL_BOING_TESTNET_NATIVE_DEX_DEPLOYER_HEX } from "boing-sdk";
+import { CANONICAL_BOING_TESTNET_NATIVE_CP_POOL_HEX, CANONICAL_BOING_TESTNET_NATIVE_DEX_DEPLOYER_HEX, boingPoolBytecodeHex } from "boing-sdk";
 
 /** RPC replay from live testnet responses (captured 2026-10-16; deployer transfer rows trimmed). */
 const replay = new Map(Object.entries(fixture as Record<string, unknown>).map(([k, v]) => [JSON.stringify(JSON.parse(k)), v]));
@@ -36,5 +36,15 @@ describe("lookupContractCode + identifyContract (testnet replay)", () => {
     const anon = identifyContract({ network: "mainnet", address64: addr, code: look.code });
     expect(anon.interfaceId).toBe(iface);
     expect(["bytecode", "selectors"]).toContain(anon.source);
+  });
+
+  it("canonical ledger pool v1 lists only the selectors its bytecode implements", () => {
+    const pool = identifyContract({
+      network: "testnet",
+      address64: CANONICAL_BOING_TESTNET_NATIVE_CP_POOL_HEX,
+      code: { bytecodeHex: boingPoolBytecodeHex(1), deployer: "00".repeat(32), height: 2, txIndex: 0 },
+    });
+    expect(pool.source).toBe("canonical");
+    expect(pool.functions.map((f) => f.name)).toEqual(["swap", "add_liquidity", "remove_liquidity"]);
   });
 });
