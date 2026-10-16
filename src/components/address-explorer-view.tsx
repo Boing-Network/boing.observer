@@ -13,6 +13,7 @@ import { CopyButton } from "@/components/copy-button";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 import { AccountBalanceMix } from "@/components/account-balance-mix";
 import { AccountContractHints } from "@/components/account-contract-hints";
+import { ContractFunctions } from "@/components/contract-functions";
 import { AccountNftGallery } from "@/components/account-nft-gallery";
 import { AccountTxHistory } from "@/components/account-tx-history";
 import { AccountNames } from "@/components/account-names";
@@ -370,6 +371,8 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
           />
         </section>
       )}
+
+      {isHex64(address) ? <ContractFunctions network={network} address64={address} /> : null}
 
       {variant === "account" && isHex64(address) ? <AccountNames address64={address} network={network} /> : null}
 

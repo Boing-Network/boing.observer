@@ -29,6 +29,7 @@ const ALLOWED_RPC_METHODS = new Set([
   "boing_getNameInfo",
   "boing_checkNames",
   "boing_namesOwnedBy",
+  "boing_simulateContractCall",
 ]);
 
 const UPSTREAM_TIMEOUT_MS = 30_000;
