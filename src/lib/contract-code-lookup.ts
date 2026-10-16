@@ -39,6 +39,60 @@ async function allRows(rpc: Rpc, account: string, maxPages: number): Promise<TxR
   return rows;
 }
 
+/**
+ * Exact deployed bytecode via `boing_getContractCode` (node >= task-17 build).
+ * Returns `null` for accounts without code and `"unsupported"` when the node/proxy lacks the method or errors.
+ */
+export async function fetchContractCodeRpc(
+  rpc: Rpc,
+  address64: string,
+): Promise<{ bytecodeHex: string; codeHash: string; size: number } | null | "unsupported"> {
+  let r: { bytecode?: string; code_hash?: string; size?: number } | null;
+  try {
+    r = await rpc(`boing_getContractCode`, [`0x${h64(address64)}`]);
+  } catch {
+    return "unsupported";
+  }
+  if (r == null) return null;
+  const bytecodeHex = h64(r.bytecode);
+  if (!bytecodeHex) return null;
+  return { bytecodeHex, codeHash: h64(r.code_hash), size: typeof r.size === "number" ? r.size : bytecodeHex.length / 2 };
+}
+
+/**
+ * Prefer `boing_getContractCode`; fall back to the account-history deploy search when the RPC is unavailable.
+ * History still runs (best effort) for call counts and the deployer / deploy block.
+ */
+export async function resolveContractCode(
+  rpc: Rpc,
+  address64: string,
+  opts: Parameters<typeof lookupContractCode>[2] = {},
+): Promise<ContractCodeLookup & { codeVia: "rpc" | "history" | "none" }> {
+  const [direct, hist] = await Promise.all([
+    fetchContractCodeRpc(rpc, address64),
+    lookupContractCode(rpc, address64, opts).catch(
+      (): ContractCodeLookup => ({ calledAsContract: false, callCount: 0, code: null }),
+    ),
+  ]);
+  if (direct === "unsupported") {
+    return { ...hist, code: hist.code ? { ...hist.code, via: "history" } : null, codeVia: hist.code ? "history" : "none" };
+  }
+  if (direct == null) return { ...hist, code: null, codeVia: "none" };
+  const sameDeploy = hist.code && h64(hist.code.bytecodeHex) === direct.bytecodeHex ? hist.code : null;
+  return {
+    ...hist,
+    code: {
+      bytecodeHex: direct.bytecodeHex,
+      codeHash: direct.codeHash,
+      deployer: sameDeploy?.deployer ?? null,
+      height: sameDeploy?.height ?? null,
+      txIndex: sameDeploy?.txIndex ?? null,
+      via: "rpc",
+    },
+    codeVia: "rpc",
+  };
+}
+
 export type ContractCodeLookup = {
   /** Calls to this address were seen (it behaves as a contract). */
   calledAsContract: boolean;

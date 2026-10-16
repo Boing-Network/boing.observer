@@ -183,15 +183,33 @@ export function ContractFunctions({ network, address64 }: { network: NetworkId; 
           </p>
           {data.code ? (
             <p className="text-xs text-[var(--text-muted)]" data-testid="contract-code-info">
-              Deployed by{" "}
-              <Link href={explorerAccountHref(data.code.deployer, network)} className="font-mono text-network-cyan hover:underline">
-                {shortenHash(`0x${data.code.deployer}`)}
-              </Link>{" "}
-              in{" "}
-              <Link href={explorerBlockHeightHref(data.code.height, network, data.code.txIndex)} className="text-network-cyan hover:underline">
-                block #{data.code.height}
-              </Link>{" "}
-              · {data.code.sizeBytes.toLocaleString()} bytes · {data.decodedSelectors.length} dispatch selector
+              {data.code.deployer ? (
+                <>
+                  Deployed by{" "}
+                  <Link href={explorerAccountHref(data.code.deployer, network)} className="font-mono text-network-cyan hover:underline">
+                    {shortenHash(`0x${data.code.deployer}`)}
+                  </Link>
+                  {data.code.height != null ? (
+                    <>
+                      {" "}in{" "}
+                      <Link
+                        href={explorerBlockHeightHref(data.code.height, network, data.code.txIndex ?? undefined)}
+                        className="text-network-cyan hover:underline"
+                      >
+                        block #{data.code.height}
+                      </Link>
+                    </>
+                  ) : null}
+                  {" · "}
+                </>
+              ) : null}
+              {data.code.codeHash ? (
+                <span title={`BLAKE3 code hash 0x${data.code.codeHash}`} data-testid="contract-code-hash">
+                  code hash <span className="font-mono">{shortenHash(`0x${data.code.codeHash}`)}</span>
+                  {" · "}
+                </span>
+              ) : null}
+              {data.code.sizeBytes.toLocaleString()} bytes · {data.decodedSelectors.length} dispatch selector
               {data.decodedSelectors.length === 1 ? "" : "s"} decoded
             </p>
           ) : (

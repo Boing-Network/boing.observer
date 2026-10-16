@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CANONICAL_BOING_TESTNET_NATIVE_DEX_DEPLOYER_HEX, validateHex32 } from "boing-sdk";
-import { lookupContractCode, type ContractCodeLookup } from "@/lib/contract-code-lookup";
+import { resolveContractCode, type ContractCodeLookup } from "@/lib/contract-code-lookup";
 import { identifyContract, type IdentifiedContract } from "@/lib/contract-identify";
 import { getRpcBaseUrl, isMainnetConfigured, rpcCall } from "@/lib/rpc-client";
 import { normalizeHex64, type NetworkId } from "@/lib/rpc-types";
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
   const rpc = <T,>(method: string, params: unknown[]) => rpcCall<T>(network, base, method, params);
   let lookup: ContractCodeLookup;
   try {
-    lookup = await lookupContractCode(rpc, address64, {
+    lookup = await resolveContractCode(rpc, address64, {
       extraDeployers: network === "testnet" ? [CANONICAL_BOING_TESTNET_NATIVE_DEX_DEPLOYER_HEX] : [],
     });
   } catch {

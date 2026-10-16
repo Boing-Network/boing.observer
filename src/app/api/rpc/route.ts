@@ -16,6 +16,7 @@ const ALLOWED_RPC_METHODS = new Set([
   "boing_getTransactionReceipt",
   "boing_getAccount",
   "boing_getNetworkInfo",
+  "boing_getContractCode",
   "boing_getContractStorage",
   "boing_getQaRegistry",
   "boing_qaPoolList",

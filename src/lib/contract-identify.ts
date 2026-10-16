@@ -78,9 +78,14 @@ export function knownBytecodeMap(): Map<string, Known> {
 
 export type ContractCodeInfo = {
   bytecodeHex: string;
-  deployer: string;
-  height: number;
-  txIndex: number;
+  /** Deploy tx origin; null when the code came from `boing_getContractCode` and history did not locate the deploy. */
+  deployer: string | null;
+  height: number | null;
+  txIndex: number | null;
+  /** BLAKE3 code hash reported by `boing_getContractCode` (64 hex, no 0x). */
+  codeHash?: string | null;
+  /** Where the bytecode came from. */
+  via?: "rpc" | "history";
 };
 
 export type IdentifiedContract = {
@@ -165,6 +170,8 @@ export function identifyContract(input: {
           deployer: input.code.deployer,
           height: input.code.height,
           txIndex: input.code.txIndex,
+          codeHash: input.code.codeHash ?? null,
+          via: input.code.via ?? "history",
           sizeBytes: Math.floor(h64(input.code.bytecodeHex).length / 2),
         }
       : null,
