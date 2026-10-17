@@ -26,7 +26,7 @@ import {
 } from "@/lib/block-economics";
 import { explorerAccountHref } from "@/lib/explorer-href";
 import { shortenHash } from "@/lib/rpc-types";
-import { compactAmount, formatBoingCompact } from "@/lib/format-amount";
+import { compactBoing } from "@/lib/native-unit";
 import Link from "next/link";
 
 const BLOCKS_TO_SAMPLE = HOME_BLOCK_WINDOW;
@@ -68,7 +68,7 @@ function InsightStat({
 }
 
 function formatBig(b: bigint): string {
-  return formatBoingCompact(b);
+  return `${compactBoing(b).short} BOING`;
 }
 
 type VolPieRow = { name: string; value: number; fill: string; raw: bigint };
@@ -297,7 +297,7 @@ export function NetworkEconomyInsights() {
                     labelStyle={{ color: "var(--text-primary)" }}
                     formatter={(_value: number | undefined, name: string | undefined, item) => {
                       const raw = (item?.payload as VolPieRow | undefined)?.raw;
-                      const amt = raw != null ? compactAmount(raw).short : "—";
+                      const amt = raw != null ? compactBoing(raw).short : "—";
                       return [`${amt} BOING`, name ?? ""];
                     }}
                   />
@@ -338,7 +338,7 @@ export function NetworkEconomyInsights() {
                   labelStyle={{ color: "var(--text-primary)" }}
                   formatter={(value) => {
                     const v = typeof value === "number" ? value : 0;
-                    return [Number.isFinite(v) ? `${compactAmount(BigInt(Math.round(v))).short} BOING` : "—", "Cumulative transfers"];
+                    return [Number.isFinite(v) ? `${v.toLocaleString("en-US", { maximumFractionDigits: 4 })} BOING` : "—", "Cumulative transfers"];
                   }}
                   labelFormatter={(h) => `Block #${Number(h).toLocaleString()}`}
                 />

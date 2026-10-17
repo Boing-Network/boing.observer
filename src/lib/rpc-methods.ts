@@ -188,7 +188,10 @@ export async function qaCheck(
 
 export interface FaucetResult {
   ok: boolean;
+  /** Ledger units (base units after the 18-decimals switch); prefer `amount_boing` for display. */
   amount?: string;
+  /** Amount in whole BOING (testnet-v0.1.17+ nodes). */
+  amount_boing?: string;
   to?: string;
   message?: string;
 }

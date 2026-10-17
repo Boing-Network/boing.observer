@@ -15,7 +15,7 @@ import type { TransactionReceipt } from "@/lib/rpc-types";
 const sender = "af".repeat(32);
 const to = "42".repeat(32);
 const tx = { sender, payload: { Transfer: { to, amount: "1000000000000000000000000000000" } } };
-const failed = { tx_id: "0x" + "ee".repeat(32), success: false, gas_used: 21000, error: "Insufficient balance" } as unknown as TransactionReceipt;
+const failed = { tx_id: "0x" + "ee".repeat(32), block_height: 925, success: false, gas_used: 21000, error: "Insufficient balance" } as unknown as TransactionReceipt;
 const ok = { ...failed, success: true, error: null } as unknown as TransactionReceipt;
 
 function render(receipt: TransactionReceipt, featured: boolean) {

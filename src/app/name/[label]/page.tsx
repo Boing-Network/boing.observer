@@ -134,7 +134,7 @@ export default function NamePage() {
               </>
             ) : info.available ? (
               <>
-                <strong>{display}</strong> is available for {info.rent_per_year ?? boingNameRentPerYear(v.label)} BOING / year.
+                <strong>{display}</strong> is available for {info.rent_per_year_boing ?? boingNameRentPerYear(v.label)} BOING / year.
               </>
             ) : (
               <>

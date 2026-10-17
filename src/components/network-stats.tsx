@@ -7,7 +7,7 @@ import { useNetwork } from "@/context/network-context";
 import { explorerBlockHeightHref } from "@/lib/explorer-href";
 import { formatIntervalLabel } from "@/lib/block-economics";
 import { computeNetworkStats, type NetworkStats as NetworkStatsData } from "@/lib/network-stats";
-import { compactAmount, formatBoingCompact } from "@/lib/format-amount";
+import { compactBoing } from "@/lib/native-unit";
 import { RpcDownNotice, Skeleton } from "@/components/loading-states";
 
 const BLOCKS_TO_SAMPLE = 20;
@@ -70,8 +70,8 @@ export function NetworkStats() {
   }
 
   const moved =
-    stats != null ? formatBoingCompact(stats.boingMoved) : "—";
-  const movedFull = stats != null ? `${compactAmount(stats.boingMoved).full} BOING` : undefined;
+    stats != null ? `${compactBoing(stats.boingMoved).short} BOING` : "—";
+  const movedFull = stats != null ? `${compactBoing(stats.boingMoved).full} BOING` : undefined;
 
   return (
     <div className="py-2" role="region" aria-label="Summary statistics">

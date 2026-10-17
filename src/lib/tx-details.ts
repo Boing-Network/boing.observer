@@ -36,7 +36,7 @@ export function hexPreview(prefixed: string, maxHexChars = 48): string {
   return `0x${h.slice(0, maxHexChars)}… (${Math.floor(h.length / 2)} bytes)`;
 }
 
-export function buildPayloadDetailLines(payload: unknown): TxDetailLine[] {
+export function buildPayloadDetailLines(payload: unknown, height?: number | null, network?: string | null): TxDetailLine[] {
   const kind = getTxPayloadKind(payload);
   const p = getTxPayloadInner(payload);
   const lines: TxDetailLine[] = [];
@@ -45,14 +45,14 @@ export function buildPayloadDetailLines(payload: unknown): TxDetailLine[] {
     case "Transfer": {
       const to = hexForLink(p.to);
       lines.push({ label: "Recipient", value: shortenHash(to) || "—", accountHex64: to || undefined });
-      lines.push({ label: "Amount", value: `${formatBoingAmount(String(p.amount ?? ""))} BOING` });
+      lines.push({ label: "Amount", value: `${formatBoingAmount(String(p.amount ?? ""), height, network)} BOING` });
       return lines;
     }
     case "Bond":
-      lines.push({ label: "Stake amount", value: `${formatBoingAmount(String(p.amount ?? ""))} BOING` });
+      lines.push({ label: "Stake amount", value: `${formatBoingAmount(String(p.amount ?? ""), height, network)} BOING` });
       return lines;
     case "Unbond":
-      lines.push({ label: "Unbond amount", value: `${formatBoingAmount(String(p.amount ?? ""))} BOING` });
+      lines.push({ label: "Unbond amount", value: `${formatBoingAmount(String(p.amount ?? ""), height, network)} BOING` });
       return lines;
     case "ClaimUnbond":
       lines.push({

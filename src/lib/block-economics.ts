@@ -5,6 +5,7 @@
 import type { Block, BlockTransaction } from "./rpc-types";
 import { hexForLink } from "./rpc-types";
 import { getTxPayloadKind, getTxPayloadInner } from "./tx-payload";
+import { baseUnitsToChartNumber, toBaseUnits } from "./native-unit";
 
 export type BlockEconomicsRow = {
   height: number;
@@ -47,17 +48,8 @@ export function txSucceeded(block: Block, index: number): boolean {
   return receipts[index]?.success !== false;
 }
 
-function safeU128BigInt(raw: unknown): bigint {
-  const s = String(raw ?? "0").trim();
-  if (!/^\d+$/.test(s)) return BigInt(0);
-  try {
-    return BigInt(s);
-  } catch {
-    return BigInt(0);
-  }
-}
-
-function txContribution(tx: BlockTransaction): {
+/** Amounts in base units (1 BOING = 10^18), normalized from the ledger unit at `height`. */
+function txContribution(tx: BlockTransaction, height: number): {
   bond: bigint;
   unbond: bigint;
   transfer: bigint;
@@ -67,6 +59,7 @@ function txContribution(tx: BlockTransaction): {
 } {
   const kind = getTxPayloadKind(tx.payload);
   const p = getTxPayloadInner(tx.payload);
+  const amountBase = (raw: unknown) => toBaseUnits(raw, height) ?? BigInt(0);
   let bond = BigInt(0);
   let unbond = BigInt(0);
   let transfer = BigInt(0);
@@ -75,15 +68,15 @@ function txContribution(tx: BlockTransaction): {
   let transferTxs = 0;
   switch (kind) {
     case "Bond":
-      bond = safeU128BigInt(p.amount);
+      bond = amountBase(p.amount);
       bondTxs = 1;
       break;
     case "Unbond":
-      unbond = safeU128BigInt(p.amount);
+      unbond = amountBase(p.amount);
       unbondTxs = 1;
       break;
     case "Transfer":
-      transfer = safeU128BigInt(p.amount);
+      transfer = amountBase(p.amount);
       transferTxs = 1;
       break;
     default:
@@ -92,13 +85,9 @@ function txContribution(tx: BlockTransaction): {
   return { bond, unbond, transfer, bondTxs, unbondTxs, transferTxs };
 }
 
-/** Convert bigint BOING units to a finite number for charts (testnet-safe; may lose precision for huge values). */
+/** Base-unit amount to BOING as a finite number for charts (may lose precision; display only). */
 export function bigIntToChartNumber(b: bigint): number {
-  if (b === BigInt(0)) return 0;
-  const max = BigInt(Number.MAX_SAFE_INTEGER);
-  const million = BigInt(1000000);
-  if (b > max) return Number(b / million) * 1e6;
-  return Number(b);
+  return baseUnitsToChartNumber(b);
 }
 
 export function analyzeBlockEconomics(blocks: Block[]): { rows: BlockEconomicsRow[]; totals: BlockEconomicsTotals } {
@@ -127,7 +116,7 @@ export function analyzeBlockEconomics(blocks: Block[]): { rows: BlockEconomicsRo
         failedN += 1;
         continue;
       }
-      const c = txContribution(tx);
+      const c = txContribution(tx, block.header.height);
       bond += c.bond;
       unbond += c.unbond;
       transferVolume += c.transfer;

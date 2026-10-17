@@ -38,7 +38,10 @@ export interface BoingNameInfo {
   reserved?: boolean;
   available: boolean;
   status?: NameStatus | null;
+  /** Ledger units (base units after the 18-decimals switch); use `rent_per_year_boing` for display. */
   rent_per_year?: string;
+  /** Yearly rent in whole BOING (testnet-v0.1.17+ nodes). */
+  rent_per_year_boing?: string;
   record?: BoingNameRecord;
   registry?: BoingNameRegistryInfo;
   head_height?: number;

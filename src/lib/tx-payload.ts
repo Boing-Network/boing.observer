@@ -1,4 +1,4 @@
-import { compactAmount, formatBoingCompact } from "./format-amount";
+import { compactBoingAt, formatBoingAt } from "./native-unit";
 /**
  * Infer transaction payload type from payload object for display.
  * Matches spec: Transfer, Bond, Unbond, ContractCall, ContractDeploy, ContractDeployWithPurpose.
@@ -111,17 +111,22 @@ export function isContractDeployPayloadKind(kind: TxPayloadKind): boolean {
   }
 }
 
-export function getTxPayloadSummary(payload: unknown): string {
+/**
+ * One-line payload summary. `height` is the block the tx is in: native amounts below the 18-decimals
+ * switch are whole BOING, base units from it (unknown height = current, base units).
+ */
+export function getTxPayloadSummary(payload: unknown, height?: number | null, network?: string | null): string {
+  const boing = (raw: unknown) => `${compactBoingAt(String(raw ?? ""), height, network).short} BOING`;
   const kind = getTxPayloadKind(payload);
   if (kind === "Unknown") return "—";
   const p = getTxPayloadInner(payload);
   switch (kind) {
     case "Transfer":
-      return `to ${formatShortAddr(p.to)} · ${formatBoingCompact(String(p.amount ?? ""))}`;
+      return `to ${formatShortAddr(p.to)} · ${boing(p.amount)}`;
     case "Bond":
-      return `${formatBoingCompact(String(p.amount ?? ""))} stake`;
+      return `${boing(p.amount)} stake`;
     case "Unbond":
-      return `unbond ${formatBoingCompact(String(p.amount ?? ""))}`;
+      return `unbond ${boing(p.amount)}`;
     case "ContractCall":
       return `contract ${formatShortAddr(p.contract)}`;
     case "ContractDeploy":
@@ -159,11 +164,13 @@ function formatPurpose(cat: string): string {
   return formatPurposeLabel(cat);
 }
 
-/** Whole BOING units from RPC (u128 string). No fractional display — decimals must stay 0 here. */
-export function formatBoingAmount(raw: string): string {
+/**
+ * Exact BOING for a native ledger amount (u128 string) committed at `height`: whole BOING below the
+ * 18-decimals switch, base units (1 BOING = 10^18) from it. Non-integers pass through.
+ */
+export function formatBoingAmount(raw: string, height?: number | null, network?: string | null): string {
   if (!/^\d+$/.test(raw)) return raw;
-  if (raw === "0") return "0";
-  return raw.replace(/^0+/, "") || "0";
+  return formatBoingAt(raw, height, network);
 }
 
 function senderHexNormalized(sender: unknown): string {
@@ -175,13 +182,19 @@ function senderHexNormalized(sender: unknown): string {
 /**
  * Plain-language explanation for block detail (one row per transaction).
  */
-export function getTxExplorerNarrative(sender: unknown, payload: unknown): string {
+export function getTxExplorerNarrative(
+  sender: unknown,
+  payload: unknown,
+  height?: number | null,
+  network?: string | null,
+): string {
+  const boing = (raw: unknown) => `${compactBoingAt(String(raw ?? ""), height, network).short} BOING`;
   const kind = getTxPayloadKind(payload);
   const from = senderHexNormalized(sender);
   const p = getTxPayloadInner(payload);
 
   if (kind === "Transfer") {
-    const amount = compactAmount(String(p.amount ?? "")).short;
+    const amount = compactBoingAt(String(p.amount ?? ""), height, network).short;
     const isFaucet = from === TESTNET_FAUCET_ACCOUNT_HEX.toLowerCase();
     if (isFaucet) {
       return `Testnet faucet → ${formatShortAddr(p.to)} · ${amount} BOING`;
@@ -190,10 +203,10 @@ export function getTxExplorerNarrative(sender: unknown, payload: unknown): strin
   }
 
   if (kind === "Bond") {
-    return `Stake (bond) · ${formatBoingCompact(String(p.amount ?? ""))}`;
+    return `Stake (bond) · ${boing(p.amount)}`;
   }
   if (kind === "Unbond") {
-    return `Unbond · ${formatBoingCompact(String(p.amount ?? ""))}`;
+    return `Unbond · ${boing(p.amount)}`;
   }
   if (kind === "ContractCall") {
     return `Call ${formatShortAddr(p.contract)}`;

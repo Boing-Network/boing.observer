@@ -28,6 +28,19 @@ function block(height: number, timestamp: number, proposer: string, txs: Block["
 const pA = "11".repeat(32);
 const pB = "22".repeat(32);
 
+/** Whole-BOING blocks (below testnet 1050) are normalized to base units. */
+const B = BigInt("1000000000000000000");
+
+describe("amounts across the 18-decimals switch", () => {
+  it("adds whole-BOING and base-unit blocks in base units", () => {
+    const blocks = [
+      block(1049, 1000, pA, [{ sender: pA, payload: { Transfer: { to: pB, amount: "20" } } }]),
+      block(1050, 1002, pA, [{ sender: pA, payload: { Transfer: { to: pB, amount: (BigInt(20) * B).toString() } } }]),
+    ];
+    expect(analyzeBlockEconomics(blocks).totals.transferVolume).toBe(BigInt(40) * B);
+  });
+});
+
 describe("block-economics chart series", () => {
   it("measures idle gaps, not tx count", () => {
     const blocks = [
@@ -38,7 +51,7 @@ describe("block-economics chart series", () => {
     const { rows, totals } = analyzeBlockEconomics(blocks);
     expect(totals.txCounts.total).toBe(3);
     expect(blockIntervalSeries(rows).map((p) => p.intervalSec)).toEqual([5, 3600]);
-    expect(cumulativeTransferSeries(rows).map((p) => p.cumulative.toString())).toEqual(["10", "20", "70"]);
+    expect(cumulativeTransferSeries(rows).map((p) => p.cumulative.toString())).toEqual(["10", "20", "70"].map((x) => (BigInt(x) * B).toString()));
     expect(proposerShare(blocks)).toEqual([
       { proposer: pA, count: 2 },
       { proposer: pB, count: 1 },
@@ -60,7 +73,7 @@ describe("computeNetworkStats", () => {
       block(2, 1010, pA, [{ sender: pA, payload: { Bond: { amount: "3" } } }]),
     ];
     const s = computeNetworkStats(2, blocks, 1015);
-    expect(s.boingMoved.toString()).toBe("10");
+    expect(s.boingMoved).toBe(BigInt(10) * B);
     expect(s.uniqueProposers).toBe(1);
     expect(s.avgBlockTimeSec).toBe(10);
     expect(s.secondsSinceLastBlock).toBe(5);
@@ -84,11 +97,11 @@ describe("failed txs are excluded from aggregates", () => {
       [false, true],
     );
     const { totals } = analyzeBlockEconomics([b]);
-    expect(totals.transferVolume).toBe(BigInt(20));
+    expect(totals.transferVolume).toBe(BigInt(20) * B);
     expect(totals.txCounts.transfer).toBe(1);
     expect(totals.txCounts.failed).toBe(1);
     expect(totals.txCounts.total).toBe(2);
-    expect(computeNetworkStats(925, [b]).boingMoved).toBe(BigInt(20));
+    expect(computeNetworkStats(925, [b]).boingMoved).toBe(BigInt(20) * B);
   });
 
   it("excludes failed bond/unbond too, and keeps blocks without receipts countable", () => {
@@ -103,7 +116,7 @@ describe("failed txs are excluded from aggregates", () => {
     const { totals } = analyzeBlockEconomics([b, plain]);
     expect(totals.bond).toBe(BigInt(0));
     expect(totals.unbond).toBe(BigInt(0));
-    expect(totals.transferVolume).toBe(BigInt(3));
+    expect(totals.transferVolume).toBe(BigInt(3) * B);
     expect(totals.txCounts.failed).toBe(2);
   });
 });

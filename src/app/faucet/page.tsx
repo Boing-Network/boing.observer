@@ -136,7 +136,7 @@ export default function FaucetPage() {
           {result.ok ? (
             <div className="space-y-2 text-green-200">
               <p>
-                {result.amount != null ? `${result.amount} testnet BOING sent.` : "Testnet BOING sent."} {result.message ?? ""}
+                {(result.amount_boing ?? result.amount) != null ? `${result.amount_boing ?? result.amount} testnet BOING sent.` : "Testnet BOING sent."} {result.message ?? ""}
               </p>
               {toPrefixedHex64(accountId) ? (
                 <p>

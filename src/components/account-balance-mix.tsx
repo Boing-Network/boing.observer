@@ -1,18 +1,8 @@
 "use client";
 
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { compactAmount, formatBoingCompact } from "@/lib/format-amount";
 import { bigIntToChartNumber } from "@/lib/block-economics";
-
-function parseU128(raw: string): bigint {
-  const s = raw.trim();
-  if (!/^\d+$/.test(s)) return BigInt(0);
-  try {
-    return BigInt(s);
-  } catch {
-    return BigInt(0);
-  }
-}
+import { compactBoing, ledgerToBaseUnits } from "@/lib/native-unit";
 
 type Slice = { name: "Liquid" | "Staked"; value: number; amountStr: string };
 
@@ -21,9 +11,10 @@ const FILL: Record<Slice["name"], string> = {
   Staked: "var(--network-primary-light)",
 };
 
-export function AccountBalanceMix({ balance, stake }: { balance: string; stake: string }) {
-  const liq = parseU128(balance);
-  const st = parseU128(stake);
+/** `balance` / `stake` are ledger units with `decimals` (18 = base units, 0 = whole BOING). */
+export function AccountBalanceMix({ balance, stake, decimals = 0 }: { balance: string; stake: string; decimals?: number }) {
+  const liq = ledgerToBaseUnits(balance, decimals) ?? BigInt(0);
+  const st = ledgerToBaseUnits(stake, decimals) ?? BigInt(0);
   const total = liq + st;
   if (total === BigInt(0)) return null;
 
@@ -79,8 +70,8 @@ export function AccountBalanceMix({ balance, stake }: { balance: string; stake: 
                 return (
                   <div className="rounded-lg border border-[var(--border-color)] bg-boing-navy-deep px-3 py-2 text-sm shadow-lg">
                     <p className="font-medium text-[var(--text-primary)]">{p.name}</p>
-                    <p className="truncate font-mono text-network-cyan" title={`${compactAmount(p.amountStr).full} BOING`}>
-                      {formatBoingCompact(p.amountStr)}
+                    <p className="truncate font-mono text-network-cyan" title={`${compactBoing(p.amountStr).full} BOING`}>
+                      {compactBoing(p.amountStr).short} BOING
                     </p>
                   </div>
                 );

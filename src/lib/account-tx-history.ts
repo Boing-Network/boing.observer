@@ -123,8 +123,8 @@ export function collectAccountTxHistory(
         kind: getTxPayloadKind(tx.payload),
         summary:
           receipt?.success === false
-            ? `${getTxPayloadSummary(tx.payload)} · failed, nothing transferred`
-            : getTxPayloadSummary(tx.payload),
+            ? `${getTxPayloadSummary(tx.payload, block.height)} · failed, nothing transferred`
+            : getTxPayloadSummary(tx.payload, block.height),
         roles,
         failed: receipt?.success === false,
       });

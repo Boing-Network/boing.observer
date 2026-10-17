@@ -1,7 +1,7 @@
 "use client";
 
-import { compactAmount } from "@/lib/format-amount";
-import { failedTxFeeBoing } from "@/lib/failed-tx";
+import { failedTxFeeBaseUnits } from "@/lib/failed-tx";
+import { compactBoingAt, formatBoingBase } from "@/lib/native-unit";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import type { BlockTransaction, TransactionReceipt } from "@/lib/rpc-types";
@@ -45,15 +45,18 @@ function SignedPayloadHeadlineRich({
   inner,
   network,
   failed = false,
+  height,
 }: {
   kind: TxPayloadKind;
   inner: Record<string, unknown>;
   network: string;
   /** Receipt says the tx reverted: phrase it as attempted, nothing moved. */
   failed?: boolean;
+  /** Block height of the tx (native amount unit; see `native-unit.ts`). */
+  height?: number | null;
 }): ReactNode {
   const amt = (k: string) => {
-    const c = compactAmount(String(inner[k] ?? "0"));
+    const c = compactBoingAt(String(inner[k] ?? "0"), height, network);
     return (
       <span title={`${c.full} BOING`} className={failed ? "text-[var(--text-muted)] line-through" : undefined}>
         {c.short}
@@ -179,11 +182,13 @@ function TxContextNarrativeRich({
   sender,
   payload,
   network,
+  height,
 }: {
   kind: TxPayloadKind;
   sender: unknown;
   payload: unknown;
   network: string;
+  height?: number | null;
 }): ReactNode {
   const from = hexForLink(sender);
   const p = getTxPayloadInner(payload);
@@ -210,9 +215,9 @@ function TxContextNarrativeRich({
     case "Transfer": {
       const faucet = TESTNET_FAUCET_ACCOUNT_HEX.toLowerCase();
       if (from !== faucet) {
-        return <>{getTxExplorerNarrative(sender, payload)}</>;
+        return <>{getTxExplorerNarrative(sender, payload, height, network)}</>;
       }
-      const amount = compactAmount(String(p.amount ?? "")).short;
+      const amount = compactBoingAt(String(p.amount ?? ""), height, network).short;
       const to = hexForLink(p.to);
       return (
         <>
@@ -234,7 +239,7 @@ function TxContextNarrativeRich({
       );
     }
     default:
-      return <>{getTxExplorerNarrative(sender, payload)}</>;
+      return <>{getTxExplorerNarrative(sender, payload, height, network)}</>;
   }
 }
 
@@ -260,6 +265,7 @@ function TransferFlowDiagram({
   scale = "standard",
   failed = false,
   feeBoing = null,
+  height,
 }: {
   sender: unknown;
   payload: unknown;
@@ -267,12 +273,14 @@ function TransferFlowDiagram({
   scale?: VisualScale;
   /** Receipt says the tx reverted: nothing was transferred (only the fee was charged). */
   failed?: boolean;
-  feeBoing?: number | null;
+  /** Fee as a formatted BOING string. */
+  feeBoing?: string | null;
+  height?: number | null;
 }) {
   const p = payload as Record<string, unknown>;
   const from = hexForLink(sender);
   const to = hexForLink(p.to);
-  const amt = compactAmount(String(p.amount ?? ""));
+  const amt = compactBoingAt(String(p.amount ?? ""), height, network);
   const amount = amt.short;
   const amountTitle = `${amt.full} BOING`;
   const featured = scale === "featured";
@@ -280,7 +288,7 @@ function TransferFlowDiagram({
   const failedNote = failed ? (
     <p className="mt-2 text-xs text-red-200" data-testid="flow-failed-fee">
       Reverted: no balance changed except the sender&apos;s fee
-      {feeBoing != null ? ` (${feeBoing.toLocaleString()} BOING)` : ""}.
+      {feeBoing != null ? ` (${feeBoing} BOING)` : ""}.
     </p>
   ) : null;
 
@@ -389,17 +397,19 @@ function StakeMovementVisual({
   network,
   failed = false,
   feeBoing = null,
+  height,
 }: {
   kind: "Bond" | "Unbond";
   sender: unknown;
   payload: unknown;
   network: string;
   failed?: boolean;
-  feeBoing?: number | null;
+  feeBoing?: string | null;
+  height?: number | null;
 }) {
   const p = payload as Record<string, unknown>;
   const from = hexForLink(sender);
-  const amt = compactAmount(String(p.amount ?? ""));
+  const amt = compactBoingAt(String(p.amount ?? ""), height, network);
   const amount = amt.short;
   const title = failed
     ? kind === "Bond"
@@ -409,7 +419,7 @@ function StakeMovementVisual({
       ? "Staked (bonded)"
       : "Unbond requested";
   const subtitle = failed
-    ? `Reverted: stake and balance unchanged except the fee${feeBoing != null ? ` (${feeBoing.toLocaleString()} BOING)` : ""}.`
+    ? `Reverted: stake and balance unchanged except the fee${feeBoing != null ? ` (${feeBoing} BOING)` : ""}.`
     : kind === "Bond"
       ? "Added to validator stake."
       : "Scheduled to unbond per protocol.";
@@ -596,11 +606,14 @@ function ReceiptPanel({
   receipt,
   network,
   showTransactionPageLink,
+  height,
 }: {
   receipt: TransactionReceipt;
   network: string;
   showTransactionPageLink: boolean;
+  height?: number | null;
 }) {
+  const failedFee = failedTxFeeBaseUnits(receipt, height ?? receipt.block_height, network);
   const ok = receipt.success !== false;
   const rd = normalizeHexData(receipt.return_data);
   const txIdRaw = receipt.tx_id ? normalizeHex64(receipt.tx_id) : "";
@@ -655,7 +668,7 @@ function ReceiptPanel({
           <div className="flex flex-wrap gap-x-2" data-testid="failed-tx-fee">
             <dt className="text-[var(--text-muted)]">Fee charged</dt>
             <dd className="text-[var(--text-primary)]">
-              {(failedTxFeeBoing(receipt) ?? 1).toLocaleString()} BOING (failed transactions still pay a fee; state was reverted)
+              {failedFee != null ? formatBoingBase(failedFee) : "?"} BOING (failed transactions still pay a fee; state was reverted)
             </dd>
           </div>
         ) : null}
@@ -721,6 +734,7 @@ export function TransactionInsight({
   receiptsWereRequested,
   visualScale = "standard",
   blockPlacement,
+  blockHeight,
 }: {
   tx: BlockTransaction;
   index: number;
@@ -731,14 +745,18 @@ export function TransactionInsight({
   visualScale?: VisualScale;
   /** When set (e.g. standalone tx page), links to the enclosing block and anchor. */
   blockPlacement?: { height: number; txIndex: number };
+  /** Height of the enclosing block when rendered inside a block page (native amount unit). */
+  blockHeight?: number;
 }) {
+  const txHeight = blockPlacement?.height ?? blockHeight ?? receipt?.block_height ?? null;
   const kind = getTxPayloadKind(tx.payload);
-  const summary = getTxPayloadSummary(tx.payload);
+  const summary = getTxPayloadSummary(tx.payload, txHeight, network);
   const sender = hexForLink(tx.sender);
   const payloadInner = getTxPayloadInner(tx.payload);
-  const detailLines = buildPayloadDetailLines(tx.payload);
+  const detailLines = buildPayloadDetailLines(tx.payload, txHeight, network);
   const txFailed = receipt?.success === false;
-  const txFeeBoing = failedTxFeeBoing(receipt);
+  const txFeeBase = failedTxFeeBaseUnits(receipt, txHeight, network);
+  const txFeeBoing = txFeeBase != null ? formatBoingBase(txFeeBase) : null;
   const deployedAssetHex =
     isContractDeployPayloadKind(kind) && receipt && receipt.success !== false
       ? tryParseCreatedAccountIdFromDeployReturnData(receipt.return_data)
@@ -910,6 +928,7 @@ export function TransactionInsight({
           scale={visualScale}
           failed={txFailed}
           feeBoing={txFeeBoing}
+          height={txHeight}
         />
       ) : null}
       {featured && kind === "Bond" ? (
@@ -920,6 +939,7 @@ export function TransactionInsight({
           network={network}
           failed={txFailed}
           feeBoing={txFeeBoing}
+          height={txHeight}
         />
       ) : null}
       {featured && kind === "Unbond" ? (
@@ -930,6 +950,7 @@ export function TransactionInsight({
           network={network}
           failed={txFailed}
           feeBoing={txFeeBoing}
+          height={txHeight}
         />
       ) : null}
       {featured && kind === "ContractCall" ? (
@@ -938,7 +959,7 @@ export function TransactionInsight({
 
       {showContextNote ? (
         <p className="text-sm leading-snug text-[var(--text-secondary)]">
-          <TxContextNarrativeRich kind={kind} sender={tx.sender} payload={tx.payload} network={network} />
+          <TxContextNarrativeRich kind={kind} sender={tx.sender} payload={tx.payload} network={network} height={txHeight} />
         </p>
       ) : null}
 
@@ -948,7 +969,7 @@ export function TransactionInsight({
             What you signed
           </h4>
           <p className="mt-3 text-sm leading-relaxed text-[var(--text-primary)] sm:text-[0.95rem]">
-            <SignedPayloadHeadlineRich kind={kind} inner={payloadInner} network={network} failed={txFailed} />
+            <SignedPayloadHeadlineRich kind={kind} inner={payloadInner} network={network} failed={txFailed} height={txHeight} />
           </p>
           {detailLines.length > 0 ? (
             <>
@@ -1008,6 +1029,7 @@ export function TransactionInsight({
             receipt={receipt}
             network={network}
             showTransactionPageLink={!blockPlacement}
+            height={txHeight}
           />
         ) : (
           <div

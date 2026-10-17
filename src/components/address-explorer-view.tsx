@@ -12,6 +12,7 @@ import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 import { AccountBalanceMix } from "@/components/account-balance-mix";
+import { formatBoingBase, ledgerToBaseUnits } from "@/lib/native-unit";
 import { AccountContractHints } from "@/components/account-contract-hints";
 import { ContractFunctions } from "@/components/contract-functions";
 import { AccountNftGallery } from "@/components/account-nft-gallery";
@@ -328,7 +329,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
                 <div className="flex flex-wrap gap-x-2">
                   <dt className="text-[var(--text-muted)]">Balance</dt>
                   <dd className="font-mono font-medium text-network-cyan">
-                    {formatBalance(account.balance)} BOING
+                    {formatBoingBase(ledgerToBaseUnits(account.balance, account.decimals ?? 0))} BOING
                   </dd>
                 </div>
                 <div className="flex flex-wrap gap-x-2">
@@ -337,7 +338,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
                 </div>
                 <div className="flex flex-wrap gap-x-2">
                   <dt className="text-[var(--text-muted)]">Stake</dt>
-                  <dd className="font-mono text-network-primary-light">{formatBalance(account.stake)} BOING</dd>
+                  <dd className="font-mono text-network-primary-light">{formatBoingBase(ledgerToBaseUnits(account.stake, account.decimals ?? 0))} BOING</dd>
                 </div>
               </dl>
               {network === "testnet" && (
@@ -353,7 +354,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
                 </p>
               )}
             </div>
-            <AccountBalanceMix balance={account.balance} stake={account.stake} />
+            <AccountBalanceMix balance={account.balance} stake={account.stake} decimals={account.decimals ?? 0} />
           </div>
           <AccountContractHints
             network={network}

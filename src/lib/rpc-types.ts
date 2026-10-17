@@ -145,9 +145,14 @@ export interface BoingHealth {
 }
 
 export interface Account {
+  /** Ledger units: base units (1 BOING = 10^18) when `decimals` is 18, whole BOING when 0 / absent. */
   balance: string;
   nonce: number;
   stake: string;
+  /** Ledger decimals of `balance` / `stake` (testnet-v0.1.17+ nodes; older nodes omit it = whole BOING). */
+  decimals?: number;
+  balance_boing?: string;
+  stake_boing?: string;
 }
 
 /** Row from `boing_qaPoolList` (public RPC). */
@@ -291,7 +296,10 @@ export function normalizeAddress(addr: string): string {
   return normalizeHex64(addr);
 }
 
-/** Native BOING balances from RPC are whole units (u128), not 10^-18 fractions. */
+/**
+ * Default decimals for `formatBalance`. Native BOING ledger amounts carry their own unit (see
+ * `native-unit.ts` and `Account.decimals`); pass it explicitly.
+ */
 const DECIMALS = 0;
 
 export function formatBalance(raw: string, decimals: number = DECIMALS): string {

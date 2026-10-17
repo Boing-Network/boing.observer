@@ -150,6 +150,7 @@ export function BlockDetails({
                 tx={tx}
                 index={i}
                 network={network}
+                blockHeight={block.header.height}
                 receipt={receiptsWereRequested ? (receipts?.[i] ?? null) : undefined}
                 receiptsWereRequested={receiptsWereRequested}
               />
