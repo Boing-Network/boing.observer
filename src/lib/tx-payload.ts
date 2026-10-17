@@ -1,3 +1,4 @@
+import { compactAmount, formatBoingCompact } from "./format-amount";
 /**
  * Infer transaction payload type from payload object for display.
  * Matches spec: Transfer, Bond, Unbond, ContractCall, ContractDeploy, ContractDeployWithPurpose.
@@ -116,11 +117,11 @@ export function getTxPayloadSummary(payload: unknown): string {
   const p = getTxPayloadInner(payload);
   switch (kind) {
     case "Transfer":
-      return `to ${formatShortAddr(p.to)} · ${formatBoingAmount(String(p.amount ?? ""))} BOING`;
+      return `to ${formatShortAddr(p.to)} · ${formatBoingCompact(String(p.amount ?? ""))}`;
     case "Bond":
-      return `${formatBoingAmount(String(p.amount ?? ""))} BOING stake`;
+      return `${formatBoingCompact(String(p.amount ?? ""))} stake`;
     case "Unbond":
-      return `unbond ${formatBoingAmount(String(p.amount ?? ""))} BOING`;
+      return `unbond ${formatBoingCompact(String(p.amount ?? ""))}`;
     case "ContractCall":
       return `contract ${formatShortAddr(p.contract)}`;
     case "ContractDeploy":
@@ -180,7 +181,7 @@ export function getTxExplorerNarrative(sender: unknown, payload: unknown): strin
   const p = getTxPayloadInner(payload);
 
   if (kind === "Transfer") {
-    const amount = formatBoingAmount(String(p.amount ?? ""));
+    const amount = compactAmount(String(p.amount ?? "")).short;
     const isFaucet = from === TESTNET_FAUCET_ACCOUNT_HEX.toLowerCase();
     if (isFaucet) {
       return `Testnet faucet → ${formatShortAddr(p.to)} · ${amount} BOING`;
@@ -189,10 +190,10 @@ export function getTxExplorerNarrative(sender: unknown, payload: unknown): strin
   }
 
   if (kind === "Bond") {
-    return `Stake (bond) · ${formatBoingAmount(String(p.amount ?? ""))} BOING`;
+    return `Stake (bond) · ${formatBoingCompact(String(p.amount ?? ""))}`;
   }
   if (kind === "Unbond") {
-    return `Unbond · ${formatBoingAmount(String(p.amount ?? ""))} BOING`;
+    return `Unbond · ${formatBoingCompact(String(p.amount ?? ""))}`;
   }
   if (kind === "ContractCall") {
     return `Call ${formatShortAddr(p.contract)}`;

@@ -121,7 +121,10 @@ export function collectAccountTxHistory(
         txId: txIdRaw || null,
         sender: asAccount64(tx.sender),
         kind: getTxPayloadKind(tx.payload),
-        summary: getTxPayloadSummary(tx.payload),
+        summary:
+          receipt?.success === false
+            ? `${getTxPayloadSummary(tx.payload)} · failed, nothing transferred`
+            : getTxPayloadSummary(tx.payload),
         roles,
         failed: receipt?.success === false,
       });

@@ -1,5 +1,7 @@
 "use client";
 
+import { compactAmount } from "@/lib/format-amount";
+import { failedTxFeeBoing } from "@/lib/failed-tx";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import type { BlockTransaction, TransactionReceipt } from "@/lib/rpc-types";
@@ -13,7 +15,6 @@ import {
   tryReferenceNftTokenIdU64,
 } from "@/lib/reference-nft-calldata";
 import {
-  formatBoingAmount,
   getTxExplorerNarrative,
   getTxPayloadInner,
   getTxPayloadKind,
@@ -43,24 +44,45 @@ function SignedPayloadHeadlineRich({
   kind,
   inner,
   network,
+  failed = false,
 }: {
   kind: TxPayloadKind;
   inner: Record<string, unknown>;
   network: string;
+  /** Receipt says the tx reverted: phrase it as attempted, nothing moved. */
+  failed?: boolean;
 }): ReactNode {
-  const amt = (k: string) => formatBoingAmount(String(inner[k] ?? "0"));
+  const amt = (k: string) => {
+    const c = compactAmount(String(inner[k] ?? "0"));
+    return (
+      <span title={`${c.full} BOING`} className={failed ? "text-[var(--text-muted)] line-through" : undefined}>
+        {c.short}
+      </span>
+    );
+  };
+  const reverted = failed ? (
+    <span className="font-semibold text-red-300" data-testid="signed-reverted">
+      {" "}
+      It was attempted but reverted: no BOING moved, only the fee was charged.
+    </span>
+  ) : null;
   switch (kind) {
     case "Bond":
       return (
         <>
-          You signed a bond (stake) of {amt("amount")} BOING — it moves from liquid balance into validator stake when
-          executed.
+          {failed ? "You signed (attempted) a bond (stake) of " : "You signed a bond (stake) of "}
+          {amt("amount")} BOING
+          {failed ? "." : " — it moves from liquid balance into validator stake when executed."}
+          {reverted}
         </>
       );
     case "Unbond":
       return (
         <>
-          You signed an unbond of {amt("amount")} BOING — stake begins leaving per protocol rules when executed.
+          {failed ? "You signed (attempted) an unbond of " : "You signed an unbond of "}
+          {amt("amount")} BOING
+          {failed ? "." : " — stake begins leaving per protocol rules when executed."}
+          {reverted}
         </>
       );
     case "Transfer": {
@@ -68,7 +90,8 @@ function SignedPayloadHeadlineRich({
       const short = to ? shortenHash(to) || to : "—";
       return (
         <>
-          You signed a transfer of {amt("amount")} BOING to{" "}
+          {failed ? "You attempted a transfer of " : "You signed a transfer of "}
+          {amt("amount")} BOING to{" "}
           {to ? (
             <Link href={explorerAccountHref(to, network)} className="text-network-cyan hover:underline">
               {short}
@@ -76,7 +99,7 @@ function SignedPayloadHeadlineRich({
           ) : (
             "—"
           )}
-          .
+          .{reverted}
         </>
       );
     }
@@ -189,7 +212,7 @@ function TxContextNarrativeRich({
       if (from !== faucet) {
         return <>{getTxExplorerNarrative(sender, payload)}</>;
       }
-      const amount = formatBoingAmount(String(p.amount ?? ""));
+      const amount = compactAmount(String(p.amount ?? "")).short;
       const to = hexForLink(p.to);
       return (
         <>
@@ -235,34 +258,58 @@ function TransferFlowDiagram({
   payload,
   network,
   scale = "standard",
+  failed = false,
+  feeBoing = null,
 }: {
   sender: unknown;
   payload: unknown;
   network: string;
   scale?: VisualScale;
+  /** Receipt says the tx reverted: nothing was transferred (only the fee was charged). */
+  failed?: boolean;
+  feeBoing?: number | null;
 }) {
   const p = payload as Record<string, unknown>;
   const from = hexForLink(sender);
   const to = hexForLink(p.to);
-  const amount = formatBoingAmount(String(p.amount ?? ""));
+  const amt = compactAmount(String(p.amount ?? ""));
+  const amount = amt.short;
+  const amountTitle = `${amt.full} BOING`;
   const featured = scale === "featured";
+  const amountTone = failed ? "text-[var(--text-muted)] line-through decoration-red-400/80" : "text-[var(--text-primary)]";
+  const failedNote = failed ? (
+    <p className="mt-2 text-xs text-red-200" data-testid="flow-failed-fee">
+      Reverted: no balance changed except the sender&apos;s fee
+      {feeBoing != null ? ` (${feeBoing.toLocaleString()} BOING)` : ""}.
+    </p>
+  ) : null;
 
   return (
     <div
-      className={`rounded-xl border border-network-cyan/25 bg-gradient-to-br from-network-cyan/10 via-boing-navy-mid/40 to-boing-black/30 ${
+      data-testid="transfer-flow"
+      className={`min-w-0 overflow-hidden rounded-xl border ${failed ? "border-red-500/35" : "border-network-cyan/25"} bg-gradient-to-br from-network-cyan/10 via-boing-navy-mid/40 to-boing-black/30 ${
         featured ? "p-5 sm:p-8" : "p-4 sm:p-5"
       }`}
     >
       {featured ? (
         <div className="mb-6 rounded-lg border border-network-cyan/30 bg-boing-black/40 px-4 py-6 text-center sm:px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-network-cyan/90">
-            Amount transferred
+          <p
+            className={`text-xs font-semibold uppercase tracking-[0.2em] ${failed ? "text-red-300" : "text-network-cyan/90"}`}
+          >
+            {failed ? "Not transferred (failed)" : "Amount transferred"}
           </p>
-          <p className="mt-3 font-display text-4xl font-bold tabular-nums tracking-tight text-[var(--text-primary)] sm:text-5xl">
+          <p
+            title={amountTitle}
+            className={`mt-3 truncate font-display text-4xl font-bold tabular-nums tracking-tight sm:text-5xl ${amountTone}`}
+          >
             {amount}
           </p>
           <p className="mt-1 font-display text-xl font-semibold text-network-cyan-light">BOING</p>
-          <p className="mt-2 text-xs text-[var(--text-muted)]">Applied when this block executed.</p>
+          {failed ? (
+            failedNote
+          ) : (
+            <p className="mt-2 text-xs text-[var(--text-muted)]">Applied when this block executed.</p>
+          )}
         </div>
       ) : null}
       <p
@@ -270,12 +317,12 @@ function TransferFlowDiagram({
           featured ? "text-sm" : "text-xs"
         }`}
       >
-        {featured ? "Parties" : "Value flow"}
+        {featured ? "Parties" : failed ? "Value flow: not transferred (failed)" : "Value flow"}
       </p>
       <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-stretch sm:justify-between">
         <div className="flex-1 rounded-lg border border-[var(--border-color)] bg-boing-black/30 p-3 text-center sm:p-4 sm:text-left">
           <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
-            {featured ? "Sender (debited)" : "From"}
+            {featured ? (failed ? "Sender (fee only)" : "Sender (debited)") : "From"}
           </p>
           <Link
             href={explorerAccountHref(from, network)}
@@ -301,16 +348,20 @@ function TransferFlowDiagram({
               <span className="text-2xl leading-none text-network-cyan" aria-hidden>
                 ↓
               </span>
-              <span className="font-display text-lg font-bold tabular-nums text-[var(--text-primary)]">
+              <span
+                title={amountTitle}
+                className={`max-w-full truncate font-display text-lg font-bold tabular-nums ${amountTone}`}
+              >
                 {amount}{" "}
                 <span className="text-sm font-semibold text-network-cyan-light">BOING</span>
               </span>
+              {failedNote}
             </>
           )}
         </div>
         <div className="flex-1 rounded-lg border border-[var(--border-color)] bg-boing-black/30 p-3 text-center sm:p-4 sm:text-right">
           <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
-            {featured ? "Recipient (credited)" : "To"}
+            {featured ? (failed ? "Recipient (not credited)" : "Recipient (credited)") : "To"}
           </p>
           <Link
             href={explorerAccountHref(to, network)}
@@ -336,17 +387,32 @@ function StakeMovementVisual({
   sender,
   payload,
   network,
+  failed = false,
+  feeBoing = null,
 }: {
   kind: "Bond" | "Unbond";
   sender: unknown;
   payload: unknown;
   network: string;
+  failed?: boolean;
+  feeBoing?: number | null;
 }) {
   const p = payload as Record<string, unknown>;
   const from = hexForLink(sender);
-  const amount = formatBoingAmount(String(p.amount ?? ""));
-  const title = kind === "Bond" ? "Staked (bonded)" : "Unbond requested";
-  const subtitle = kind === "Bond" ? "Added to validator stake." : "Scheduled to unbond per protocol.";
+  const amt = compactAmount(String(p.amount ?? ""));
+  const amount = amt.short;
+  const title = failed
+    ? kind === "Bond"
+      ? "Not staked (failed)"
+      : "Not unbonded (failed)"
+    : kind === "Bond"
+      ? "Staked (bonded)"
+      : "Unbond requested";
+  const subtitle = failed
+    ? `Reverted: stake and balance unchanged except the fee${feeBoing != null ? ` (${feeBoing.toLocaleString()} BOING)` : ""}.`
+    : kind === "Bond"
+      ? "Added to validator stake."
+      : "Scheduled to unbond per protocol.";
 
   return (
     <div className="rounded-xl border border-network-primary/35 bg-gradient-to-br from-network-primary/15 via-boing-navy-mid/50 to-boing-black/40 p-5 sm:p-8">
@@ -354,7 +420,12 @@ function StakeMovementVisual({
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-network-primary-light/90">
           {title}
         </p>
-        <p className="mt-3 font-display text-4xl font-bold tabular-nums text-[var(--text-primary)] sm:text-5xl">
+        <p
+          title={`${amt.full} BOING`}
+          className={`mt-3 truncate font-display text-4xl font-bold tabular-nums sm:text-5xl ${
+            failed ? "text-[var(--text-muted)] line-through" : "text-[var(--text-primary)]"
+          }`}
+        >
           {amount}
         </p>
         <p className="mt-1 font-display text-xl font-semibold text-network-primary-light">BOING</p>
@@ -584,7 +655,7 @@ function ReceiptPanel({
           <div className="flex flex-wrap gap-x-2" data-testid="failed-tx-fee">
             <dt className="text-[var(--text-muted)]">Fee charged</dt>
             <dd className="text-[var(--text-primary)]">
-              {Math.ceil(receipt.gas_used / 21000).toLocaleString()} BOING (failed transactions still pay a fee; state was reverted)
+              {(failedTxFeeBoing(receipt) ?? 1).toLocaleString()} BOING (failed transactions still pay a fee; state was reverted)
             </dd>
           </div>
         ) : null}
@@ -666,6 +737,8 @@ export function TransactionInsight({
   const sender = hexForLink(tx.sender);
   const payloadInner = getTxPayloadInner(tx.payload);
   const detailLines = buildPayloadDetailLines(tx.payload);
+  const txFailed = receipt?.success === false;
+  const txFeeBoing = failedTxFeeBoing(receipt);
   const deployedAssetHex =
     isContractDeployPayloadKind(kind) && receipt && receipt.success !== false
       ? tryParseCreatedAccountIdFromDeployReturnData(receipt.return_data)
@@ -835,13 +908,29 @@ export function TransactionInsight({
           payload={payloadInner}
           network={network}
           scale={visualScale}
+          failed={txFailed}
+          feeBoing={txFeeBoing}
         />
       ) : null}
       {featured && kind === "Bond" ? (
-        <StakeMovementVisual kind="Bond" sender={tx.sender} payload={payloadInner} network={network} />
+        <StakeMovementVisual
+          kind="Bond"
+          sender={tx.sender}
+          payload={payloadInner}
+          network={network}
+          failed={txFailed}
+          feeBoing={txFeeBoing}
+        />
       ) : null}
       {featured && kind === "Unbond" ? (
-        <StakeMovementVisual kind="Unbond" sender={tx.sender} payload={payloadInner} network={network} />
+        <StakeMovementVisual
+          kind="Unbond"
+          sender={tx.sender}
+          payload={payloadInner}
+          network={network}
+          failed={txFailed}
+          feeBoing={txFeeBoing}
+        />
       ) : null}
       {featured && kind === "ContractCall" ? (
         <ContractCallFeaturedVisual payload={payloadInner} network={network} />
@@ -859,7 +948,7 @@ export function TransactionInsight({
             What you signed
           </h4>
           <p className="mt-3 text-sm leading-relaxed text-[var(--text-primary)] sm:text-[0.95rem]">
-            <SignedPayloadHeadlineRich kind={kind} inner={payloadInner} network={network} />
+            <SignedPayloadHeadlineRich kind={kind} inner={payloadInner} network={network} failed={txFailed} />
           </p>
           {detailLines.length > 0 ? (
             <>
