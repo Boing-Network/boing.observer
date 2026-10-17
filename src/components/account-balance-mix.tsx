@@ -1,7 +1,7 @@
 "use client";
 
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { formatBoingAmount } from "@/lib/tx-payload";
+import { compactAmount, formatBoingCompact } from "@/lib/format-amount";
 import { bigIntToChartNumber } from "@/lib/block-economics";
 
 function parseU128(raw: string): bigint {
@@ -79,7 +79,9 @@ export function AccountBalanceMix({ balance, stake }: { balance: string; stake: 
                 return (
                   <div className="rounded-lg border border-[var(--border-color)] bg-boing-navy-deep px-3 py-2 text-sm shadow-lg">
                     <p className="font-medium text-[var(--text-primary)]">{p.name}</p>
-                    <p className="font-mono text-network-cyan">{formatBoingAmount(p.amountStr)} BOING</p>
+                    <p className="truncate font-mono text-network-cyan" title={`${compactAmount(p.amountStr).full} BOING`}>
+                      {formatBoingCompact(p.amountStr)}
+                    </p>
                   </div>
                 );
               }}

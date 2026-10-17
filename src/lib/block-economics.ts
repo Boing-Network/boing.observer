@@ -31,8 +31,21 @@ export type BlockEconomicsTotals = {
     transfer: number;
     other: number;
     total: number;
+    /** Included txs whose receipt says `success: false` (excluded from every amount above). */
+    failed: number;
   };
 };
+
+/**
+ * True when the tx at `index` executed successfully. Uses the block's receipts (fetch blocks with
+ * `include_receipts`); a failed tx moved nothing except its fee, so it must not count as moved value.
+ * Blocks fetched without receipts (older nodes / call sites) are counted as before.
+ */
+export function txSucceeded(block: Block, index: number): boolean {
+  const receipts = block.receipts;
+  if (!Array.isArray(receipts)) return true;
+  return receipts[index]?.success !== false;
+}
 
 function safeU128BigInt(raw: unknown): bigint {
   const s = String(raw ?? "0").trim();
@@ -97,6 +110,7 @@ export function analyzeBlockEconomics(blocks: Block[]): { rows: BlockEconomicsRo
   let bondT = BigInt(0);
   let unbondT = BigInt(0);
   let transferT = BigInt(0);
+  let failedN = 0;
 
   const rows: BlockEconomicsRow[] = sorted.map((block) => {
     proposers.add(hexForLink(block.header.proposer));
@@ -108,7 +122,11 @@ export function analyzeBlockEconomics(blocks: Block[]): { rows: BlockEconomicsRo
     let unbondTxs = 0;
     let transferTxs = 0;
 
-    for (const tx of block.transactions ?? []) {
+    for (const [i, tx] of (block.transactions ?? []).entries()) {
+      if (!txSucceeded(block, i)) {
+        failedN += 1;
+        continue;
+      }
       const c = txContribution(tx);
       bond += c.bond;
       unbond += c.unbond;
@@ -138,7 +156,7 @@ export function analyzeBlockEconomics(blocks: Block[]): { rows: BlockEconomicsRo
   const unbondN = rows.reduce((s, r) => s + r.unbondTxs, 0);
   const transferN = rows.reduce((s, r) => s + r.transferTxs, 0);
   const totalTxs = sorted.reduce((s, b) => s + (b.transactions?.length ?? 0), 0);
-  const otherN = Math.max(0, totalTxs - bondN - unbondN - transferN);
+  const otherN = Math.max(0, totalTxs - failedN - bondN - unbondN - transferN);
 
   return {
     rows,
@@ -155,6 +173,7 @@ export function analyzeBlockEconomics(blocks: Block[]): { rows: BlockEconomicsRo
         transfer: transferN,
         other: otherN,
         total: totalTxs,
+        failed: failedN,
       },
     },
   };

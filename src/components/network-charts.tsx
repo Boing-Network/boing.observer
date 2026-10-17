@@ -20,7 +20,7 @@ import {
   formatIntervalLabel,
   intervalAxisScale,
 } from "@/lib/block-economics";
-import { formatBoingAmount } from "@/lib/tx-payload";
+import { compactAmount, formatBoingCompact } from "@/lib/format-amount";
 
 export function NetworkCharts() {
   const { sliceBlocks, loading, error } = useHomeChainData();
@@ -181,7 +181,7 @@ export function NetworkCharts() {
                               ? payload?.bondRaw
                               : payload?.unbondRaw;
                         const label = name === "transfer" ? "Transfer" : name === "bond" ? "Bond" : "Unbond";
-                        const amt = raw != null ? formatBoingAmount(raw.toString()) : String(value ?? 0);
+                        const amt = raw != null ? compactAmount(raw).short : String(value ?? 0);
                         return [`${amt} BOING`, label];
                       }}
                       labelFormatter={(label) => `Block #${Number(label).toLocaleString()}`}

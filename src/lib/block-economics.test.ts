@@ -67,3 +67,43 @@ describe("computeNetworkStats", () => {
     expect(s).not.toHaveProperty("tps");
   });
 });
+
+describe("failed txs are excluded from aggregates", () => {
+  const huge = "1000000000000000000000000000000";
+  const withReceipts = (b: Block, success: boolean[]): Block => ({
+    ...b,
+    receipts: success.map((s, i) => ({ tx_id: `0x${String(i).repeat(64)}`, block_height: b.header.height, tx_index: i, success: s, gas_used: 21000 })) as unknown as Block["receipts"],
+  });
+
+  it("does not count a reverted 1e30 transfer as BOING moved", () => {
+    const b = withReceipts(
+      block(925, 1000, pA, [
+        { sender: pA, payload: { Transfer: { to: pB, amount: huge } } },
+        { sender: pB, payload: { Transfer: { to: pA, amount: "20" } } },
+      ]),
+      [false, true],
+    );
+    const { totals } = analyzeBlockEconomics([b]);
+    expect(totals.transferVolume).toBe(BigInt(20));
+    expect(totals.txCounts.transfer).toBe(1);
+    expect(totals.txCounts.failed).toBe(1);
+    expect(totals.txCounts.total).toBe(2);
+    expect(computeNetworkStats(925, [b]).boingMoved).toBe(BigInt(20));
+  });
+
+  it("excludes failed bond/unbond too, and keeps blocks without receipts countable", () => {
+    const b = withReceipts(
+      block(1, 1000, pA, [
+        { sender: pA, payload: { Bond: { amount: "5" } } },
+        { sender: pA, payload: { Unbond: { amount: "7" } } },
+      ]),
+      [false, false],
+    );
+    const plain = block(2, 1005, pA, [{ sender: pA, payload: { Transfer: { to: pB, amount: "3" } } }]);
+    const { totals } = analyzeBlockEconomics([b, plain]);
+    expect(totals.bond).toBe(BigInt(0));
+    expect(totals.unbond).toBe(BigInt(0));
+    expect(totals.transferVolume).toBe(BigInt(3));
+    expect(totals.txCounts.failed).toBe(2);
+  });
+});

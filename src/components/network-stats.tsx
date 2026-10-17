@@ -7,7 +7,7 @@ import { useNetwork } from "@/context/network-context";
 import { explorerBlockHeightHref } from "@/lib/explorer-href";
 import { formatIntervalLabel } from "@/lib/block-economics";
 import { computeNetworkStats, type NetworkStats as NetworkStatsData } from "@/lib/network-stats";
-import { formatBoingAmount } from "@/lib/tx-payload";
+import { compactAmount, formatBoingCompact } from "@/lib/format-amount";
 import { RpcDownNotice, Skeleton } from "@/components/loading-states";
 
 const BLOCKS_TO_SAMPLE = 20;
@@ -18,21 +18,26 @@ function StatCard({
   sub,
   loading,
   href,
+  title,
 }: {
   label: string;
   value: string;
   sub?: string;
   loading?: boolean;
   href?: string;
+  /** Full value shown on hover when `value` is compacted. */
+  title?: string;
 }) {
   const valueNode = loading ? (
     <Skeleton className="mt-1 h-6 w-20" />
   ) : href ? (
-    <Link href={href} className="font-mono text-lg font-semibold text-network-cyan hover:underline">
+    <Link href={href} title={title ?? value} className="block min-w-0 truncate font-mono text-lg font-semibold text-network-cyan hover:underline">
       {value}
     </Link>
   ) : (
-    <span className="font-mono text-lg font-semibold text-network-cyan">{value}</span>
+    <span title={title ?? value} className="block min-w-0 truncate font-mono text-lg font-semibold text-network-cyan" data-testid="stat-value">
+      {value}
+    </span>
   );
   return (
     <div
@@ -42,7 +47,7 @@ function StatCard({
     >
       <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">{label}</span>
       {valueNode}
-      {sub ? <span className="text-xs text-[var(--text-muted)]">{sub}</span> : null}
+      {sub ? <span className="break-words text-xs text-[var(--text-muted)]">{sub}</span> : null}
     </div>
   );
 }
@@ -65,7 +70,8 @@ export function NetworkStats() {
   }
 
   const moved =
-    stats != null ? `${formatBoingAmount(stats.boingMoved.toString())} BOING` : "—";
+    stats != null ? formatBoingCompact(stats.boingMoved) : "—";
+  const movedFull = stats != null ? `${compactAmount(stats.boingMoved).full} BOING` : undefined;
 
   return (
     <div className="py-2" role="region" aria-label="Summary statistics">
@@ -95,7 +101,8 @@ export function NetworkStats() {
         <StatCard
           label="BOING moved"
           value={loading ? "—" : moved}
-          sub={`transfers + stake in last ${stats?.blocksSampled ?? BLOCKS_TO_SAMPLE} blocks`}
+          title={movedFull}
+          sub={`successful transfers + stake in last ${stats?.blocksSampled ?? BLOCKS_TO_SAMPLE} blocks (failed txs excluded)`}
           loading={loading}
         />
       </div>

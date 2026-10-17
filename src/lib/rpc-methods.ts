@@ -121,7 +121,8 @@ export async function fetchRecentBlocks(
   const height = await fetchChainHeight(network);
   const results = await Promise.all(
     Array.from({ length: Math.max(0, count) }, (_, i) =>
-      fetchBlockByHeight(network, Math.max(0, height - i))
+      // Receipts so aggregates count successful txs only (a failed tx moves nothing but its fee).
+      fetchBlockByHeight(network, Math.max(0, height - i), true)
     )
   );
   const blocks = results.filter(

@@ -485,3 +485,11 @@ body.app-page-canvas {
     transition: none;
   }
 }
+
+/* Long values (u128 amounts, hashes) must wrap inside cards instead of overflowing them. */
+.glass-card,
+.data-card,
+.data-card__value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
