@@ -6,13 +6,14 @@ import { useNetwork } from "@/context/network-context";
 import { explorerAssetHref, explorerBlockHeightHref } from "@/lib/explorer-href";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { shortenHash, normalizeHex64 } from "@/lib/rpc-types";
+import { formatTokenDecimals } from "@/lib/format-amount";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
 
 type DexTokenRow = {
   id: string;
   symbol: string;
   name: string;
-  decimals: number;
+  decimals: number | null;
   poolCount: number;
   firstSeenHeight: number | null;
   metadataSource?: "deploy" | "abbrev";
@@ -296,7 +297,7 @@ export function DexTokensPanel() {
                       </div>
                       <div className="data-card__row">
                         <span className="data-card__label">Decimals</span>
-                        <span className="data-card__value font-mono">{row.decimals}</span>
+                        <span className="data-card__value font-mono">{formatTokenDecimals(row.decimals)}</span>
                       </div>
                       <div className="data-card__row">
                         <span className="data-card__label">Pools</span>
@@ -359,7 +360,7 @@ export function DexTokensPanel() {
                           <td className="py-2 pr-3 max-w-[12rem] truncate" title={display.displayName || row.name}>
                             {display.displayName || row.name || "—"}
                           </td>
-                          <td className="py-2 pr-3 font-mono">{row.decimals}</td>
+                          <td className="py-2 pr-3 font-mono">{formatTokenDecimals(row.decimals)}</td>
                           <td className="py-2 pr-3 font-mono">{row.poolCount}</td>
                           <td className="py-2 pr-3 font-mono">
                             {row.firstSeenHeight != null ? (

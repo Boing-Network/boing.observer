@@ -38,3 +38,12 @@ export function compactAmount(raw: string | bigint | number): CompactAmount {
 export function formatBoingCompact(raw: string | bigint | number): string {
   return `${compactAmount(raw).short} BOING`;
 }
+
+/**
+ * Token decimals label for DEX directory rows. Nodes report `0` for reference fungible tokens (v2 etc.,
+ * whole units) and `null` when they cannot tell; show "Unknown" rather than guessing 18.
+ */
+export function formatTokenDecimals(decimals: number | null | undefined, opts: { short?: boolean } = {}): string {
+  if (typeof decimals !== "number" || !Number.isInteger(decimals) || decimals < 0) return opts.short ? "?" : "Unknown";
+  return decimals === 0 && !opts.short ? "0 (whole units)" : String(decimals);
+}

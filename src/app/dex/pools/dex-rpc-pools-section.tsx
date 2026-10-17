@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
 import { explorerAssetHref } from "@/lib/explorer-href";
 import { shortenHash, normalizeHex64 } from "@/lib/rpc-types";
+import { formatTokenDecimals } from "@/lib/format-amount";
 
 type DexPoolRow = {
   poolHex: string;
   tokenAHex: string;
   tokenBHex: string;
-  tokenADecimals: number;
-  tokenBDecimals: number;
+  tokenADecimals: number | null;
+  tokenBDecimals: number | null;
   feeBps: number;
   reserveA: string;
   reserveB: string;
@@ -289,7 +290,7 @@ export function DexRpcPoolsSection() {
                       <div className="data-card__row">
                         <span className="data-card__label">Decimals</span>
                         <span className="data-card__value font-mono text-xs">
-                          {row.tokenADecimals} / {row.tokenBDecimals}
+                          {formatTokenDecimals(row.tokenADecimals, { short: true })} / {formatTokenDecimals(row.tokenBDecimals, { short: true })}
                         </span>
                       </div>
                       <div className="data-card__row">
@@ -339,7 +340,7 @@ export function DexRpcPoolsSection() {
                             {row.reserveA} / {row.reserveB}
                           </td>
                           <td className="py-2 pr-2 font-mono text-xs">
-                            {row.tokenADecimals} / {row.tokenBDecimals}
+                            {formatTokenDecimals(row.tokenADecimals, { short: true })} / {formatTokenDecimals(row.tokenBDecimals, { short: true })}
                           </td>
                           <td className="py-2 pr-2 font-mono">{row.feeBps}</td>
                           <td className="py-2 font-mono text-xs">{row.createdAtHeight ?? "—"}</td>

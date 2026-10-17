@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compactAmount, formatBoingCompact } from "./format-amount";
+import { compactAmount, formatBoingCompact, formatTokenDecimals } from "./format-amount";
 
 describe("compactAmount", () => {
   it("groups small values and keeps the exact value", () => {
@@ -22,5 +22,19 @@ describe("compactAmount", () => {
   });
   it("passes through non-integers", () => {
     expect(compactAmount("—").short).toBe("—");
+  });
+});
+
+describe("formatTokenDecimals", () => {
+  it("labels whole-unit tokens and real decimals", () => {
+    expect(formatTokenDecimals(0)).toBe("0 (whole units)");
+    expect(formatTokenDecimals(6)).toBe("6");
+  });
+  it("never invents 18 for unknown decimals", () => {
+    expect(formatTokenDecimals(null)).toBe("Unknown");
+    expect(formatTokenDecimals(undefined)).toBe("Unknown");
+    expect(formatTokenDecimals(Number.NaN)).toBe("Unknown");
+    expect(formatTokenDecimals(null, { short: true })).toBe("?");
+    expect(formatTokenDecimals(0, { short: true })).toBe("0");
   });
 });

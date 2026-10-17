@@ -6,6 +6,7 @@ import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extrac
 import { formatAssetKindLabel, formatPurposeLabel } from "@/lib/asset-kind-label";
 import type { NetworkId } from "@/lib/rpc-types";
 import { shortenHash } from "@/lib/rpc-types";
+import { formatTokenDecimals } from "@/lib/format-amount";
 import type { TokenIndexJsonEntry } from "@/lib/token-index/types";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
 
@@ -13,7 +14,7 @@ type DexTokenProfile = {
   id: string;
   symbol: string;
   name: string;
-  decimals: number;
+  decimals: number | null;
   poolCount: number;
   firstSeenHeight: number | null;
   metadataSource?: "deploy" | "abbrev";
@@ -133,7 +134,7 @@ export function AssetMetadataSection({
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Decimals</dt>
-              <dd className="font-mono">{dexToken.decimals}</dd>
+              <dd className="font-mono">{formatTokenDecimals(dexToken.decimals)}</dd>
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Pools</dt>
