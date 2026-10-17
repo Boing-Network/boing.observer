@@ -27,6 +27,7 @@ import {
 import { explorerAccountHref } from "@/lib/explorer-href";
 import { shortenHash } from "@/lib/rpc-types";
 import { compactBoing } from "@/lib/native-unit";
+import { boingTooltipValue, compactBoingAxis } from "@/lib/chart-native";
 import Link from "next/link";
 
 const BLOCKS_TO_SAMPLE = HOME_BLOCK_WINDOW;
@@ -99,6 +100,7 @@ export function NetworkEconomyInsights() {
       cumulative.map((p) => ({
         height: p.height,
         cumulative: bigIntToChartNumber(p.cumulative),
+        cumulativeRaw: p.cumulative,
       })),
     [cumulative]
   );
@@ -328,7 +330,7 @@ export function NetworkEconomyInsights() {
                   tick={{ fill: "var(--text-muted)", fontSize: 10 }}
                   tickFormatter={(v) => `#${Number(v).toLocaleString()}`}
                 />
-                <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} />
+                <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} tickFormatter={compactBoingAxis} width={44} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "var(--boing-navy-deep)",
@@ -336,10 +338,11 @@ export function NetworkEconomyInsights() {
                     borderRadius: 8,
                   }}
                   labelStyle={{ color: "var(--text-primary)" }}
-                  formatter={(value) => {
-                    const v = typeof value === "number" ? value : 0;
-                    return [Number.isFinite(v) ? `${v.toLocaleString("en-US", { maximumFractionDigits: 4 })} BOING` : "—", "Cumulative transfers"];
-                  }}
+                  separator=": "
+                  formatter={(_value, _name, item) => [
+                    boingTooltipValue((item?.payload as { cumulativeRaw?: bigint } | undefined)?.cumulativeRaw),
+                    "Cumulative transfers",
+                  ]}
                   labelFormatter={(h) => `Block #${Number(h).toLocaleString()}`}
                 />
                 <Line

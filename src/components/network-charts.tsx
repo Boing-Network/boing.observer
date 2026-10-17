@@ -15,12 +15,11 @@ import {
 import { HOME_BLOCK_WINDOW, useHomeChainData } from "@/context/home-chain-data";
 import {
   analyzeBlockEconomics,
-  bigIntToChartNumber,
   blockIntervalSeries,
   formatIntervalLabel,
   intervalAxisScale,
 } from "@/lib/block-economics";
-import { compactBoing } from "@/lib/native-unit";
+import { blockValueSeries, blockValueTooltip, compactBoingAxis, type BlockValuePoint } from "@/lib/chart-native";
 
 export function NetworkCharts() {
   const { sliceBlocks, loading, error } = useHomeChainData();
@@ -41,19 +40,7 @@ export function NetworkCharts() {
     [intervalRaw, axis.divisor]
   );
 
-  const valueData = useMemo(
-    () =>
-      rows.map((r) => ({
-        height: r.height,
-        transfer: bigIntToChartNumber(r.transferVolume),
-        bond: bigIntToChartNumber(r.bond),
-        unbond: bigIntToChartNumber(r.unbond),
-        transferRaw: r.transferVolume,
-        bondRaw: r.bond,
-        unbondRaw: r.unbond,
-      })),
-    [rows]
-  );
+  const valueData = useMemo(() => blockValueSeries(rows), [rows]);
 
   const anyValue = valueData.some((d) => d.transfer > 0 || d.bond > 0 || d.unbond > 0);
 
@@ -162,7 +149,12 @@ export function NetworkCharts() {
                       tick={{ fill: "var(--text-muted)", fontSize: 11 }}
                       tickFormatter={(v) => Number(v).toLocaleString()}
                     />
-                    <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                    <YAxis
+                      tick={{ fill: "var(--text-muted)", fontSize: 11 }}
+                      tickFormatter={compactBoingAxis}
+                      width={44}
+                      label={{ value: "BOING", angle: -90, position: "insideLeft", fill: "var(--text-muted)", fontSize: 10 }}
+                    />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "var(--boing-navy-deep)",
@@ -170,20 +162,10 @@ export function NetworkCharts() {
                         borderRadius: 8,
                       }}
                       labelStyle={{ color: "var(--text-primary)" }}
-                      formatter={(value, name, item) => {
-                        const payload = item?.payload as
-                          | { transferRaw?: bigint; bondRaw?: bigint; unbondRaw?: bigint }
-                          | undefined;
-                        const raw =
-                          name === "transfer"
-                            ? payload?.transferRaw
-                            : name === "bond"
-                              ? payload?.bondRaw
-                              : payload?.unbondRaw;
-                        const label = name === "transfer" ? "Transfer" : name === "bond" ? "Bond" : "Unbond";
-                        const amt = raw != null ? compactBoing(raw).short : String(value ?? 0);
-                        return [`${amt} BOING`, label];
-                      }}
+                      separator=": "
+                      formatter={(_value, name, item) =>
+                        blockValueTooltip(name, item?.payload as Partial<BlockValuePoint> | undefined)
+                      }
                       labelFormatter={(label) => `Block #${Number(label).toLocaleString()}`}
                     />
                     <Bar dataKey="transfer" stackId="v" fill="var(--network-cyan)" name="transfer" />
