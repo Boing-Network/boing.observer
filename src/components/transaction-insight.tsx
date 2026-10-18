@@ -20,6 +20,9 @@ import {
   getTxPayloadKind,
   getTxPayloadSummary,
   isContractDeployPayloadKind,
+  batchCallValueTotal,
+  batchSteps,
+  contractCallValue,
 } from "@/lib/tx-payload";
 import {
   buildPayloadDetailLines,
@@ -119,7 +122,35 @@ function SignedPayloadHeadlineRich({
           ) : (
             "—"
           )}
-          {inner.calldata ? " with calldata" : ""}.
+          {inner.calldata ? " with calldata" : ""}
+          {contractCallValue(inner) ? (
+            <>
+              {failed ? ", attempting to send " : ", sending "}
+              <span data-testid="signed-call-value">{amt("value")} BOING</span> to it
+            </>
+          ) : null}
+          .{contractCallValue(inner) ? reverted : null}
+        </>
+      );
+    }
+    case "Batch": {
+      const steps = batchSteps(inner);
+      const total = batchCallValueTotal(steps);
+      const c = total ? compactBoingAt(total, height, network) : null;
+      return (
+        <>
+          {failed ? "You attempted a batch of " : "You signed a batch of "}
+          {steps.length} step{steps.length === 1 ? "" : "s"} (all succeed or all revert)
+          {c ? (
+            <>
+              {failed ? ", attempting to send " : ", sending "}
+              <span title={`${c.full} BOING`} data-testid="signed-call-value">
+                {c.short} BOING
+              </span>{" "}
+              to contracts
+            </>
+          ) : null}
+          .{reverted}
         </>
       );
     }

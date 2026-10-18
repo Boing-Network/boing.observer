@@ -4,7 +4,14 @@
 
 import type { TxPayloadKind } from "./rpc-types";
 import { hexForLink, shortenHash, toSafeHexString } from "./rpc-types";
-import { formatBoingAmount, getTxPayloadKind, getTxPayloadInner } from "./tx-payload";
+import {
+  batchCallValueTotal,
+  batchSteps,
+  contractCallValue,
+  formatBoingAmount,
+  getTxPayloadKind,
+  getTxPayloadInner,
+} from "./tx-payload";
 import { formatPurposeLabel } from "./asset-kind-label";
 import { parseAssetDisplayMetadata } from "./extract-media-url";
 
@@ -78,6 +85,10 @@ export function buildPayloadDetailLines(payload: unknown, height?: number | null
         value: shortenHash(c) || "—",
         accountHex64: c || undefined,
       });
+      const value = contractCallValue(p);
+      if (value) {
+        lines.push({ label: "BOING sent to contract", value: `${formatBoingAmount(value, height, network)} BOING` });
+      }
       const calldata = normalizeHexData(p.calldata);
       if (calldata.bytes > 0) {
         lines.push({
@@ -88,6 +99,36 @@ export function buildPayloadDetailLines(payload: unknown, height?: number | null
       } else {
         lines.push({ label: "Calldata", value: "Empty (no call data bytes)" });
       }
+      return lines;
+    }
+    case "Batch": {
+      const steps = batchSteps(p);
+      lines.push({ label: "Steps", value: `${steps.length} (all succeed or all revert)` });
+      steps.forEach((s, i) => {
+        const label = `Step ${i + 1}`;
+        if (s.kind === "Transfer") {
+          const to = hexForLink(s.to);
+          lines.push({
+            label,
+            value: `Transfer ${formatBoingAmount(s.amount, height, network)} BOING to ${shortenHash(to) || "—"}`,
+            accountHex64: to || undefined,
+          });
+        } else if (s.kind === "ContractCall") {
+          const c = hexForLink(s.contract);
+          const cd = normalizeHexData(s.calldata);
+          const v = s.value ? ` · sends ${formatBoingAmount(s.value, height, network)} BOING` : "";
+          lines.push({
+            label,
+            value: `Call ${shortenHash(c) || "—"}${v} · calldata ${cd.bytes} bytes`,
+            accountHex64: c || undefined,
+            copyValue: cd.prefixed || undefined,
+          });
+        } else {
+          lines.push({ label, value: "Unrecognized step" });
+        }
+      });
+      const total = batchCallValueTotal(steps);
+      if (total) lines.push({ label: "BOING sent to contracts", value: `${formatBoingAmount(total, height, network)} BOING` });
       return lines;
     }
     case "ContractDeploy":
@@ -172,6 +213,7 @@ export function kindBadgeTone(kind: TxPayloadKind): string {
     case "QaPoolVote":
       return "border-emerald-500/40 bg-emerald-500/10 text-emerald-200";
     case "ContractCall":
+    case "Batch":
       return "border-amber-500/40 bg-amber-500/10 text-amber-200";
     case "ContractDeploy":
     case "ContractDeployWithPurpose":

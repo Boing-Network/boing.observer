@@ -43,6 +43,7 @@ export type TxPayloadKind =
   | "ClaimUnbond"
   | "QaPoolVote"
   | "ContractCall"
+  | "Batch"
   | "ContractDeploy"
   | "ContractDeployWithPurpose"
   | "ContractDeployWithPurposeAndMetadata"
@@ -81,6 +82,8 @@ export interface TxPayloadUnbond {
 export interface TxPayloadContractCall {
   contract: string;
   calldata?: string;
+  /** Native BOING sent with the call (`ContractCallWithValue`, from the native-value height; ledger units). */
+  value?: string;
 }
 
 export interface TxPayloadContractDeploy {

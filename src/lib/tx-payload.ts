@@ -1,7 +1,8 @@
 import { compactBoingAt, formatBoingAt } from "./native-unit";
 /**
  * Infer transaction payload type from payload object for display.
- * Matches spec: Transfer, Bond, Unbond, ContractCall, ContractDeploy, ContractDeployWithPurpose.
+ * Matches spec: Transfer, Bond, Unbond, ContractCall (incl. ContractCallWithValue), Batch, ContractDeploy,
+ * ContractDeployWithPurpose.
  */
 
 import type { TxPayloadKind } from "./rpc-types";
@@ -20,6 +21,9 @@ const TAGGED_PAYLOAD_KIND_BY_KEY: Record<string, TxPayloadKind> = {
   QaPoolVote: "QaPoolVote",
   qa_pool_vote: "QaPoolVote",
   ContractCall: "ContractCall",
+  // Contract call carrying native BOING (`{ contract, calldata, value }`): shown as a contract call with its value.
+  ContractCallWithValue: "ContractCall",
+  Batch: "Batch",
   ContractDeploy: "ContractDeploy",
   ContractDeployWithPurpose: "ContractDeployWithPurpose",
   ContractDeployWithPurposeAndMetadata: "ContractDeployWithPurposeAndMetadata",
@@ -76,6 +80,7 @@ function getTxPayloadKindFlat(p: Record<string, unknown>): TxPayloadKind {
     return "ContractDeployWithPurpose";
   }
   if ("contract" in p) return "ContractCall";
+  if (Array.isArray(p.calls)) return "Batch";
   if ("to" in p && "amount" in p) return "Transfer";
   if ("amount" in p && Object.keys(p).length <= 2) {
     if ("amount" in p && !("to" in p)) {
@@ -98,6 +103,37 @@ export function getTxPayloadKind(payload: unknown): TxPayloadKind {
   const { inner, taggedKind } = unwrapTaggedPayload(payload);
   if (taggedKind) return taggedKind;
   return getTxPayloadKindFlat(inner);
+}
+
+/** Native BOING a contract call sends (`ContractCallWithValue.value`), or null when none / zero. */
+export function contractCallValue(inner: Record<string, unknown>): string | null {
+  const v = inner.value;
+  const s = typeof v === "number" ? String(v) : typeof v === "string" ? v : "";
+  return /^\d+$/.test(s) && !/^0+$/.test(s) ? s : null;
+}
+
+export type BatchStep =
+  | { kind: "Transfer"; to: unknown; amount: string }
+  | { kind: "ContractCall"; contract: unknown; calldata: unknown; value: string | null }
+  | { kind: "Unknown" };
+
+/** Steps of a `Batch` payload (`{ calls: [{ Transfer }, { ContractCall }, { ContractCallWithValue }] }`). */
+export function batchSteps(inner: Record<string, unknown>): BatchStep[] {
+  const calls = Array.isArray(inner.calls) ? inner.calls : [];
+  return calls.map((c): BatchStep => {
+    const { inner: s, taggedKind } = unwrapTaggedPayload(c);
+    const kind = taggedKind ?? getTxPayloadKindFlat(s);
+    if (kind === "Transfer") return { kind, to: s.to, amount: String(s.amount ?? "") };
+    if (kind === "ContractCall") return { kind, contract: s.contract, calldata: s.calldata, value: contractCallValue(s) };
+    return { kind: "Unknown" };
+  });
+}
+
+/** Total native BOING the batch's contract-call steps send (ledger units), or null when none. */
+export function batchCallValueTotal(steps: BatchStep[]): string | null {
+  let t = BigInt(0);
+  for (const s of steps) if (s.kind === "ContractCall" && s.value) t += BigInt(s.value);
+  return t > BigInt(0) ? t.toString() : null;
 }
 
 export function isContractDeployPayloadKind(kind: TxPayloadKind): boolean {
@@ -127,8 +163,15 @@ export function getTxPayloadSummary(payload: unknown, height?: number | null, ne
       return `${boing(p.amount)} stake`;
     case "Unbond":
       return `unbond ${boing(p.amount)}`;
-    case "ContractCall":
-      return `contract ${formatShortAddr(p.contract)}`;
+    case "ContractCall": {
+      const v = contractCallValue(p);
+      return `contract ${formatShortAddr(p.contract)}${v ? ` · sends ${boing(v)}` : ""}`;
+    }
+    case "Batch": {
+      const steps = batchSteps(p);
+      const v = batchCallValueTotal(steps);
+      return `batch · ${steps.length} step${steps.length === 1 ? "" : "s"}${v ? ` · sends ${boing(v)}` : ""}`;
+    }
     case "ContractDeploy":
       return "deploy contract";
     case "ContractDeployWithPurpose":
@@ -209,7 +252,13 @@ export function getTxExplorerNarrative(
     return `Unbond · ${boing(p.amount)}`;
   }
   if (kind === "ContractCall") {
-    return `Call ${formatShortAddr(p.contract)}`;
+    const v = contractCallValue(p);
+    return `Call ${formatShortAddr(p.contract)}${v ? ` · sends ${boing(v)}` : ""}`;
+  }
+  if (kind === "Batch") {
+    const steps = batchSteps(p);
+    const v = batchCallValueTotal(steps);
+    return `Batch of ${steps.length} step${steps.length === 1 ? "" : "s"} (all or nothing)${v ? ` · sends ${boing(v)} to contracts` : ""}`;
   }
   if (
     kind === "ContractDeploy" ||

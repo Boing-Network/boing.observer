@@ -3,6 +3,7 @@ import { receiptReturnDataHex, tryParseCreatedAccountIdFromDeployReturnData } fr
 import { hexForLink, normalizeHex64 } from "@/lib/rpc-types";
 import type { TxPayloadKind } from "@/lib/rpc-types";
 import {
+  batchSteps,
   getTxPayloadInner,
   getTxPayloadKind,
   getTxPayloadSummary,
@@ -75,6 +76,12 @@ export function rolesForAccountInTx(
   const kind = getTxPayloadKind(tx.payload);
   if (kind === "Transfer" && asAccount64(inner.to) === want) roles.push("recipient");
   if (kind === "ContractCall" && asAccount64(inner.contract) === want) roles.push("contract");
+  if (kind === "Batch") {
+    for (const s of batchSteps(inner)) {
+      if (s.kind === "Transfer" && asAccount64(s.to) === want && !roles.includes("recipient")) roles.push("recipient");
+      if (s.kind === "ContractCall" && asAccount64(s.contract) === want && !roles.includes("contract")) roles.push("contract");
+    }
+  }
 
   if (isContractDeployPayloadKind(kind) && receipt?.success !== false) {
     const created =
