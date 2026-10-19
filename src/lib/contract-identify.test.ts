@@ -48,3 +48,12 @@ describe("lookupContractCode + identifyContract (testnet replay)", () => {
     expect(pool.functions.map((f) => f.name)).toEqual(["swap", "add_liquidity", "remove_liquidity"]);
   });
 });
+describe("linked NFT / token registry v2", () => {
+  it("canonical v2 address is the v2 interface (claim_self 0xE7, get_asset_deployer 0xE8); v1 is labelled superseded", () => {
+    const v2 = identifyContract({ network: "testnet", address64: "f704485ad29f56bb6516ac822fcf9ca8fcb6c4266e22c9ed7f9c6908668655dd", code: null });
+    expect(v2.interfaceId).toBe("linked-nft-registry-v2");
+    const v1 = identifyContract({ network: "testnet", address64: "ebf9f0190f415852f90d0e60343126201248ab96273fdbf8acc5fe5fa03c3dd8", code: null });
+    expect(v1.interfaceId).toBe("linked-nft-registry");
+    expect(v1.label).toMatch(/superseded/);
+  });
+});

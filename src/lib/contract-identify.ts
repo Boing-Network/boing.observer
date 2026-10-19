@@ -1,7 +1,6 @@
 import {
   BOING_CUSTODY_ROUTER_BYTECODE_HEX,
   CANONICAL_BOING_TESTNET_BUILDER_ATTESTATION_REGISTRY_HEX,
-  CANONICAL_BOING_TESTNET_LINKED_NFT_TOKEN_REGISTRY_HEX,
   CANONICAL_BOING_TESTNET_NATIVE_AMM_LP_VAULT_HEX,
   CANONICAL_BOING_TESTNET_NATIVE_CP_POOL_HEX,
   CANONICAL_BOING_TESTNET_NATIVE_DEX_FACTORY_HEX,
@@ -19,6 +18,10 @@ import {
   boingTokenBytecodeHex,
 } from "boing-sdk";
 import { decodeDispatchSelectors, hexToBytesLoose } from "./bytecode-selectors";
+import {
+  CANONICAL_BOING_TESTNET_LINKED_NFT_TOKEN_REGISTRY_HEX,
+  CANONICAL_BOING_TESTNET_LINKED_NFT_TOKEN_REGISTRY_V1_HEX,
+} from "./testnet-constants";
 import {
   CONTRACT_INTERFACES,
   matchInterfaceBySelectors,
@@ -48,7 +51,8 @@ export const CANONICAL_TESTNET_CONTRACTS: Record<string, Known> = {
   [h64(CANONICAL_BOING_TESTNET_NATIVE_DEX_MULTIHOP_SWAP_ROUTER_HEX)]: { interfaceId: "multihop-router", label: "Multihop swap router (canonical)" },
   [h64(CANONICAL_BOING_TESTNET_NATIVE_AMM_LP_VAULT_HEX)]: { interfaceId: "lp-vault-v1", label: "Native AMM LP vault v1 (canonical)" },
   [h64(CANONICAL_BOING_TESTNET_NATIVE_LP_SHARE_TOKEN_HEX)]: { interfaceId: "lp-share-token", label: "LP share token (canonical)" },
-  [h64(CANONICAL_BOING_TESTNET_LINKED_NFT_TOKEN_REGISTRY_HEX)]: { interfaceId: "linked-nft-registry", label: "Linked NFT / token registry (canonical)" },
+  [h64(CANONICAL_BOING_TESTNET_LINKED_NFT_TOKEN_REGISTRY_HEX)]: { interfaceId: "linked-nft-registry-v2", label: "Linked NFT / token registry v2 (canonical)" },
+  [h64(CANONICAL_BOING_TESTNET_LINKED_NFT_TOKEN_REGISTRY_V1_HEX)]: { interfaceId: "linked-nft-registry", label: "Linked NFT / token registry v1 (superseded by v2)" },
   [h64(CANONICAL_BOING_TESTNET_BUILDER_ATTESTATION_REGISTRY_HEX)]: { interfaceId: "builder-attestation", label: "Builder attestation registry (canonical)" },
 };
 
@@ -70,7 +74,7 @@ export function knownBytecodeMap(): Map<string, Known> {
   for (const v of [9, 8] as const) add(boingPoolBytecodeHex(v), { interfaceId: "pool-custody", label: `Native CP pool v${v} (canonical template)` });
   for (const v of [7, 6, 5, 4, 3, 2, 1] as const) add(boingPoolBytecodeHex(v), { interfaceId: "pool-ledger", label: `Native CP pool v${v} (canonical template)` });
   add(BOING_CUSTODY_ROUTER_BYTECODE_HEX, { interfaceId: "custody-router", label: "Custody router v1 (canonical template)" });
-  add(DEFAULT_LINKED_NFT_TOKEN_REGISTRY_BYTECODE_HEX, { interfaceId: "linked-nft-registry", label: "Linked NFT / token registry (canonical template)" });
+  add(DEFAULT_LINKED_NFT_TOKEN_REGISTRY_BYTECODE_HEX, { interfaceId: "linked-nft-registry", label: "Linked NFT / token registry v1 (canonical template)" });
   add(DEFAULT_BUILDER_ATTESTATION_REGISTRY_BYTECODE_HEX, { interfaceId: "builder-attestation", label: "Builder attestation registry (canonical template)" });
   knownBytecodes = m;
   return m;

@@ -357,6 +357,24 @@ export const CONTRACT_INTERFACES: Record<string, ContractInterface> = {
       { selector: 0xe6, name: "transfer_asset_claimer", params: [acct("asset"), acct("new_claimer")], kind: "write", description: "Hand the claim to another account.", access: "Current claimer." },
     ],
   },
+  "linked-nft-registry-v2": {
+    id: "linked-nft-registry-v2",
+    name: "Linked NFT / token registry v2",
+    summary:
+      "Many-to-many links between NFT collections and project tokens, authorised by each asset's claimer. An asset's claimer is its creator: new assets claim themselves in their deploy transaction, older ones can be claimed only by their recorded deployer.",
+    docsUrl: `${DOCS}/BOING-LINKED-NFT-TOKEN.md`,
+    functions: [
+      { selector: 0xe0, name: "claim_asset", params: [acct("asset")], kind: "write", description: "Claim an asset that existed before v2.", access: "Only the asset's recorded deployer (see get_asset_deployer); a no-op for the current claimer." },
+      { selector: 0xe1, name: "register_link", params: [acct("collection"), acct("token")], kind: "write", description: "Link a collection to a token.", access: "Claimer of both assets." },
+      { selector: 0xe2, name: "unlink_at", params: [u64("index")], kind: "write", description: "Tombstone the link at `index`.", access: "Claimer of either asset." },
+      { selector: 0xe3, name: "links_count", params: [], kind: "read", description: "Number of link slots (including tombstones).", access: "Anyone.", returns: "count" },
+      { selector: 0xe4, name: "get_link_at", params: [u64("index")], kind: "read", description: "Link at `index`.", access: "Anyone.", returns: "collection, token" },
+      { selector: 0xe5, name: "get_asset_claimer", params: [acct("asset")], kind: "read", description: "Claimer of `asset`.", access: "Anyone.", returns: "claimer account" },
+      { selector: 0xe6, name: "transfer_asset_claimer", params: [acct("asset"), acct("new_claimer")], kind: "write", description: "Hand the claim to another account.", access: "Current claimer." },
+      { selector: 0xe7, name: "claim_self", params: [acct("claimer")], kind: "write", description: "Called by a new asset from its deploy init code: records `claimer` (its creator) as the claimer of the calling contract.", access: "The asset itself (caller = asset), once." },
+      { selector: 0xe8, name: "get_asset_deployer", params: [acct("asset")], kind: "read", description: "Recorded deployer of a pre-v2 asset (the account allowed to claim_asset it).", access: "Anyone.", returns: "deployer account" },
+    ],
+  },
   "builder-attestation": {
     id: "builder-attestation",
     name: "Builder attestation registry",
