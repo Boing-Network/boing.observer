@@ -84,6 +84,10 @@ test.describe("contract functions (live testnet)", () => {
   for (const c of CONTRACTS) {
     test(c.slug, async ({ page }) => {
       await page.goto(`/${c.path}/${c.id}?network=testnet`);
+      const tech = page.getByTestId("technical-details");
+      if (await tech.count()) {
+        await tech.locator("summary").click();
+      }
       const section = page.getByTestId("contract-functions");
       await expect(section).toBeVisible({ timeout: 60_000 });
       await expect(section.getByTestId("contract-interface-label")).toHaveText(c.label);

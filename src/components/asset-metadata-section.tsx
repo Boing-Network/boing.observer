@@ -6,7 +6,7 @@ import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extrac
 import { formatAssetKindLabel, formatPurposeLabel } from "@/lib/asset-kind-label";
 import type { NetworkId } from "@/lib/rpc-types";
 import { shortenHash } from "@/lib/rpc-types";
-import { formatTokenDecimals } from "@/lib/format-amount";
+import { compactAmount, formatTokenDecimals } from "@/lib/format-amount";
 import type { TokenIndexJsonEntry } from "@/lib/token-index/types";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
 
@@ -30,6 +30,14 @@ export type NftSamplePreview = {
   metadataName: string | null;
 };
 
+export type FungibleTotalSupplyPayload = {
+  amount: string;
+  mintTo: string;
+  mintTxId: string | null;
+  mintBlockHeight: number | null;
+  source: "mint_first";
+};
+
 export type ExplorerAssetProfilePayload = {
   supported: true;
   address: string;
@@ -42,6 +50,8 @@ export type ExplorerAssetProfilePayload = {
   tokenIndexScan: { fromHeight: number; toHeight: number } | null;
   imageUrl: string | null;
   description?: string | null;
+  /** Fixed supply from reference `mint_first` when available. */
+  totalSupply?: FungibleTotalSupplyPayload | null;
   nftSamples?: NftSamplePreview[];
   nftDiscoverNote?: string;
   /** Assets this account deployed (from the recent-block index scan). */
@@ -61,33 +71,53 @@ export function AssetMetadataSection({
   /** When set, shows a control to run the bounded deploy/receipt scan. */
   onRequestScan?: () => void;
 }) {
-  const { dexToken, tokenIndex, tokenIndexScan, indexWarnings, nftSamples, nftDiscoverNote, imageUrl, factory, deployedByAccount } =
-    profile;
+  const {
+    dexToken,
+    tokenIndex,
+    tokenIndexScan,
+    indexWarnings,
+    nftSamples,
+    nftDiscoverNote,
+    imageUrl,
+    factory,
+    deployedByAccount,
+    totalSupply,
+  } = profile;
   const dexDisplay = dexToken ? parseAssetDisplayMetadata(dexToken.name, dexToken.symbol) : null;
   const indexDisplay = tokenIndex
     ? parseAssetDisplayMetadata(tokenIndex.assetName, tokenIndex.assetSymbol)
     : null;
   const heroImage = imageUrl || dexDisplay?.imageUrl || indexDisplay?.imageUrl || tokenIndex?.imageUrl || null;
-  const hasBody = Boolean(dexToken || tokenIndex || nftSamples?.length || deployedByAccount?.length);
+  const hasBody = Boolean(dexToken || tokenIndex || nftSamples?.length || deployedByAccount?.length || totalSupply);
+  const isFungible = tokenIndex?.kind === "fungible" || Boolean(dexToken) || tokenIndex?.purposeCategory === "token";
+  const displayName =
+    indexDisplay?.displayName || dexDisplay?.displayName || tokenIndex?.assetName || dexToken?.name || null;
+  const displaySymbol =
+    indexDisplay?.displaySymbol || dexDisplay?.displaySymbol || tokenIndex?.assetSymbol || dexToken?.symbol || null;
+  const decimals = dexToken?.decimals ?? null;
+  const firstBlock = tokenIndex?.firstSeenBlock ?? dexToken?.firstSeenHeight ?? null;
+  const supplyFmt = totalSupply ? compactAmount(totalSupply.amount) : null;
 
   return (
     <section className="glass-card space-y-4 p-4 sm:p-6" aria-labelledby="asset-metadata-heading">
       <h2 id="asset-metadata-heading" className="font-display text-lg font-semibold text-[var(--text-primary)]">
-        Metadata &amp; discovery
+        {isFungible ? "Token details" : "Metadata & discovery"}
       </h2>
       <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-        DEX fields come from <code className="rounded bg-white/10 px-1">boing_getDexToken</code>. Deploy name / symbol
-        can be merged from a bounded receipt scan
+        {isFungible
+          ? "Essential fields for this fungible token: identity, supply, deployer, and first appearance on chain."
+          : "DEX listing and deploy metadata for this asset."}
         {scanUsed && tokenIndexScan
-          ? ` (last ${tokenIndexScan.toHeight - tokenIndexScan.fromHeight + 1} blocks at tip)`
-          : ""}
-        . Older deploys may only appear on the{" "}
+          ? ` Deploy scan covers the last ${tokenIndexScan.toHeight - tokenIndexScan.fromHeight + 1} blocks at tip.`
+          : ""}{" "}
+        Browse the{" "}
         <Link href={`/tokens?network=${encodeURIComponent(network)}`} className="text-network-cyan hover:underline">
           token index
         </Link>
         {factory ? (
           <>
-            . Factory{" "}
+            {" "}
+            · factory{" "}
             <Link href={explorerAssetHref(factory, network)} className="font-mono text-network-cyan hover:underline">
               {shortenHash(factory, 10, 8)}
             </Link>
@@ -95,6 +125,112 @@ export function AssetMetadataSection({
         ) : null}
         .
       </p>
+
+      {isFungible && (displayName || displaySymbol || totalSupply || tokenIndex || dexToken) ? (
+        <div className="space-y-2 rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/20 p-3" data-testid="token-essentials">
+          <h3 className="text-sm font-medium text-[var(--text-primary)]">Essentials</h3>
+          <dl className="grid gap-2 text-sm sm:grid-cols-2">
+            <div className="flex flex-wrap gap-x-2">
+              <dt className="text-[var(--text-muted)]">Name</dt>
+              <dd className="break-words">{displayName || "—"}</dd>
+            </div>
+            <div className="flex flex-wrap gap-x-2">
+              <dt className="text-[var(--text-muted)]">Symbol</dt>
+              <dd>{displaySymbol || "—"}</dd>
+            </div>
+            <div className="flex flex-wrap gap-x-2">
+              <dt className="text-[var(--text-muted)]">Kind</dt>
+              <dd>
+                {tokenIndex?.kind === "fungible" || dexToken || tokenIndex?.purposeCategory === "token"
+                  ? "Fungible token"
+                  : tokenIndex?.kind
+                    ? formatAssetKindLabel(tokenIndex.kind)
+                    : "Fungible token"}
+              </dd>
+            </div>
+            <div className="flex flex-wrap gap-x-2">
+              <dt className="text-[var(--text-muted)]">Decimals</dt>
+              <dd className="font-mono">{formatTokenDecimals(decimals)}</dd>
+            </div>
+            {dexToken ? (
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="text-[var(--text-muted)]">Pools</dt>
+                <dd className="font-mono">{dexToken.poolCount}</dd>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap gap-x-2 sm:col-span-2">
+              <dt className="text-[var(--text-muted)]">Total supply</dt>
+              <dd className="font-mono" data-testid="token-total-supply">
+                {supplyFmt ? (
+                  <span title={supplyFmt.full}>
+                    {supplyFmt.short}
+                    {displaySymbol ? ` ${displaySymbol}` : ""}
+                  </span>
+                ) : (
+                  <span className="text-[var(--text-muted)]">Not found (no mint_first in indexed history)</span>
+                )}
+              </dd>
+            </div>
+            {firstBlock != null ? (
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="text-[var(--text-muted)]">First block</dt>
+                <dd className="font-mono">
+                  <Link
+                    href={explorerBlockHeightHref(firstBlock, network)}
+                    className="text-network-cyan hover:underline"
+                  >
+                    #{firstBlock.toLocaleString()}
+                  </Link>
+                </dd>
+              </div>
+            ) : null}
+            {tokenIndex?.deployTxId ? (
+              <div className="flex flex-wrap gap-x-2 sm:col-span-2">
+                <dt className="text-[var(--text-muted)]">Deploy tx</dt>
+                <dd className="font-mono text-xs">
+                  <Link href={explorerTxHref(tokenIndex.deployTxId, network)} className="text-network-cyan hover:underline">
+                    {tokenIndex.deployTxId}
+                  </Link>
+                </dd>
+              </div>
+            ) : null}
+            {tokenIndex?.deployer ? (
+              <div className="flex flex-wrap gap-x-2 sm:col-span-2">
+                <dt className="text-[var(--text-muted)]">Deployer</dt>
+                <dd className="font-mono text-xs">
+                  <Link
+                    href={explorerAccountHref(tokenIndex.deployer, network)}
+                    className="text-network-cyan hover:underline break-all"
+                  >
+                    0x{tokenIndex.deployer}
+                  </Link>
+                </dd>
+              </div>
+            ) : null}
+            {totalSupply?.mintTo ? (
+              <div className="flex flex-wrap gap-x-2 sm:col-span-2">
+                <dt className="text-[var(--text-muted)]">Minted to</dt>
+                <dd className="font-mono text-xs">
+                  <Link
+                    href={explorerAccountHref(totalSupply.mintTo, network)}
+                    className="text-network-cyan hover:underline break-all"
+                  >
+                    0x{totalSupply.mintTo}
+                  </Link>
+                  {totalSupply.mintTxId ? (
+                    <>
+                      {" · "}
+                      <Link href={explorerTxHref(totalSupply.mintTxId, network)} className="text-network-cyan hover:underline">
+                        mint tx
+                      </Link>
+                    </>
+                  ) : null}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </div>
+      ) : null}
 
       {onRequestScan && (
         <button
@@ -114,7 +250,7 @@ export function AssetMetadataSection({
         </p>
       )}
 
-      {dexToken && (
+      {dexToken && !isFungible && (
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-[var(--text-primary)]">DEX token</h3>
           <div className="flex items-start gap-3">
@@ -164,7 +300,7 @@ export function AssetMetadataSection({
         </div>
       )}
 
-      {tokenIndex && (
+      {tokenIndex && !isFungible && (
         <div className="space-y-2 border-t border-[var(--border-color)] pt-4">
           <h3 className="text-sm font-medium text-[var(--text-primary)]">Deploy index (recent blocks)</h3>
           <div className="flex items-start gap-3">

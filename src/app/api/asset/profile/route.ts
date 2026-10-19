@@ -7,9 +7,10 @@ import { isNftPurposeOrKind } from "@/lib/asset-kind-label";
 import { buildTokenIndexForHeightRange } from "@/lib/token-index/build-token-index";
 import { fetchAccountDeployHeights } from "@/lib/account-deploy-heights";
 import { resolveOffchainTokenMetadata } from "@/lib/token-metadata-lookup";
+import { resolveFungibleTotalSupplyFromMintFirst } from "@/lib/fungible-mint-supply";
 import { probeReferenceNftCollectionSamples } from "@/lib/reference-nft-probe";
 import { discoverReferenceNftTokenIdsFromHeightRange } from "@/lib/reference-nft-discover";
-import { getRpcBaseUrl, isMainnetConfigured } from "@/lib/rpc-client";
+import { getRpcBaseUrl, getTestnetRpcCandidates, isMainnetConfigured, rpcCall } from "@/lib/rpc-client";
 import { normalizeHex64 } from "@/lib/rpc-types";
 import type { NetworkId } from "@/lib/rpc-types";
 import type { TokenIndexJsonEntry } from "@/lib/token-index/types";
@@ -184,6 +185,25 @@ export async function GET(req: NextRequest) {
     const nftPreviewImage =
       resolvedImage ?? nftSamples.find((s) => s.imageUrl)?.imageUrl ?? null;
 
+    // Reference fungibles have no total_supply() selector — recover fixed supply from mint_first.
+    const looksFungible =
+      tokenIndex?.kind === "fungible" ||
+      Boolean(dexToken) ||
+      tokenIndex?.purposeCategory === "token";
+    let totalSupply: Awaited<ReturnType<typeof resolveFungibleTotalSupplyFromMintFirst>> = null;
+    if (looksFungible) {
+      const bases = network === "testnet" ? getTestnetRpcCandidates() : [getRpcBaseUrl(network)];
+      for (const base of bases) {
+        const rpc = <T,>(method: string, params: unknown[]) => rpcCall<T>(network, base, method, params);
+        try {
+          totalSupply = await resolveFungibleTotalSupplyFromMintFirst(rpc, address64);
+          break;
+        } catch {
+          totalSupply = null;
+        }
+      }
+    }
+
     return NextResponse.json({
       supported: true as const,
       address: address64,
@@ -196,6 +216,7 @@ export async function GET(req: NextRequest) {
       tokenIndexScan,
       imageUrl: nftPreviewImage,
       description: resolvedDescription,
+      totalSupply: totalSupply ?? undefined,
       nftSamples: nftSamples.length ? nftSamples : undefined,
       ...(nftDiscoverNote ? { nftDiscoverNote } : {}),
       deployedByAccount: deployedByAccount.length ? deployedByAccount : undefined,

@@ -47,6 +47,6 @@ test.describe("Explorer account & transaction flows", () => {
     await expect(page.getByRole("heading", { name: /^Asset$/i })).toBeVisible();
     await expect(page.locator("[aria-busy=true]")).toHaveCount(0, { timeout: 20_000 });
     await expect(page.getByRole("heading", { name: /Contract & network hints/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Transaction history/i })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: /Token transactions/i })).toBeVisible();
   });
 });

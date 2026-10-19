@@ -138,7 +138,19 @@ function FunctionRow({ fn, network, address64 }: { fn: ContractFunction; network
 }
 
 /** Contract pages: every function the contract can perform (known template ABI, or decoded selectors). */
-export function ContractFunctions({ network, address64 }: { network: NetworkId; address64: string }) {
+export function ContractFunctions({
+  network,
+  address64,
+  /**
+   * On asset (token) profiles, hide fungible template selector chrome behind “Technical details”.
+   * Account / pool pages keep the list expanded.
+   */
+  collapseFungibleByDefault = false,
+}: {
+  network: NetworkId;
+  address64: string;
+  collapseFungibleByDefault?: boolean;
+}) {
   const [data, setData] = useState<ContractInterfaceResponse | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -161,8 +173,11 @@ export function ContractFunctions({ network, address64 }: { network: NetworkId; 
   const isContract = data.source !== "none" || data.decodedSelectors.length > 0 || data.calledAsContract || data.code != null;
   if (!isContract) return null;
 
+  const isFungibleInterface = Boolean(data.interfaceId?.startsWith("fungible"));
+  const collapsed = collapseFungibleByDefault && isFungibleInterface;
   const reads = data.functions.filter((f) => f.kind === "read").length;
-  return (
+
+  const body = (
     <section className="space-y-3" aria-labelledby="contract-functions-heading" data-testid="contract-functions">
       <h2 id="contract-functions-heading" className="font-display text-lg font-semibold text-[var(--text-primary)]">
         Contract functions
@@ -268,5 +283,21 @@ export function ContractFunctions({ network, address64 }: { network: NetworkId; 
         ) : null}
       </div>
     </section>
+  );
+
+  if (!collapsed) return body;
+
+  return (
+    <details className="space-y-3" data-testid="technical-details">
+      <summary className="cursor-pointer font-display text-lg font-semibold text-[var(--text-primary)] list-outside">
+        Technical details
+      </summary>
+      <p className="text-xs leading-relaxed text-[var(--text-muted)]" data-testid="technical-details-note">
+        Fungible tokens on Boing are still on-chain accounts that run reference template bytecode (not an EVM
+        “smart contract” in the Solidity sense, but also not a bare wallet). The selector list below is developer
+        chrome for simulating calls — end users usually want supply and transaction history above.
+      </p>
+      {body}
+    </details>
   );
 }

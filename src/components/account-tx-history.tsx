@@ -19,6 +19,7 @@ type HistoryOk = {
   scannedToHeight: number;
   blocksFetched: number;
   items: AccountTxHistoryItem[];
+  source?: "indexed" | "scan";
   note?: string;
 };
 
@@ -32,7 +33,17 @@ function formatTs(ts: number | null): string {
   return new Date(ts * 1000).toLocaleString();
 }
 
-export function AccountTxHistory({ address64, network }: { address64: string; network: NetworkId }) {
+export function AccountTxHistory({
+  address64,
+  network,
+  heading = "Transaction history",
+  description,
+}: {
+  address64: string;
+  network: NetworkId;
+  heading?: string;
+  description?: string;
+}) {
   const [windowBlocks, setWindowBlocks] = useState<number>(DEFAULT_ACCOUNT_TX_HISTORY_WINDOW);
   const [data, setData] = useState<HistoryOk | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,11 +82,11 @@ export function AccountTxHistory({ address64, network }: { address64: string; ne
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id="account-tx-history-heading" className="font-display text-lg font-semibold text-[var(--text-primary)]">
-            Transaction history
+            {heading}
           </h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-[var(--text-muted)]">
-            Transfers, deploys, calls, and stake txs in recent committed blocks where this address is the signer,
-            recipient, called contract, or newly created account. This is a bounded RPC scan, not a full indexer.
+            {description ??
+              "Transfers, deploys, calls, and stake txs where this address is the signer, recipient, called contract, or newly created account. Prefers node-indexed account history when available; otherwise a bounded block scan."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
