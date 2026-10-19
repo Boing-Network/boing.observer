@@ -28,6 +28,49 @@ export async function installMinimalRpcMocks(page: Page): Promise<void> {
     });
   });
 
+  // Asset profile (scan=1 walks every block server-side) and linked companions hit the live
+  // testnet from the Next server; stub them so CI timing does not depend on chain length.
+  await page.route("**/api/asset/profile**", async (route: Route) => {
+    const id = new URL(route.request().url()).searchParams.get("id") ?? "";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        supported: true,
+        address: id.replace(/^0x/i, "").toLowerCase(),
+        headHeight: 1,
+        rpcHost: "e2e-mock",
+        factory: null,
+        dexSupported: false,
+        dexToken: null,
+        tokenIndex: null,
+        tokenIndexScan: null,
+        imageUrl: null,
+        description: null,
+      }),
+    });
+  });
+
+  await page.route("**/api/asset/companions**", async (route: Route) => {
+    const id = new URL(route.request().url()).searchParams.get("id") ?? "";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        supported: true,
+        network: "testnet",
+        address: id,
+        registryId: null,
+        registrySource: "e2e-mock",
+        slotCount: 0,
+        companions: [],
+        managedLinks: [],
+        rpcHost: "e2e-mock",
+        note: "e2e mock — registry not queried",
+      }),
+    });
+  });
+
   await page.route("**/api/rpc", async (route: Route) => {
     if (route.request().method() !== "POST") {
       await route.continue();
