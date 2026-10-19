@@ -10,7 +10,7 @@ import { resolveOffchainTokenMetadata } from "@/lib/token-metadata-lookup";
 import { resolveFungibleTotalSupplyFromMintFirst } from "@/lib/fungible-mint-supply";
 import { probeReferenceNftCollectionSamples } from "@/lib/reference-nft-probe";
 import { discoverReferenceNftTokenIdsFromHeightRange } from "@/lib/reference-nft-discover";
-import { getRpcBaseUrl, isMainnetConfigured, rpcCall } from "@/lib/rpc-client";
+import { getRpcBaseUrl, getTestnetRpcCandidates, isMainnetConfigured, rpcCall } from "@/lib/rpc-client";
 import { normalizeHex64 } from "@/lib/rpc-types";
 import type { NetworkId } from "@/lib/rpc-types";
 import type { TokenIndexJsonEntry } from "@/lib/token-index/types";
@@ -192,11 +192,15 @@ export async function GET(req: NextRequest) {
       tokenIndex?.purposeCategory === "token";
     let totalSupply: Awaited<ReturnType<typeof resolveFungibleTotalSupplyFromMintFirst>> = null;
     if (looksFungible) {
-      const rpc = <T,>(method: string, params: unknown[]) => rpcCall<T>(network, getRpcBaseUrl(network), method, params);
-      try {
-        totalSupply = await resolveFungibleTotalSupplyFromMintFirst(rpc, address64);
-      } catch {
-        totalSupply = null;
+      const bases = network === "testnet" ? getTestnetRpcCandidates() : [getRpcBaseUrl(network)];
+      for (const base of bases) {
+        const rpc = <T,>(method: string, params: unknown[]) => rpcCall<T>(network, base, method, params);
+        try {
+          totalSupply = await resolveFungibleTotalSupplyFromMintFirst(rpc, address64);
+          break;
+        } catch {
+          totalSupply = null;
+        }
       }
     }
 

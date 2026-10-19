@@ -9,7 +9,7 @@ import {
   type IndexedAccountTxRow,
 } from "@/lib/account-tx-history";
 import { createServerBoingClient } from "@/lib/server-boing-client";
-import { isMainnetConfigured } from "@/lib/rpc-client";
+import { getRpcBaseUrl, getTestnetRpcCandidates, isMainnetConfigured, rpcCall } from "@/lib/rpc-client";
 import { normalizeHex64 } from "@/lib/rpc-types";
 import type { NetworkId } from "@/lib/rpc-types";
 
@@ -23,8 +23,10 @@ function parseNetwork(v: string | null): NetworkId | null {
   return null;
 }
 
+type Rpc = <T>(method: string, params: unknown[]) => Promise<T>;
+
 async function fetchIndexedWindow(
-  client: ReturnType<typeof createServerBoingClient>,
+  rpc: Rpc,
   address64: string,
   fromHeight: number,
 ): Promise<{ items: ReturnType<typeof collectIndexedAccountTxHistory>; pages: number; supported: boolean }> {
@@ -35,7 +37,8 @@ async function fetchIndexedWindow(
   for (let page = 0; page < 16; page += 1) {
     let result: { transactions?: IndexedAccountTxRow[]; next_cursor?: string | null };
     try {
-      result = await client.getAccountTransactions(`0x${address64}`, { cursor, limit: 100 });
+      // Raw RPC: pinned boing-sdk client may not expose getAccountTransactions yet.
+      result = await rpc("boing_getAccountTransactions", [`0x${address64}`, { cursor, limit: 100 }]);
       supported = true;
     } catch {
       return { items: [], pages, supported: page > 0 };
@@ -61,6 +64,23 @@ async function fetchIndexedWindow(
     pages,
     supported,
   };
+}
+
+function rpcBases(network: NetworkId): string[] {
+  return network === "testnet" ? getTestnetRpcCandidates() : [getRpcBaseUrl(network)];
+}
+
+async function withRpcFailover<T>(network: NetworkId, fn: (rpc: Rpc, baseUrl: string) => Promise<T>): Promise<T> {
+  let last: unknown;
+  for (const base of rpcBases(network)) {
+    const rpc: Rpc = (method, params) => rpcCall(network, base, method, params);
+    try {
+      return await fn(rpc, base);
+    } catch (e) {
+      last = e;
+    }
+  }
+  throw last instanceof Error ? last : new Error("All RPC candidates failed");
 }
 
 export async function GET(req: NextRequest) {
@@ -94,50 +114,52 @@ export async function GET(req: NextRequest) {
     req.nextUrl.searchParams.get("source") === "blocks";
 
   try {
-    const client = createServerBoingClient(network);
-    const info = await client.getNetworkInfo();
-    const toHeight = info.head_height;
-    const fromHeight = Math.max(0, toHeight - (windowBlocks - 1));
+    return await withRpcFailover(network, async (rpc, baseUrl) => {
+      const info = await rpc<{ head_height: number }>("boing_getNetworkInfo", []);
+      const toHeight = info.head_height;
+      const fromHeight = Math.max(0, toHeight - (windowBlocks - 1));
 
-    if (!preferScan) {
-      const indexed = await fetchIndexedWindow(client, address64, fromHeight);
-      if (indexed.supported && indexed.items.length > 0) {
-        return NextResponse.json({
-          address: address64,
-          headHeight: toHeight,
-          scannedFromHeight: fromHeight,
-          scannedToHeight: toHeight,
-          blocksFetched: indexed.pages,
-          items: indexed.items,
-          source: "indexed" as const,
-          note: "Node-indexed account history (boing_getAccountTransactions) filtered to this block window. Includes calls and transfers that touch this address; deploy-only “created” rows may still require a block scan.",
-        });
+      if (!preferScan) {
+        const indexed = await fetchIndexedWindow(rpc, address64, fromHeight);
+        if (indexed.supported && indexed.items.length > 0) {
+          return NextResponse.json({
+            address: address64,
+            headHeight: toHeight,
+            scannedFromHeight: fromHeight,
+            scannedToHeight: toHeight,
+            blocksFetched: indexed.pages,
+            items: indexed.items,
+            source: "indexed" as const,
+            note: "Node-indexed account history (boing_getAccountTransactions) filtered to this block window. Includes calls and transfers that touch this address; deploy-only “created” rows may still require a block scan.",
+          });
+        }
       }
-    }
 
-    const bundles = await fetchBlocksWithReceiptsForHeightRange(client, fromHeight, toHeight, {
-      maxConcurrent: 8,
-      onMissingBlock: "omit",
-    });
+      const client = createServerBoingClient(network, baseUrl);
+      const bundles = await fetchBlocksWithReceiptsForHeightRange(client, fromHeight, toHeight, {
+        maxConcurrent: 8,
+        onMissingBlock: "omit",
+      });
 
-    const scanBlocks: AccountTxHistoryScanBlock[] = bundles.map((bundle) => ({
-      height: bundle.height,
-      timestamp:
-        bundle.block.header?.timestamp == null ? null : Number(bundle.block.header.timestamp),
-      transactions: (bundle.block.transactions ?? []) as AccountTxHistoryScanBlock["transactions"],
-      receipts: (bundle.block.receipts ?? null) as AccountTxHistoryScanBlock["receipts"],
-    }));
+      const scanBlocks: AccountTxHistoryScanBlock[] = bundles.map((bundle) => ({
+        height: bundle.height,
+        timestamp:
+          bundle.block.header?.timestamp == null ? null : Number(bundle.block.header.timestamp),
+        transactions: (bundle.block.transactions ?? []) as AccountTxHistoryScanBlock["transactions"],
+        receipts: (bundle.block.receipts ?? null) as AccountTxHistoryScanBlock["receipts"],
+      }));
 
-    const items = collectAccountTxHistory(address64, scanBlocks);
-    return NextResponse.json({
-      address: address64,
-      headHeight: toHeight,
-      scannedFromHeight: fromHeight,
-      scannedToHeight: toHeight,
-      blocksFetched: bundles.length,
-      items,
-      source: "scan" as const,
-      note: "Bounded scan of committed blocks (not a full chain indexer). Older txs may be missing if they sit outside this window or on a pruned node.",
+      const items = collectAccountTxHistory(address64, scanBlocks);
+      return NextResponse.json({
+        address: address64,
+        headHeight: toHeight,
+        scannedFromHeight: fromHeight,
+        scannedToHeight: toHeight,
+        blocksFetched: bundles.length,
+        items,
+        source: "scan" as const,
+        note: "Bounded scan of committed blocks (not a full chain indexer). Older txs may be missing if they sit outside this window or on a pruned node.",
+      });
     });
   } catch (e) {
     const message =

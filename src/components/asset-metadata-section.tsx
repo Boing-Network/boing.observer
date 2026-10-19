@@ -140,12 +140,24 @@ export function AssetMetadataSection({
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Kind</dt>
-              <dd>{tokenIndex?.kind ? formatAssetKindLabel(tokenIndex.kind) : "Fungible token"}</dd>
+              <dd>
+                {tokenIndex?.kind === "fungible" || dexToken || tokenIndex?.purposeCategory === "token"
+                  ? "Fungible token"
+                  : tokenIndex?.kind
+                    ? formatAssetKindLabel(tokenIndex.kind)
+                    : "Fungible token"}
+              </dd>
             </div>
             <div className="flex flex-wrap gap-x-2">
               <dt className="text-[var(--text-muted)]">Decimals</dt>
               <dd className="font-mono">{formatTokenDecimals(decimals)}</dd>
             </div>
+            {dexToken ? (
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="text-[var(--text-muted)]">Pools</dt>
+                <dd className="font-mono">{dexToken.poolCount}</dd>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-x-2 sm:col-span-2">
               <dt className="text-[var(--text-muted)]">Total supply</dt>
               <dd className="font-mono" data-testid="token-total-supply">
@@ -238,7 +250,7 @@ export function AssetMetadataSection({
         </p>
       )}
 
-      {dexToken && (
+      {dexToken && !isFungible && (
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-[var(--text-primary)]">DEX token</h3>
           <div className="flex items-start gap-3">
@@ -288,7 +300,7 @@ export function AssetMetadataSection({
         </div>
       )}
 
-      {tokenIndex && (
+      {tokenIndex && !isFungible && (
         <div className="space-y-2 border-t border-[var(--border-color)] pt-4">
           <h3 className="text-sm font-medium text-[var(--text-primary)]">Deploy index (recent blocks)</h3>
           <div className="flex items-start gap-3">
