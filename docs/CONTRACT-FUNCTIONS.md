@@ -3,6 +3,11 @@
 Boing VM contracts have no on-chain ABI. Every canonical template dispatches on a one-byte selector held in the
 low byte of calldata word 0, followed by 32-byte argument words.
 
+**Fungible token profiles (`/asset/…`):** reference tokens are still on-chain accounts with template bytecode (not
+an EVM Solidity contract, and not a bare wallet). The selector list is developer chrome, so the explorer hides it
+under **Technical details** on fungible asset pages. ABI helpers and `/api/contract/interface` remain available for
+account pages, pools, and advanced expand.
+
 How the explorer builds the "Contract functions" section (`/api/contract/interface`):
 
 1. **Bytecode.** The node has no `getCode` RPC. `boing_getAccountTransactions(contract)` lists calls to the contract,

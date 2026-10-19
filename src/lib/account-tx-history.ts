@@ -158,3 +158,122 @@ export function accountTxRoleLabel(role: AccountTxRole): string {
       return role;
   }
 }
+
+/** Indexed `boing_getAccountTransactions` row (snake_case payload summary, no full calldata). */
+export type IndexedAccountTxRow = {
+  tx_id?: string;
+  block_height?: number;
+  tx_index?: number;
+  timestamp?: number;
+  sender?: string;
+  roles?: string[];
+  payload?: {
+    kind?: string;
+    to?: string;
+    amount?: string;
+    contract?: string;
+    calldata_len?: number;
+    steps?: Array<{ kind?: string; to?: string; amount?: string; contract?: string; calldata_len?: number }>;
+  };
+  success?: boolean | null;
+};
+
+function mapIndexedKind(kind: string | undefined): TxPayloadKind {
+  switch ((kind ?? "").toLowerCase()) {
+    case "transfer":
+      return "Transfer";
+    case "bond":
+      return "Bond";
+    case "unbond":
+      return "Unbond";
+    case "claim_unbond":
+      return "ClaimUnbond";
+    case "qa_pool_vote":
+      return "QaPoolVote";
+    case "contract_call":
+    case "contract_call_with_value":
+      return "ContractCall";
+    case "batch":
+      return "Batch";
+    case "contract_deploy":
+      return "ContractDeploy";
+    case "contract_deploy_with_purpose":
+      return "ContractDeployWithPurpose";
+    case "contract_deploy_with_purpose_and_metadata":
+      return "ContractDeployWithPurposeAndMetadata";
+    default:
+      return "Unknown";
+  }
+}
+
+function mapIndexedRoles(raw: string[] | undefined): AccountTxRole[] {
+  const out: AccountTxRole[] = [];
+  for (const r of raw ?? []) {
+    const k = r.toLowerCase();
+    if (k === "sender" || k === "signer") out.push("sender");
+    else if (k === "recipient" || k === "to") out.push("recipient");
+    else if (k === "contract" || k === "counterparty" || k === "called_contract") out.push("contract");
+    else if (k === "created" || k === "deployed") out.push("created");
+    else if (k === "access_list") out.push("access_list");
+  }
+  return [...new Set(out)];
+}
+
+function summaryFromIndexedPayload(payload: IndexedAccountTxRow["payload"]): string {
+  if (!payload?.kind) return "Transaction";
+  const kind = payload.kind.toLowerCase();
+  if (kind === "transfer") {
+    const amt = payload.amount != null ? String(payload.amount) : "?";
+    return `Transfer ${amt}`;
+  }
+  if (kind === "contract_call" || kind === "contract_call_with_value") {
+    const len = payload.calldata_len;
+    return len != null ? `Contract call (${len} bytes calldata)` : "Contract call";
+  }
+  if (kind === "batch") {
+    const n = payload.steps?.length ?? 0;
+    const tokenSteps = (payload.steps ?? []).filter((s) =>
+      String(s.kind ?? "").toLowerCase().includes("contract"),
+    ).length;
+    return tokenSteps > 0
+      ? `Batch · ${n} step${n === 1 ? "" : "s"} (${tokenSteps} contract call${tokenSteps === 1 ? "" : "s"})`
+      : `Batch · ${n} step${n === 1 ? "" : "s"}`;
+  }
+  if (kind.includes("deploy")) return "Contract deploy";
+  return payload.kind;
+}
+
+/** Map node-indexed account txs into the explorer history row shape. */
+export function collectIndexedAccountTxHistory(
+  rows: IndexedAccountTxRow[],
+  opts: { minHeight?: number } = {},
+): AccountTxHistoryItem[] {
+  const minHeight = opts.minHeight ?? 0;
+  const items: AccountTxHistoryItem[] = [];
+  for (const row of rows) {
+    const blockHeight = row.block_height;
+    if (blockHeight == null || blockHeight < minHeight) continue;
+    const roles = mapIndexedRoles(row.roles);
+    if (!roles.length) {
+      // Indexed rows for token accounts often only list "counterparty"; still show the row.
+      roles.push("contract");
+    }
+    const txId = typeof row.tx_id === "string" ? normalizeHex64(row.tx_id.replace(/^0x/i, "")) : "";
+    items.push({
+      blockHeight,
+      txIndex: typeof row.tx_index === "number" ? row.tx_index : 0,
+      timestamp: typeof row.timestamp === "number" ? row.timestamp : null,
+      txId: txId || null,
+      sender: asAccount64(row.sender),
+      kind: mapIndexedKind(row.payload?.kind),
+      summary:
+        row.success === false
+          ? `${summaryFromIndexedPayload(row.payload)} · failed, nothing transferred`
+          : summaryFromIndexedPayload(row.payload),
+      roles,
+      failed: row.success === false,
+    });
+  }
+  items.sort((a, b) => b.blockHeight - a.blockHeight || b.txIndex - a.txIndex);
+  return items;
+}

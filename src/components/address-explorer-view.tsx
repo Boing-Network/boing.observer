@@ -234,8 +234,8 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
         </div>
         {variant === "asset" ? (
           <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-            Tokens, NFTs, and other contracts share the same 32-byte AccountId. Search or link here to inspect
-            balances, nonce, and contract hints for this address.
+            Tokens and NFTs are on-chain accounts (32-byte AccountId) that run template bytecode. This page
+            highlights supply, deployer, and transactions; developer call selectors stay under Technical details.
           </p>
         ) : (
           <p className="text-xs text-[var(--text-muted)] leading-relaxed">
@@ -373,7 +373,18 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
         </section>
       )}
 
-      {isHex64(address) ? <ContractFunctions network={network} address64={address} /> : null}
+      {isHex64(address) ? (
+        <AccountTxHistory
+          address64={address}
+          network={network}
+          heading={variant === "asset" ? "Token transactions" : "Transaction history"}
+          description={
+            variant === "asset"
+              ? "Transfers, mints, approvals, and other calls that involve this token account — not only the deploy. Prefers the node’s indexed account history when available, with a bounded block scan as fallback."
+              : undefined
+          }
+        />
+      ) : null}
 
       {variant === "account" && isHex64(address) ? <AccountNames address64={address} network={network} /> : null}
 
@@ -381,8 +392,12 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
         <AccountNftGallery address64={address} network={network} />
       ) : null}
 
-      {variant === "account" && isHex64(address) ? (
-        <AccountTxHistory address64={address} network={network} />
+      {isHex64(address) ? (
+        <ContractFunctions
+          network={network}
+          address64={address}
+          collapseFungibleByDefault={variant === "asset"}
+        />
       ) : null}
     </div>
   );

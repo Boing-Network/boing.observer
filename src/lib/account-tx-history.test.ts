@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { collectAccountTxHistory, rolesForAccountInTx } from "./account-tx-history";
+import {
+  collectAccountTxHistory,
+  collectIndexedAccountTxHistory,
+  rolesForAccountInTx,
+} from "./account-tx-history";
 
 const WALLET = "a".repeat(64);
 const OTHER = "b".repeat(64);
@@ -96,6 +100,37 @@ describe("collectAccountTxHistory", () => {
       [9, 0, "sender", null],
       [3, 1, "recipient", "d".repeat(64)],
     ]);
+  });
+});
+
+describe("collectIndexedAccountTxHistory", () => {
+  it("maps counterparty roles and filters by minHeight", () => {
+    const items = collectIndexedAccountTxHistory(
+      [
+        {
+          block_height: 50,
+          tx_index: 0,
+          tx_id: `0x${"e".repeat(64)}`,
+          timestamp: 1,
+          sender: `0x${WALLET}`,
+          roles: ["counterparty"],
+          payload: { kind: "contract_call", calldata_len: 96, contract: `0x${CONTRACT}` },
+          success: true,
+        },
+        {
+          block_height: 10,
+          tx_index: 0,
+          roles: ["counterparty"],
+          payload: { kind: "contract_call", calldata_len: 96 },
+          success: true,
+        },
+      ],
+      { minHeight: 40 },
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0]?.roles).toEqual(["contract"]);
+    expect(items[0]?.kind).toBe("ContractCall");
+    expect(items[0]?.txId).toBe("e".repeat(64));
   });
 });
 
