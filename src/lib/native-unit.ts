@@ -131,7 +131,7 @@ export function feeBaseUnitsForGas(
   if (g <= BigInt(0)) return BigInt(0);
   const bps = Math.max(0, Math.min(10_000, Math.floor(executionGasFeeBps)));
   if (nativeDecimalsAt(height, network) === 18) {
-    return (g * GAS_PRICE_BASE_UNITS * BigInt(bps)) / 10_000n;
+    return (g * GAS_PRICE_BASE_UNITS * BigInt(bps)) / BigInt(10_000);
   }
   // Pre-redenomination era had no micro BPS; keep whole-BOING ceil rule.
   const whole = (g + BigInt(20999)) / BigInt(21000);
