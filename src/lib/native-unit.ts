@@ -9,8 +9,14 @@ import { compactAmount, type CompactAmount } from "./format-amount";
 
 export const BOING_DECIMALS = 18;
 export const BASE_UNITS_PER_BOING = BigInt("1000000000000000000");
-/** Fee per gas in base units (0.000001 BOING; a 21,000-gas transfer costs 0.021 BOING). */
+/** Fee per gas in base units at the **full** historical schedule (0.000001 BOING/gas → 0.021 BOING/transfer). */
 export const GAS_PRICE_BASE_UNITS = BigInt("1000000000000");
+/**
+ * Recommended product share of the historical gas schedule (1% → ~0.00021 BOING/transfer).
+ * Matches `MICRO_FEE_EXECUTION_GAS_BPS` in boing.network. Live nodes may still charge full
+ * schedule until operators apply `micro_fee_default()` after the activation height.
+ */
+export const MICRO_FEE_EXECUTION_GAS_BPS = 100;
 /** Public testnet 6913 switched native amounts from whole BOING to base units at this block. */
 export const TESTNET_BASE_UNITS_FROM_HEIGHT = 1050;
 
@@ -110,11 +116,24 @@ export function baseUnitsToChartNumber(base: bigint): number {
   return Number(micro) / 1e6;
 }
 
-/** Network fee in base units for `gasUsed` under the rule at `height` (whole-BOING era: ceil(gas/21000) BOING). */
-export function feeBaseUnitsForGas(gasUsed: number | bigint, height: number | null | undefined, network?: string | null): bigint {
+/**
+ * Network fee in base units for `gasUsed` under the rule at `height`.
+ * Whole-BOING era: ceil(gas/21000) BOING. Base-units era: gas × GAS_PRICE_BASE_UNITS × bps/10000
+ * (default bps = {@link MICRO_FEE_EXECUTION_GAS_BPS}). Pass `10000` for the full historical schedule.
+ */
+export function feeBaseUnitsForGas(
+  gasUsed: number | bigint,
+  height: number | null | undefined,
+  network?: string | null,
+  executionGasFeeBps: number = MICRO_FEE_EXECUTION_GAS_BPS,
+): bigint {
   const g = BigInt(gasUsed);
   if (g <= BigInt(0)) return BigInt(0);
-  if (nativeDecimalsAt(height, network) === 18) return g * GAS_PRICE_BASE_UNITS;
+  const bps = Math.max(0, Math.min(10_000, Math.floor(executionGasFeeBps)));
+  if (nativeDecimalsAt(height, network) === 18) {
+    return (g * GAS_PRICE_BASE_UNITS * BigInt(bps)) / BigInt(10_000);
+  }
+  // Pre-redenomination era had no micro BPS; keep whole-BOING ceil rule.
   const whole = (g + BigInt(20999)) / BigInt(21000);
   return whole * BASE_UNITS_PER_BOING;
 }

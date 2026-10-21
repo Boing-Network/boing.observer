@@ -13,7 +13,8 @@ describe("failed tx helpers", () => {
   it("reports the fee of a 21000-gas failed transfer under the rule at its height", () => {
     const B = BigInt("1000000000000000000");
     expect(failedTxFeeBaseUnits(r({ success: false, gas_used: 21000 }), 900)).toBe(B);
-    expect(failedTxFeeBaseUnits(r({ success: false, gas_used: 21000 }), 1050)).toBe(BigInt("21000000000000000"));
+    // Base-units era defaults to micro schedule (~0.00021 BOING / 21k gas).
+    expect(failedTxFeeBaseUnits(r({ success: false, gas_used: 21000 }), 1050)).toBe(BigInt("210000000000000"));
     expect(failedTxFeeBaseUnits(r({ success: true, gas_used: 21000 }), 900)).toBeNull();
   });
 });

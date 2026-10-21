@@ -7,8 +7,8 @@ export function isFailedReceipt(receipt: TransactionReceipt | null | undefined):
 }
 
 /**
- * Fee a failed tx still paid, in base units: gas x 10^12 base units from the 18-decimals switch,
- * ceil(gas / 21,000) whole BOING before it (`height` = the tx's block; unknown = current rule).
+ * Fee a failed tx still paid, in base units. Base-units era uses the recommended micro fee BPS
+ * (`feeBaseUnitsForGas` default). Whole-BOING era: ceil(gas / 21,000) BOING.
  */
 export function failedTxFeeBaseUnits(
   receipt: TransactionReceipt | null | undefined,

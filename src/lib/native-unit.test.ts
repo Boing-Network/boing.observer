@@ -6,6 +6,7 @@ import {
   feeBaseUnitsForGas,
   formatBoingAt,
   formatBoingBase,
+  MICRO_FEE_EXECUTION_GAS_BPS,
   nativeDecimalsAt,
   toBaseUnits,
 } from "./native-unit";
@@ -35,10 +36,12 @@ describe("native BOING denomination", () => {
     expect(compactBoing(BigInt(1)).full).toBe("0.000000000000000001");
     expect(compactBoingAt("1000000", 5).short).toBe("1M");
   });
-  it("fees follow the rule at the height", () => {
+  it("fees follow the rule at the height (micro BPS in base-units era)", () => {
     expect(feeBaseUnitsForGas(21000, 1000)).toBe(B);
     expect(feeBaseUnitsForGas(21001, 1000)).toBe(BigInt(2) * B);
-    expect(formatBoingBase(feeBaseUnitsForGas(21000, 1050))).toBe("0.021");
+    expect(MICRO_FEE_EXECUTION_GAS_BPS).toBe(100);
+    expect(formatBoingBase(feeBaseUnitsForGas(21000, 1050))).toBe("0.00021");
+    expect(formatBoingBase(feeBaseUnitsForGas(21000, 1050, null, 10_000))).toBe("0.021");
   });
   it("chart numbers are BOING floats", () => {
     expect(baseUnitsToChartNumber(BigInt(3) * B)).toBe(3);
