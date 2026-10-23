@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateHex32 } from "boing-sdk";
+import { validateHex32 } from "@boing-network/boing-sdk";
 import { normalizeHex64 } from "@/lib/rpc-types";
 import type { NetworkId } from "@/lib/rpc-types";
 

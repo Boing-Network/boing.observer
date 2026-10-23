@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createClient } from "boing-sdk";
+import { createClient } from "@boing-network/boing-sdk";
 import { getRpcBaseUrl, getTestnetRpcCandidates } from "@/lib/rpc-client";
 import type { NetworkId } from "@/lib/rpc-types";
 

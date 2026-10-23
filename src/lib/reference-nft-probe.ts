@@ -1,7 +1,7 @@
 import "server-only";
 
-import type { BoingClient } from "boing-sdk";
-import { validateHex32 } from "boing-sdk";
+import type { BoingClient } from "@boing-network/boing-sdk";
+import { validateHex32 } from "@boing-network/boing-sdk";
 import { resolveImageUrlFromSources } from "@/lib/extract-media-url";
 import { tryReferenceNftTokenIdU64 } from "@/lib/reference-nft-calldata";
 import {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchCpRoutingFromDirectoryLogs } from "boing-sdk";
-import { BoingRpcError } from "boing-sdk";
-import { validateHex32 } from "boing-sdk";
+import { fetchCpRoutingFromDirectoryLogs } from "@boing-network/boing-sdk";
+import { BoingRpcError } from "@boing-network/boing-sdk";
+import { validateHex32 } from "@boing-network/boing-sdk";
 import { createServerBoingClient } from "@/lib/server-boing-client";
 import { isMainnetConfigured } from "@/lib/rpc-client";
 import type { NetworkId } from "@/lib/rpc-types";

@@ -1,4 +1,4 @@
-import { bytesToHex, hexToBytes, validateHex32 } from "boing-sdk";
+import { bytesToHex, hexToBytes, validateHex32 } from "@boing-network/boing-sdk";
 import { resolveImageUrlFromSources, extractHttpOrIpfsUrl } from "@/lib/extract-media-url";
 
 /** Mirrors `REF_NFT_OWNER_STORAGE_XOR` in `boing-execution` `reference_nft.rs`. */

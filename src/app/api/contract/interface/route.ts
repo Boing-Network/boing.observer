@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { CANONICAL_BOING_TESTNET_NATIVE_DEX_DEPLOYER_HEX, validateHex32 } from "boing-sdk";
+import { CANONICAL_BOING_TESTNET_NATIVE_DEX_DEPLOYER_HEX, validateHex32 } from "@boing-network/boing-sdk";
 import { resolveContractCode, type ContractCodeLookup } from "@/lib/contract-code-lookup";
 import { applyPublishedInterface, identifyContract, type IdentifiedContract, type PublishedInfo } from "@/lib/contract-identify";
 import { resolvePublishedInterface } from "@/lib/published-interface";

@@ -4,7 +4,7 @@ import {
   predictCreate2ContractAddress,
   predictNonceDerivedContractAddress,
   validateHex32,
-} from "boing-sdk";
+} from "@boing-network/boing-sdk";
 import { hexForLink, normalizeHex64 } from "@/lib/rpc-types";
 import { getTxPayloadInner, getTxPayloadKind, isContractDeployPayloadKind } from "@/lib/tx-payload";
 

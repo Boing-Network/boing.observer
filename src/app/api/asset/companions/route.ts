@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateHex32 } from "boing-sdk";
+import { validateHex32 } from "@boing-network/boing-sdk";
 import { withServerBoingClientFailover } from "@/lib/server-boing-client";
 import {
   listLinkedCompanionsForAsset,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { BoingRpcError, validateHex32 } from "boing-sdk";
+import { BoingRpcError, validateHex32 } from "@boing-network/boing-sdk";
 import { createServerBoingClient } from "@/lib/server-boing-client";
 import { probeReferenceNftItem } from "@/lib/reference-nft-probe";
 import { getRpcBaseUrl, isMainnetConfigured } from "@/lib/rpc-client";

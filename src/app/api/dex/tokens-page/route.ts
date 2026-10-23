@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { BoingRpcError, validateHex32 } from "boing-sdk";
+import { BoingRpcError, validateHex32 } from "@boing-network/boing-sdk";
 import { createServerBoingClient } from "@/lib/server-boing-client";
 import { dexDiagnosticsEnabled } from "@/lib/server-dex-factory";
 import { resolveNativeDexFactoryForExplorer } from "@/lib/resolve-native-dex-factory";

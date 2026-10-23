@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bytesToHex } from "boing-sdk";
+import { bytesToHex } from "@boing-network/boing-sdk";
 import {
   REF_NFT_SELECTOR_MINT_BATCH,
   REF_NFT_SELECTOR_TRANSFER_NFT,

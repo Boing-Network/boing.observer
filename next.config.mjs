@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["boing-sdk", "pdfjs-dist"],
-  /** Peer deps of boing-sdk must resolve from app node_modules when the server bundle inlines the SDK. */
+  transpilePackages: ["@boing-network/boing-sdk", "pdfjs-dist"],
+  /** Peer deps of @boing-network/boing-sdk must resolve from app node_modules when the server bundle inlines the SDK. */
   serverExternalPackages: ["@noble/ed25519", "@noble/hashes"],
   async headers() {
     return [

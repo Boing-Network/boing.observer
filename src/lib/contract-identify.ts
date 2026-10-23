@@ -16,7 +16,7 @@ import {
   DEFAULT_REFERENCE_NFT_COLLECTION_TEMPLATE_BYTECODE_HEX,
   boingPoolBytecodeHex,
   boingTokenBytecodeHex,
-} from "boing-sdk";
+} from "@boing-network/boing-sdk";
 import { decodeDispatchSelectors, hexToBytesLoose } from "./bytecode-selectors";
 import {
   CANONICAL_BOING_TESTNET_LINKED_NFT_TOKEN_REGISTRY_HEX,

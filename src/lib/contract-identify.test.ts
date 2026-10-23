@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fixture from "./__fixtures__/testnet-contracts-rpc.json";
 import { lookupContractCode } from "./contract-code-lookup";
 import { identifyContract } from "./contract-identify";
-import { CANONICAL_BOING_TESTNET_NATIVE_CP_POOL_HEX, CANONICAL_BOING_TESTNET_NATIVE_DEX_DEPLOYER_HEX, boingPoolBytecodeHex } from "boing-sdk";
+import { CANONICAL_BOING_TESTNET_NATIVE_CP_POOL_HEX, CANONICAL_BOING_TESTNET_NATIVE_DEX_DEPLOYER_HEX, boingPoolBytecodeHex } from "@boing-network/boing-sdk";
 
 /** RPC replay from live testnet responses (captured 2026-10-16; deployer transfer rows trimmed). */
 const replay = new Map(Object.entries(fixture as Record<string, unknown>).map(([k, v]) => [JSON.stringify(JSON.parse(k)), v]));

@@ -7,7 +7,7 @@ import {
   DEFAULT_REFERENCE_NFT_COLLECTION_TEMPLATE_BYTECODE_HEX,
   boingPoolBytecodeHex,
   boingTokenBytecodeHex,
-} from "boing-sdk";
+} from "@boing-network/boing-sdk";
 import { decodeDispatchSelectors, hexToBytesLoose } from "./bytecode-selectors";
 import { CONTRACT_INTERFACES, interfaceSelectors, matchInterfaceBySelectors } from "./contract-interfaces";
 import { encodeContractCall, returnWords, wordAsUint } from "./contract-call-encode";

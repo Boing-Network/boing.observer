@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { BoingRpcError, fetchBlocksWithReceiptsForHeightRange, validateHex32 } from "boing-sdk";
+import { BoingRpcError, fetchBlocksWithReceiptsForHeightRange, validateHex32 } from "@boing-network/boing-sdk";
 import {
   ACCOUNT_TX_HISTORY_WINDOWS,
   DEFAULT_ACCOUNT_TX_HISTORY_WINDOW,

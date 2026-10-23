@@ -3,7 +3,7 @@
  * Kept local so the explorer works without a newer boing-sdk decode export.
  */
 
-import { bytesToHex, hexToBytes, validateHex32 } from "boing-sdk";
+import { bytesToHex, hexToBytes, validateHex32 } from "@boing-network/boing-sdk";
 
 export const REF_NFT_SELECTOR_OWNER_OF = 0x03;
 export const REF_NFT_SELECTOR_TRANSFER_NFT = 0x04;

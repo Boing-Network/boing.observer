@@ -1,7 +1,7 @@
 import "server-only";
 
-import type { BoingClient } from "boing-sdk";
-import { buildNativeDexIntegrationOverridesFromProcessEnv, fetchNativeDexIntegrationDefaults } from "boing-sdk";
+import type { BoingClient } from "@boing-network/boing-sdk";
+import { buildNativeDexIntegrationOverridesFromProcessEnv, fetchNativeDexIntegrationDefaults } from "@boing-network/boing-sdk";
 
 const FACTORY_CACHE_TTL_MS = 10 * 60_000;
 

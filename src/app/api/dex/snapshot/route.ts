@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchNativeDexDirectorySnapshot } from "boing-sdk";
-import { BoingRpcError } from "boing-sdk";
+import { fetchNativeDexDirectorySnapshot } from "@boing-network/boing-sdk";
+import { BoingRpcError } from "@boing-network/boing-sdk";
 import { createServerBoingClient } from "@/lib/server-boing-client";
 import { isMainnetConfigured } from "@/lib/rpc-client";
 import type { NetworkId } from "@/lib/rpc-types";

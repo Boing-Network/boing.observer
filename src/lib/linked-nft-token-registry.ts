@@ -6,7 +6,7 @@
  * Protocol: https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md
  */
 
-import type { createClient } from "boing-sdk";
+import type { createClient } from "@boing-network/boing-sdk";
 import { CANONICAL_BOING_TESTNET_LINKED_NFT_TOKEN_REGISTRY_HEX } from "@/lib/testnet-constants";
 import { normalizeHex64 } from "@/lib/rpc-types";
 import type { NetworkId } from "@/lib/rpc-types";

@@ -1,40 +1,50 @@
 /**
- * Copies boing-sdk from the boing.network monorepo (dependency `boing-network-root`, pinned to a
- * commit in package.json, like boing.express pins its git SDK) over node_modules/boing-sdk.
+ * Installs `@boing-network/boing-sdk` from the pinned `boing-network-root` monorepo
+ * checkout (directory `boing-sdk/` inside that repo) into
+ * `node_modules/@boing-network/boing-sdk`.
  *
- * Default: overlay from the pinned monorepo commit (npm `boing-sdk` lags the repo: 0.3.x vs 0.5.x).
- * Set BOING_OBSERVER_USE_NPM_SDK=1 to keep the published npm package instead.
- * To bump the SDK: change the commit in package.json "boing-network-root", then npm install.
+ * Default: overlay from the pinned monorepo commit (scoped package not yet on npm,
+ * or tip ahead of registry). Set BOING_OBSERVER_USE_NPM_SDK=1 to keep a published
+ * `@boing-network/boing-sdk` from the registry instead.
+ * To bump the SDK: change the commit in package.json `boing-network-root`, then npm install.
  */
-import { cpSync, existsSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const cwd = process.cwd();
 const src = join(cwd, "node_modules", "boing-network-root", "boing-sdk");
-const dst = join(cwd, "node_modules", "boing-sdk");
+const dst = join(cwd, "node_modules", "@boing-network", "boing-sdk");
 
-if (process.env.BOING_OBSERVER_USE_NPM_SDK !== "1") {
+function overlayFromMonorepo(reason) {
   if (!existsSync(join(src, "package.json"))) {
-    console.warn("[sync-boing-sdk] node_modules/boing-network-root/boing-sdk not found; keeping npm boing-sdk.");
-    process.exit(0);
+    console.warn(
+      `[sync-boing-sdk] node_modules/boing-network-root/boing-sdk not found (${reason}).`,
+    );
+    return false;
   }
   if (existsSync(dst)) {
     rmSync(dst, { recursive: true, force: true });
   }
+  mkdirSync(dirname(dst), { recursive: true });
   cpSync(src, dst, { recursive: true });
-  console.log("[sync-boing-sdk] Overlaid boing-sdk from pinned boing-network-root");
+  console.log(`[sync-boing-sdk] Overlaid @boing-network/boing-sdk from pinned boing-network-root (${reason})`);
+  return true;
+}
+
+if (process.env.BOING_OBSERVER_USE_NPM_SDK === "1") {
+  if (existsSync(join(dst, "package.json"))) {
+    console.log("[sync-boing-sdk] Using npm @boing-network/boing-sdk (BOING_OBSERVER_USE_NPM_SDK=1)");
+    process.exit(0);
+  }
+  if (overlayFromMonorepo("npm package missing")) process.exit(0);
+  console.warn(
+    "[sync-boing-sdk] No @boing-network/boing-sdk found (npm install @boing-network/boing-sdk@^0.5.24 or clone boing-network-root).",
+  );
   process.exit(0);
 }
 
-if (existsSync(join(dst, "package.json"))) {
-  console.log("[sync-boing-sdk] Using npm boing-sdk (BOING_OBSERVER_USE_NPM_SDK=1)");
-  process.exit(0);
-}
+if (overlayFromMonorepo("default monorepo overlay")) process.exit(0);
 
-if (existsSync(join(src, "package.json"))) {
-  cpSync(src, dst, { recursive: true });
-  console.log("[sync-boing-sdk] Installed boing-sdk from boing-network-root (npm package missing)");
-  process.exit(0);
-}
-
-console.warn("[sync-boing-sdk] No boing-sdk found (npm install boing-sdk or clone boing-network-root).");
+console.warn(
+  "[sync-boing-sdk] No @boing-network/boing-sdk found (set boing-network-root or npm install @boing-network/boing-sdk).",
+);

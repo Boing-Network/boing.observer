@@ -1,11 +1,11 @@
 import "server-only";
 
-import type { BoingClient } from "boing-sdk";
+import type { BoingClient } from "@boing-network/boing-sdk";
 import {
   buildNativeDexIntegrationOverridesFromProcessEnv,
   fetchBlocksWithReceiptsForHeightRange,
   fetchNativeDexDirectorySnapshot,
-} from "boing-sdk";
+} from "@boing-network/boing-sdk";
 import { tryPredictDeployedContractAddressFromDeployTx } from "@/lib/deploy-contract-address";
 import { receiptReturnDataHex, tryParseCreatedAccountIdFromDeployReturnData } from "@/lib/deploy-receipt";
 import { parseAssetDisplayMetadata } from "@/lib/extract-media-url";

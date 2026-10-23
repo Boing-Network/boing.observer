@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { predictNonceDerivedContractAddress, validateHex32 } from "boing-sdk";
+import { predictNonceDerivedContractAddress, validateHex32 } from "@boing-network/boing-sdk";
 import { tryPredictDeployedContractAddressFromDeployTx } from "./deploy-contract-address";
 
 describe("tryPredictDeployedContractAddressFromDeployTx", () => {

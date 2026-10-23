@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { BoingRpcError } from "boing-sdk";
+import { BoingRpcError } from "@boing-network/boing-sdk";
 import { defaultTokenIndexCacheTtlSeconds } from "@/lib/token-index/cache-logic";
 import { buildTokenIndexForHeightRange } from "@/lib/token-index/build-token-index";
 import {
