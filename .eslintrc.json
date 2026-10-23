@@ -1,4 +1,4 @@
 {
   "extends": ["next/core-web-vitals"],
-  "ignorePatterns": ["node_modules/", ".next/", "out/", "boing-network-root/", "open-next/", "e2e/", "playwright.config.ts"]
+  "ignorePatterns": ["node_modules/", ".next/", "out/", "open-next/", "e2e/", "playwright.config.ts"]
 }

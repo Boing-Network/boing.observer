@@ -6,7 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "postinstall": "node scripts/sync-boing-sdk.mjs && node scripts/copy-pdf-worker.mjs",
+    "postinstall": "node scripts/copy-pdf-worker.mjs",
     "generate:brand-assets": "node scripts/generate-brand-assets.mjs",
     "dev": "next dev",
     "build": "next build",
@@ -21,9 +21,9 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
+    "@boing-network/boing-sdk": "^0.5.24",
     "@noble/ed25519": "^2.2.0",
     "@noble/hashes": "^1.6.0",
-    "boing-network-root": "github:Boing-Network/boing.network#bb359e7e0c3ad71a7f9163ac9c87f268d21c526f",
     "next": "15.5.27",
     "pdfjs-dist": "^4.10.38",
     "react": "^18.3.1",
