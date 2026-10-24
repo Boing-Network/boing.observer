@@ -100,7 +100,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Request body too large" }, { status: 413 });
   }
 
-  const failoverStatuses = new Set([502, 503, 504, 521, 522, 523, 524, 525, 526, 530]);
+  // 403: CF Bot Fight / challenge HTML on the public hostname (not a JSON-RPC body).
+  const failoverStatuses = new Set([403, 502, 503, 504, 521, 522, 523, 524, 525, 526, 530]);
   let lastStatus = 0;
   let lastText = "";
   let lastError = "";
@@ -121,8 +122,17 @@ export async function POST(req: NextRequest) {
       });
 
       const text = await upstream.text();
+      const looksLikeCfChallenge =
+        upstream.status === 403 &&
+        (/cf-mitigated/i.test(upstream.headers.get("cf-mitigated") || "") ||
+          /Just a moment/i.test(text) ||
+          /challenges\.cloudflare\.com/i.test(text));
 
-      if (!upstream.ok && failoverStatuses.has(upstream.status) && i < upstreamBases.length - 1) {
+      if (
+        !upstream.ok &&
+        (failoverStatuses.has(upstream.status) || looksLikeCfChallenge) &&
+        i < upstreamBases.length - 1
+      ) {
         lastStatus = upstream.status;
         lastText = text;
         continue;
@@ -134,7 +144,9 @@ export async function POST(req: NextRequest) {
         const edgeHint =
           upstream.status === 530 || /\b1033\b/i.test(text)
             ? " Public hostname did not reach a hosted node—verify Fly backends and the RPC gateway."
-            : "";
+            : looksLikeCfChallenge || upstream.status === 403
+              ? " Public hostname returned a Cloudflare challenge—Bot Fight Mode must stay off for JSON-RPC clients."
+              : "";
         return NextResponse.json(
           {
             jsonrpc: "2.0",

@@ -12,9 +12,8 @@ Browse blocks, transactions, accounts, QA, and native DEX on **Boing Network**. 
 flowchart LR
   You[You] --> UI[boing.observer]
   UI --> Proxy[POST /api/rpc]
-  Proxy -->|5xx / 530 failover| Public[testnet-rpc.boing.network]
+  Proxy -->|5xx / 530 / 403 failover| Public[testnet-rpc.boing.network]
   Public --> Fly1[boing-testnet-1]
-  Public --> Fly2[boing-testnet-2]
 ```
 
 ## ✨ What you can do

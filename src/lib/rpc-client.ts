@@ -13,7 +13,6 @@ const PUBLIC_TESTNET_RPC = "https://testnet-rpc.boing.network";
 /** Hosted Fly origins used when the public hostname (or tunnel) is down. */
 export const HOSTED_TESTNET_RPC_FALLBACKS = [
   "https://boing-testnet-1.fly.dev",
-  "https://boing-testnet-2.fly.dev",
 ] as const;
 
 const RPC_RETRY_DELAY_MS = 600;
