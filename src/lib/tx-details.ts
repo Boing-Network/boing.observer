@@ -15,6 +15,12 @@ import {
 import { formatPurposeLabel } from "./asset-kind-label";
 import { parseAssetDisplayMetadata } from "./extract-media-url";
 
+function formatBoingName(name: unknown): string {
+  const s = String(name ?? "").trim();
+  if (!s) return "—";
+  return s.endsWith(".boing") ? s : `${s}.boing`;
+}
+
 export type TxDetailLine = {
   label: string;
   value: string;
@@ -197,6 +203,90 @@ export function buildPayloadDetailLines(payload: unknown, height?: number | null
       }
       return lines;
     }
+    case "NameCommit": {
+      const c = hexForLink(p.commitment);
+      lines.push({
+        label: "Commitment",
+        value: shortenHash(c) || "—",
+        copyValue: c ? `0x${c}` : undefined,
+      });
+      return lines;
+    }
+    case "NameRegister": {
+      lines.push({ label: "Name", value: formatBoingName(p.name) });
+      const target = hexForLink(p.target);
+      lines.push({ label: "Target", value: shortenHash(target) || "—", accountHex64: target || undefined });
+      lines.push({ label: "Years", value: String(p.years ?? "—") });
+      const salt = normalizeHexData(p.salt);
+      if (salt.bytes > 0) {
+        lines.push({ label: "Salt", value: hexPreview(salt.prefixed, 32), copyValue: salt.prefixed });
+      }
+      return lines;
+    }
+    case "NameRenew":
+      lines.push({ label: "Name", value: formatBoingName(p.name) });
+      lines.push({ label: "Years", value: String(p.years ?? "—") });
+      return lines;
+    case "NameTransfer": {
+      lines.push({ label: "Name", value: formatBoingName(p.name) });
+      const owner = hexForLink(p.new_owner);
+      lines.push({ label: "New owner", value: shortenHash(owner) || "—", accountHex64: owner || undefined });
+      return lines;
+    }
+    case "NameSetTarget": {
+      lines.push({ label: "Name", value: formatBoingName(p.name) });
+      const target = hexForLink(p.target);
+      lines.push({ label: "Target", value: shortenHash(target) || "—", accountHex64: target || undefined });
+      return lines;
+    }
+    case "NameSetPrimary":
+      lines.push({
+        label: "Primary name",
+        value: p.name == null || p.name === "" ? "(cleared)" : formatBoingName(p.name),
+      });
+      return lines;
+    case "NameRelease":
+      lines.push({ label: "Name", value: formatBoingName(p.name) });
+      return lines;
+    case "ValidatorRegister": {
+      const node = hexForLink(p.node_id ?? p.nodeId);
+      lines.push({ label: "Node id", value: shortenHash(node) || "—", accountHex64: node || undefined });
+      return lines;
+    }
+    case "ValidatorDeregister":
+    case "ValidatorUnjail": {
+      const node = hexForLink(p.node_id ?? p.nodeId);
+      lines.push({ label: "Node id", value: shortenHash(node) || "—", accountHex64: node || undefined });
+      return lines;
+    }
+    case "PutBlob":
+    case "BlobAnnounce":
+    case "RenewMediaBlobPin":
+    case "PayBlobSample":
+    case "RegisterBlobSampleOffer":
+    case "SettleBlobSampleMatch":
+    case "CancelBlobSampleOffer":
+    case "ChallengeBlobSampleServe":
+    case "RespondBlobSampleServe": {
+      const blob = hexForLink(p.blob_id ?? p.blobId);
+      if (blob) {
+        lines.push({ label: "Blob id", value: shortenHash(blob) || "—", copyValue: `0x${blob}` });
+      }
+      if (p.size != null) lines.push({ label: "Size", value: String(p.size) });
+      if (p.chunk_index != null || p.chunkIndex != null) {
+        lines.push({ label: "Chunk index", value: String(p.chunk_index ?? p.chunkIndex) });
+      }
+      return lines;
+    }
+    case "SubmitSlashAppeal":
+      lines.push({ label: "Slash id", value: String(p.slash_id ?? p.slashId ?? "—") });
+      return lines;
+    case "ResolveSlashAppeal":
+    case "ResolveSlashAppealAttested":
+    case "ResolveSlashAppealBlsAggregate":
+      lines.push({ label: "Appeal id", value: String(p.appeal_id ?? p.appealId ?? "—") });
+      lines.push({ label: "Approved", value: String(p.approved ?? "—") });
+      return lines;
     default:
       return lines;
   }
@@ -209,8 +299,15 @@ export function kindBadgeTone(kind: TxPayloadKind): string {
     case "Bond":
     case "Unbond":
     case "ClaimUnbond":
+    case "ValidatorRegister":
+    case "ValidatorDeregister":
+    case "ValidatorUnjail":
       return "border-network-primary/40 bg-network-primary/15 text-network-primary-light";
     case "QaPoolVote":
+    case "SubmitSlashAppeal":
+    case "ResolveSlashAppeal":
+    case "ResolveSlashAppealAttested":
+    case "ResolveSlashAppealBlsAggregate":
       return "border-emerald-500/40 bg-emerald-500/10 text-emerald-200";
     case "ContractCall":
     case "Batch":
@@ -219,6 +316,24 @@ export function kindBadgeTone(kind: TxPayloadKind): string {
     case "ContractDeployWithPurpose":
     case "ContractDeployWithPurposeAndMetadata":
       return "border-fuchsia-500/35 bg-fuchsia-950/30 text-fuchsia-200";
+    case "NameCommit":
+    case "NameRegister":
+    case "NameRenew":
+    case "NameTransfer":
+    case "NameSetTarget":
+    case "NameSetPrimary":
+    case "NameRelease":
+      return "border-sky-500/40 bg-sky-500/10 text-sky-200";
+    case "PutBlob":
+    case "BlobAnnounce":
+    case "RenewMediaBlobPin":
+    case "PayBlobSample":
+    case "RegisterBlobSampleOffer":
+    case "SettleBlobSampleMatch":
+    case "CancelBlobSampleOffer":
+    case "ChallengeBlobSampleServe":
+    case "RespondBlobSampleServe":
+      return "border-violet-500/35 bg-violet-950/25 text-violet-200";
     case "Unknown":
       return "border-[var(--border-color)] bg-white/5 text-[var(--text-muted)]";
     default: {

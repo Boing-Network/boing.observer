@@ -23,6 +23,7 @@ import {
   batchCallValueTotal,
   batchSteps,
   contractCallValue,
+  payloadKindLabel,
 } from "@/lib/tx-payload";
 import {
   buildPayloadDetailLines,
@@ -36,6 +37,13 @@ import type { TxPayloadKind } from "@/lib/rpc-types";
 import { formatPurposeLabel, isNftPurposeOrKind } from "@/lib/asset-kind-label";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
+import { nameHref } from "@/lib/boing-names";
+
+function formatBoingName(name: unknown): string {
+  const s = String(name ?? "").trim();
+  if (!s) return "—";
+  return s.endsWith(".boing") ? s : `${s}.boing`;
+}
 
 type VisualScale = "standard" | "featured";
 
@@ -199,6 +207,101 @@ function SignedPayloadHeadlineRich({
         </>
       );
     }
+    case "NameCommit":
+      return <>You signed a name-registry commit (commitment hash; label reveals on register).</>;
+    case "NameRegister": {
+      const label = String(inner.name ?? "").trim().replace(/\.boing$/i, "");
+      const display = formatBoingName(inner.name);
+      const target = hexForLink(inner.target);
+      return (
+        <>
+          You signed a name claim for{" "}
+          {label ? (
+            <Link href={nameHref(label, network)} className="text-network-cyan hover:underline">
+              {display}
+            </Link>
+          ) : (
+            display
+          )}{" "}
+          for {String(inner.years ?? "—")} year(s), resolving to{" "}
+          {target ? (
+            <Link href={explorerAccountHref(target, network)} className="text-network-cyan hover:underline">
+              {shortenHash(target) || target}
+            </Link>
+          ) : (
+            "—"
+          )}
+          .
+        </>
+      );
+    }
+    case "NameRenew":
+      return (
+        <>
+          You signed a renew of {formatBoingName(inner.name)} for {String(inner.years ?? "—")} year(s).
+        </>
+      );
+    case "NameTransfer": {
+      const owner = hexForLink(inner.new_owner);
+      return (
+        <>
+          You signed a transfer of {formatBoingName(inner.name)} to{" "}
+          {owner ? (
+            <Link href={explorerAccountHref(owner, network)} className="text-network-cyan hover:underline">
+              {shortenHash(owner) || owner}
+            </Link>
+          ) : (
+            "—"
+          )}
+          .
+        </>
+      );
+    }
+    case "NameSetTarget": {
+      const target = hexForLink(inner.target);
+      return (
+        <>
+          You signed a retarget of {formatBoingName(inner.name)} to{" "}
+          {target ? (
+            <Link href={explorerAccountHref(target, network)} className="text-network-cyan hover:underline">
+              {shortenHash(target) || target}
+            </Link>
+          ) : (
+            "—"
+          )}
+          .
+        </>
+      );
+    }
+    case "NameSetPrimary":
+      return (
+        <>
+          You signed{" "}
+          {inner.name == null || inner.name === ""
+            ? "clearing your primary .boing name"
+            : `setting primary name to ${formatBoingName(inner.name)}`}
+          .
+        </>
+      );
+    case "NameRelease":
+      return <>You signed releasing {formatBoingName(inner.name)} (no refund).</>;
+    case "ValidatorRegister":
+    case "ValidatorDeregister":
+    case "ValidatorUnjail":
+    case "PutBlob":
+    case "BlobAnnounce":
+    case "RenewMediaBlobPin":
+    case "PayBlobSample":
+    case "RegisterBlobSampleOffer":
+    case "SettleBlobSampleMatch":
+    case "CancelBlobSampleOffer":
+    case "ChallengeBlobSampleServe":
+    case "RespondBlobSampleServe":
+    case "SubmitSlashAppeal":
+    case "ResolveSlashAppeal":
+    case "ResolveSlashAppealAttested":
+    case "ResolveSlashAppealBlsAggregate":
+      return <>You signed a {payloadKindLabel(kind).toLowerCase()}.</>;
     case "Unknown":
       return null;
     default: {
@@ -766,6 +869,7 @@ export function TransactionInsight({
   visualScale = "standard",
   blockPlacement,
   blockHeight,
+  embedded = false,
 }: {
   tx: BlockTransaction;
   index: number;
@@ -778,6 +882,8 @@ export function TransactionInsight({
   blockPlacement?: { height: number; txIndex: number };
   /** Height of the enclosing block when rendered inside a block page (native amount unit). */
   blockHeight?: number;
+  /** Nested under a group row: skip outer glass card + anchor id (parent owns `#tx-N`). */
+  embedded?: boolean;
 }) {
   const txHeight = blockPlacement?.height ?? blockHeight ?? receipt?.block_height ?? null;
   const kind = getTxPayloadKind(tx.payload);
@@ -875,8 +981,12 @@ export function TransactionInsight({
 
   return (
     <article
-      id={`tx-${index}`}
-      className="glass-card scroll-mt-24 space-y-4 p-4 sm:p-5"
+      id={embedded ? undefined : `tx-${index}`}
+      className={
+        embedded
+          ? "space-y-4 rounded-lg border border-[var(--border-color)]/60 bg-boing-black/20 p-3 sm:p-4"
+          : "glass-card scroll-mt-24 space-y-4 p-4 sm:p-5"
+      }
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border-color)] pb-3">
         <div className="space-y-2">
@@ -888,14 +998,16 @@ export function TransactionInsight({
               >
                 Block #{blockPlacement.height} · slot {blockPlacement.txIndex}
               </Link>
-            ) : (
+            ) : embedded ? null : (
               <span className="font-mono text-sm text-[var(--text-muted)]">#{index}</span>
             )}
-            <span
-              className={`rounded-md border px-2.5 py-0.5 text-xs font-semibold ${kindBadgeTone(kind)}`}
-            >
-              {kind}
-            </span>
+            {embedded ? null : (
+              <span
+                className={`rounded-md border px-2.5 py-0.5 text-xs font-semibold ${kindBadgeTone(kind)}`}
+              >
+                {payloadKindLabel(kind)}
+              </span>
+            )}
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Signer</p>

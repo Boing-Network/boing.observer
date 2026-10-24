@@ -5,7 +5,8 @@ import { explorerAccountHref } from "@/lib/explorer-href";
 import type { Block } from "@/lib/rpc-types";
 import { shortenHash, hexForLink, toPrefixedHex64 } from "@/lib/rpc-types";
 import { CopyButton } from "@/components/copy-button";
-import { TransactionInsight } from "@/components/transaction-insight";
+import { TransactionInsightGroup } from "@/components/transaction-insight-group";
+import { groupTxInsights } from "@/lib/tx-insight-groups";
 
 export function BlockDetails({
   block,
@@ -136,22 +137,20 @@ export function BlockDetails({
             Transactions ({txs.length})
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--text-muted)]">
-            One card per executed transaction. Receipts (gas, logs, return data) show when the node includes
-            them.
+            Consecutive transactions with the same objective (kind + signer) share one section. Expand a row
+            for full payload and execution details. Receipts show when the node includes them.
           </p>
         </div>
         {!txs.length ? (
           <p className="text-[var(--text-muted)]">No transactions.</p>
         ) : (
           <div className="space-y-5">
-            {txs.map((tx, i) => (
-              <TransactionInsight
-                key={i}
-                tx={tx}
-                index={i}
+            {groupTxInsights(txs, receiptsWereRequested ? receipts : undefined).map((group) => (
+              <TransactionInsightGroup
+                key={`${group.items[0]!.index}-${group.kind}-${group.signer}`}
+                group={group}
                 network={network}
                 blockHeight={block.header.height}
-                receipt={receiptsWereRequested ? (receipts?.[i] ?? null) : undefined}
                 receiptsWereRequested={receiptsWereRequested}
               />
             ))}

@@ -35,7 +35,10 @@ export interface BlockHeader {
   state_root: string;
 }
 
-/** Transaction payload types for display. */
+/**
+ * Transaction payload types for display.
+ * Aligns with `@boing-network/boing-sdk` `PayloadVariant` (ContractCallWithValue → ContractCall).
+ */
 export type TxPayloadKind =
   | "Transfer"
   | "Bond"
@@ -47,6 +50,29 @@ export type TxPayloadKind =
   | "ContractDeploy"
   | "ContractDeployWithPurpose"
   | "ContractDeployWithPurposeAndMetadata"
+  | "ValidatorRegister"
+  | "ValidatorDeregister"
+  | "ValidatorUnjail"
+  | "NameCommit"
+  | "NameRegister"
+  | "NameRenew"
+  | "NameTransfer"
+  | "NameSetTarget"
+  | "NameSetPrimary"
+  | "NameRelease"
+  | "PutBlob"
+  | "BlobAnnounce"
+  | "RenewMediaBlobPin"
+  | "PayBlobSample"
+  | "RegisterBlobSampleOffer"
+  | "SettleBlobSampleMatch"
+  | "CancelBlobSampleOffer"
+  | "ChallengeBlobSampleServe"
+  | "RespondBlobSampleServe"
+  | "SubmitSlashAppeal"
+  | "ResolveSlashAppeal"
+  | "ResolveSlashAppealAttested"
+  | "ResolveSlashAppealBlsAggregate"
   | "Unknown";
 
 /** Execution outcome when blocks are fetched with `include_receipts: true`. */
