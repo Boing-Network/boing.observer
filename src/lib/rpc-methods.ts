@@ -78,11 +78,16 @@ const RECEIPT_BLOCK_TTL_MS = 10_000;
 export async function fetchBlockByHeight(
   network: NetworkId,
   height: number,
-  includeReceipts = false
+  includeReceipts = false,
+  /** When false, node stubs bytecode/calldata (needs node with `include_code` param). Default true. */
+  includeCode = true
 ): Promise<Block | null> {
   const base = getRpcBaseUrl(network);
-  const cacheKey = `${base}:boing_getBlockByHeight:${height}:r${includeReceipts ? 1 : 0}`;
-  const params = includeReceipts ? [height, true] : [height];
+  const cacheKey = `${base}:boing_getBlockByHeight:${height}:r${includeReceipts ? 1 : 0}:c${includeCode ? 1 : 0}`;
+  const params: unknown[] =
+    includeCode && !includeReceipts
+      ? [height]
+      : [height, includeReceipts, includeCode];
   let ttlMs = RECEIPT_BLOCK_TTL_MS;
   if (!includeReceipts) {
     try {
@@ -100,12 +105,16 @@ export async function fetchBlockByHeight(
 export async function fetchBlockByHash(
   network: NetworkId,
   hexBlockHash: string,
-  includeReceipts = false
+  includeReceipts = false,
+  includeCode = true
 ): Promise<Block | null> {
   const base = getRpcBaseUrl(network);
   const hash = hexBlockHash.startsWith("0x") ? hexBlockHash : `0x${hexBlockHash}`;
-  const cacheKey = `${base}:boing_getBlockByHash:${hash}:r${includeReceipts ? 1 : 0}`;
-  const params = includeReceipts ? [hash, true] : [hash];
+  const cacheKey = `${base}:boing_getBlockByHash:${hash}:r${includeReceipts ? 1 : 0}:c${includeCode ? 1 : 0}`;
+  const params: unknown[] =
+    includeCode && !includeReceipts
+      ? [hash]
+      : [hash, includeReceipts, includeCode];
   // Block hashes are immutable once known; keep a longer TTL even with receipts.
   const ttlMs = includeReceipts ? RECEIPT_BLOCK_TTL_MS : HISTORICAL_BLOCK_TTL_MS;
   return cachedRpc(cacheKey, ttlMs, () =>
@@ -150,8 +159,9 @@ export async function fetchRecentBlocks(
   // Soft-fail per height: oversized/truncated deploy blocks must not blank the whole home page.
   const results = await mapPool(heights, RECENT_BLOCKS_CONCURRENCY, async (h) => {
     try {
-      // Receipts so aggregates count successful txs only (a failed tx moves nothing but its fee).
-      return await fetchBlockByHeight(network, h, true);
+      // Receipts for success filtering; include_code=false so tip deploy/blob bytes stay stubs
+      // (requires node support — older nodes ignore the 3rd param and may still return full code).
+      return await fetchBlockByHeight(network, h, true, false);
     } catch {
       return null;
     }
