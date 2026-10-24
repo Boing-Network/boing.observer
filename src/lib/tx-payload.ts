@@ -1,8 +1,8 @@
 import { compactBoingAt, formatBoingAt } from "./native-unit";
 /**
  * Infer transaction payload type from payload object for display.
- * Matches spec: Transfer, Bond, Unbond, ContractCall (incl. ContractCallWithValue), Batch, ContractDeploy,
- * ContractDeployWithPurpose.
+ * Tagged shapes come from serde externally tagged enums (RPC); flat shapes are
+ * heuristics for ad-hoc JSON. Catalog keys are driven by SDK `PayloadVariant`.
  */
 
 import type { TxPayloadKind } from "./rpc-types";
@@ -10,35 +10,9 @@ import { toSafeHexString } from "./rpc-types";
 import { TESTNET_FAUCET_ACCOUNT_HEX } from "./testnet-constants";
 import { formatPurposeLabel } from "./asset-kind-label";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "./extract-media-url";
+import { payloadKindLabel, resolveTaggedPayloadKind } from "./tx-payload-catalog";
 
-/** Serde-style tagged enums: `{ "Bond": { "amount": "1" } }` — unwrap to inner body + kind. */
-const TAGGED_PAYLOAD_KIND_BY_KEY: Record<string, TxPayloadKind> = {
-  Transfer: "Transfer",
-  Bond: "Bond",
-  Unbond: "Unbond",
-  ClaimUnbond: "ClaimUnbond",
-  claim_unbond: "ClaimUnbond",
-  QaPoolVote: "QaPoolVote",
-  qa_pool_vote: "QaPoolVote",
-  ContractCall: "ContractCall",
-  // Contract call carrying native BOING (`{ contract, calldata, value }`): shown as a contract call with its value.
-  ContractCallWithValue: "ContractCall",
-  Batch: "Batch",
-  ContractDeploy: "ContractDeploy",
-  ContractDeployWithPurpose: "ContractDeployWithPurpose",
-  ContractDeployWithPurposeAndMetadata: "ContractDeployWithPurposeAndMetadata",
-};
-
-function resolveTaggedPayloadKind(key: string): TxPayloadKind | null {
-  if (key in TAGGED_PAYLOAD_KIND_BY_KEY) {
-    return TAGGED_PAYLOAD_KIND_BY_KEY[key];
-  }
-  const lower = key.toLowerCase();
-  for (const [canonical, kind] of Object.entries(TAGGED_PAYLOAD_KIND_BY_KEY)) {
-    if (canonical.toLowerCase() === lower) return kind;
-  }
-  return null;
-}
+export { payloadKindLabel } from "./tx-payload-catalog";
 
 /**
  * Inner record used for amounts, addresses, bytecode (after unwrapping a one-key tagged payload).
@@ -47,6 +21,11 @@ export function unwrapTaggedPayload(payload: unknown): {
   inner: Record<string, unknown>;
   taggedKind: TxPayloadKind | null;
 } {
+  // Unit variants serialize as a bare string: `"ClaimUnbond"`.
+  if (typeof payload === "string") {
+    const taggedKind = resolveTaggedPayloadKind(payload);
+    return taggedKind ? { inner: {}, taggedKind } : { inner: {}, taggedKind: null };
+  }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return { inner: {}, taggedKind: null };
   }
@@ -57,18 +36,27 @@ export function unwrapTaggedPayload(payload: unknown): {
   }
   const key = keys[0];
   const val = p[key];
-  if (val === null || typeof val !== "object" || Array.isArray(val)) {
-    return { inner: p, taggedKind: null };
-  }
   const taggedKind = resolveTaggedPayloadKind(key);
   if (!taggedKind) {
     return { inner: p, taggedKind: null };
+  }
+  // Unit / empty body: `{ "ClaimUnbond": null }` or `{}` / `[]`.
+  if (val === null || val === undefined) {
+    return { inner: {}, taggedKind };
+  }
+  if (typeof val !== "object" || Array.isArray(val)) {
+    // Non-object bodies are rare; keep the tag and empty inner.
+    return { inner: {}, taggedKind };
   }
   return { inner: val as Record<string, unknown>, taggedKind };
 }
 
 export function getTxPayloadInner(payload: unknown): Record<string, unknown> {
   return unwrapTaggedPayload(payload).inner;
+}
+
+function hasKeys(p: Record<string, unknown>, required: string[]): boolean {
+  return required.every((k) => k in p);
 }
 
 function getTxPayloadKindFlat(p: Record<string, unknown>): TxPayloadKind {
@@ -82,6 +70,26 @@ function getTxPayloadKindFlat(p: Record<string, unknown>): TxPayloadKind {
   if ("contract" in p) return "ContractCall";
   if (Array.isArray(p.calls)) return "Batch";
   if ("to" in p && "amount" in p) return "Transfer";
+
+  // Name registry (Express / SDK flat `{ kind: "name_register", … }` or field-shaped JSON).
+  const kindStr = typeof p.kind === "string" ? p.kind : "";
+  if (kindStr) {
+    const fromKind = resolveTaggedPayloadKind(kindStr);
+    if (fromKind) return fromKind;
+  }
+  if (hasKeys(p, ["name", "salt", "target", "years"])) return "NameRegister";
+  if (hasKeys(p, ["name", "years"]) && !("salt" in p) && !("target" in p) && !("new_owner" in p)) {
+    return "NameRenew";
+  }
+  if (hasKeys(p, ["name", "new_owner"])) return "NameTransfer";
+  if (hasKeys(p, ["name", "target"]) && !("salt" in p) && !("years" in p)) return "NameSetTarget";
+  if ("commitment" in p && !("name" in p) && !("to" in p) && !("amount" in p)) return "NameCommit";
+  // NameRelease / NameSetPrimary need a tagged key or `kind` — both are `{ name }` shaped.
+  if ("node_id" in p || "nodeId" in p) {
+    if ("node_signature" in p || "nodeSignature" in p) return "ValidatorRegister";
+    return "ValidatorDeregister";
+  }
+
   if ("amount" in p && Object.keys(p).length <= 2) {
     if ("amount" in p && !("to" in p)) {
       const keys = Object.keys(p).sort().join(",");
@@ -95,11 +103,34 @@ function getTxPayloadKindFlat(p: Record<string, unknown>): TxPayloadKind {
   if ("amount" in p && !("to" in p)) return "Bond";
   if (("subject" in p || "subject_hex" in p) && "vote" in p) return "QaPoolVote";
   if (p.kind === "claim_unbond" || p.kind === "ClaimUnbond") return "ClaimUnbond";
+
+  // Media blob / slash appeal field heuristics (tagged path is preferred).
+  if ("data" in p && ("retention" in p || "content_type" in p)) return "PutBlob";
+  if ("blob_id" in p || "blobId" in p) {
+    if ("extend_blocks" in p || "extendBlocks" in p) return "RenewMediaBlobPin";
+    if ("ask_fee" in p || "askFee" in p) return "RegisterBlobSampleOffer";
+    if ("siblings" in p) return "RespondBlobSampleServe";
+    if ("challenger" in p) return "RespondBlobSampleServe";
+    if ("provider" in p && ("chunk_count" in p || "chunkCount" in p)) {
+      return "chunk_hash" in p || "chunkHash" in p ? "RespondBlobSampleServe" : "SettleBlobSampleMatch";
+    }
+    if (("size" in p || typeof p.size === "number") && ("retention" in p || "content_type" in p)) {
+      return "BlobAnnounce";
+    }
+    if ("chunk_index" in p || "chunkIndex" in p) return "PayBlobSample";
+  }
+  if ("slash_id" in p || "slashId" in p) return "SubmitSlashAppeal";
+  if ("appeal_id" in p || "appealId" in p) {
+    if ("aggregate_signature" in p || "aggregateSignature" in p) return "ResolveSlashAppealBlsAggregate";
+    if ("ballot_signature" in p || "ballotSignature" in p) return "ResolveSlashAppealAttested";
+    return "ResolveSlashAppeal";
+  }
+
   return "Unknown";
 }
 
 export function getTxPayloadKind(payload: unknown): TxPayloadKind {
-  if (!payload || typeof payload !== "object") return "Unknown";
+  if (payload == null) return "Unknown";
   const { inner, taggedKind } = unwrapTaggedPayload(payload);
   if (taggedKind) return taggedKind;
   return getTxPayloadKindFlat(inner);
@@ -147,6 +178,12 @@ export function isContractDeployPayloadKind(kind: TxPayloadKind): boolean {
   }
 }
 
+function formatBoingName(name: unknown): string {
+  const s = String(name ?? "").trim();
+  if (!s) return "—";
+  return s.endsWith(".boing") ? s : `${s}.boing`;
+}
+
 /**
  * One-line payload summary. `height` is the block the tx is in: native amounts below the 18-decimals
  * switch are whole BOING, base units from it (unknown height = current, base units).
@@ -184,8 +221,49 @@ export function getTxPayloadSummary(payload: unknown, height?: number | null, ne
       return "claim unbond";
     case "QaPoolVote":
       return `QA vote · ${String(p.vote ?? "")} · ${formatShortAddr(p.subject ?? p.subject_hex)}`;
+    case "NameCommit":
+      return `name commit · ${formatShortAddr(p.commitment)}`;
+    case "NameRegister":
+      return `register ${formatBoingName(p.name)} · ${String(p.years ?? "")}y → ${formatShortAddr(p.target)}`;
+    case "NameRenew":
+      return `renew ${formatBoingName(p.name)} · ${String(p.years ?? "")}y`;
+    case "NameTransfer":
+      return `transfer ${formatBoingName(p.name)} → ${formatShortAddr(p.new_owner)}`;
+    case "NameSetTarget":
+      return `retarget ${formatBoingName(p.name)} → ${formatShortAddr(p.target)}`;
+    case "NameSetPrimary":
+      return p.name == null || p.name === ""
+        ? "clear primary name"
+        : `set primary ${formatBoingName(p.name)}`;
+    case "NameRelease":
+      return `release ${formatBoingName(p.name)}`;
+    case "ValidatorRegister":
+      return `validator register · node ${formatShortAddr(p.node_id ?? p.nodeId)}`;
+    case "ValidatorDeregister":
+      return `validator deregister · node ${formatShortAddr(p.node_id ?? p.nodeId)}`;
+    case "ValidatorUnjail":
+      return `validator unjail · node ${formatShortAddr(p.node_id ?? p.nodeId)}`;
+    case "PutBlob":
+      return "put media blob";
+    case "BlobAnnounce":
+      return `blob announce · ${formatShortAddr(p.blob_id ?? p.blobId)}`;
+    case "RenewMediaBlobPin":
+      return `renew blob pin · ${formatShortAddr(p.blob_id ?? p.blobId)}`;
+    case "PayBlobSample":
+    case "RegisterBlobSampleOffer":
+    case "SettleBlobSampleMatch":
+    case "CancelBlobSampleOffer":
+    case "ChallengeBlobSampleServe":
+    case "RespondBlobSampleServe":
+      return `${payloadKindLabel(kind).toLowerCase()} · ${formatShortAddr(p.blob_id ?? p.blobId)}`;
+    case "SubmitSlashAppeal":
+      return `slash appeal · id ${String(p.slash_id ?? p.slashId ?? "")}`;
+    case "ResolveSlashAppeal":
+    case "ResolveSlashAppealAttested":
+    case "ResolveSlashAppealBlsAggregate":
+      return `${payloadKindLabel(kind).toLowerCase()} · id ${String(p.appeal_id ?? p.appealId ?? "")}`;
     default:
-      return "—";
+      return payloadKindLabel(kind);
   }
 }
 
@@ -270,5 +348,6 @@ export function getTxExplorerNarrative(
   if (kind === "Unknown") {
     return "Payload shape not recognized by this explorer.";
   }
-  return "—";
+  const summary = getTxPayloadSummary(payload, height, network);
+  return summary === "—" ? payloadKindLabel(kind) : summary;
 }

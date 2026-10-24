@@ -9,6 +9,7 @@ import {
   getTxPayloadSummary,
   isContractDeployPayloadKind,
 } from "@/lib/tx-payload";
+import { resolveTaggedPayloadKind } from "@/lib/tx-payload-catalog";
 
 export const ACCOUNT_TX_HISTORY_WINDOWS = [64, 256, 1024] as const;
 export const DEFAULT_ACCOUNT_TX_HISTORY_WINDOW = 256;
@@ -179,31 +180,10 @@ export type IndexedAccountTxRow = {
 };
 
 function mapIndexedKind(kind: string | undefined): TxPayloadKind {
-  switch ((kind ?? "").toLowerCase()) {
-    case "transfer":
-      return "Transfer";
-    case "bond":
-      return "Bond";
-    case "unbond":
-      return "Unbond";
-    case "claim_unbond":
-      return "ClaimUnbond";
-    case "qa_pool_vote":
-      return "QaPoolVote";
-    case "contract_call":
-    case "contract_call_with_value":
-      return "ContractCall";
-    case "batch":
-      return "Batch";
-    case "contract_deploy":
-      return "ContractDeploy";
-    case "contract_deploy_with_purpose":
-      return "ContractDeployWithPurpose";
-    case "contract_deploy_with_purpose_and_metadata":
-      return "ContractDeployWithPurposeAndMetadata";
-    default:
-      return "Unknown";
-  }
+  const raw = (kind ?? "").trim();
+  if (!raw) return "Unknown";
+  // Reuse tagged catalog (PascalCase + snake_case) so indexer rows stay aligned with SDK variants.
+  return resolveTaggedPayloadKind(raw) ?? "Unknown";
 }
 
 function mapIndexedRoles(raw: string[] | undefined): AccountTxRole[] {
