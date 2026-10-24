@@ -35,6 +35,13 @@ const ALLOWED_RPC_METHODS = new Set([
 
 const UPSTREAM_TIMEOUT_MS = 30_000;
 const MAX_BODY_BYTES = 1_048_576; // 1 MiB (qaCheck bytecode payloads)
+/**
+ * Cap upstream response bodies. Tip blocks with large ContractDeploy bytecode can be
+ * multi‑MB to hundreds of MB as JSON number arrays; edge proxies often truncate those
+ * mid-array and still return HTTP 200 — which surfaces in the UI as
+ * `Expected ',' or ']' after array element in JSON at position …`.
+ */
+const MAX_RESPONSE_BYTES = 6 * 1_048_576; // 6 MiB
 
 /**
  * Same-origin JSON-RPC proxy so the browser never calls the Boing node directly.
@@ -121,7 +128,25 @@ export async function POST(req: NextRequest) {
         signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       });
 
-      const text = await upstream.text();
+      const declaredLength = Number(upstream.headers.get("content-length") ?? "NaN");
+      if (Number.isFinite(declaredLength) && declaredLength > MAX_RESPONSE_BYTES) {
+        await upstream.body?.cancel().catch(() => undefined);
+        // Oversized block bodies are not failover-worthy — every backend returns the same block.
+        return NextResponse.json(
+          {
+            jsonrpc: "2.0",
+            id: reqId,
+            error: {
+              code: -32_000,
+              message: `Upstream RPC response too large (${declaredLength} bytes; limit ${MAX_RESPONSE_BYTES}). Often a block with large deploy bytecode — try a specific height or upgrade the node to hex-encode bytecode.`,
+            },
+          },
+          { status: 200 }
+        );
+      }
+
+      const buf = await upstream.arrayBuffer();
+      const text = new TextDecoder().decode(buf);
       const looksLikeCfChallenge =
         upstream.status === 403 &&
         (/cf-mitigated/i.test(upstream.headers.get("cf-mitigated") || "") ||
@@ -154,6 +179,55 @@ export async function POST(req: NextRequest) {
             error: {
               code: -32_000,
               message: `Boing RPC endpoint returned HTTP ${upstream.status}.${edgeHint}`.trim(),
+            },
+          },
+          { status: 200 }
+        );
+      }
+
+      if (buf.byteLength > MAX_RESPONSE_BYTES) {
+        return NextResponse.json(
+          {
+            jsonrpc: "2.0",
+            id: reqId,
+            error: {
+              code: -32_000,
+              message: `Upstream RPC response too large (${buf.byteLength} bytes; limit ${MAX_RESPONSE_BYTES}).`,
+            },
+          },
+          { status: 200 }
+        );
+      }
+
+      if (
+        Number.isFinite(declaredLength) &&
+        declaredLength > 0 &&
+        buf.byteLength < declaredLength
+      ) {
+        return NextResponse.json(
+          {
+            jsonrpc: "2.0",
+            id: reqId,
+            error: {
+              code: -32_000,
+              message: `Upstream RPC response truncated (${buf.byteLength} of ${declaredLength} bytes). Usually an oversized block cut by a gateway timeout — retry or skip that height.`,
+            },
+          },
+          { status: 200 }
+        );
+      }
+
+      try {
+        JSON.parse(text);
+      } catch {
+        return NextResponse.json(
+          {
+            jsonrpc: "2.0",
+            id: reqId,
+            error: {
+              code: -32_000,
+              message:
+                "Upstream RPC returned truncated or invalid JSON (often a mid-array cut of deploy bytecode). Not forwarding corrupt body.",
             },
           },
           { status: 200 }

@@ -113,18 +113,49 @@ export async function fetchBlockByHash(
   );
 }
 
+/** Bound parallel tip-window fetches so one huge deploy block cannot stampede the RPC edge. */
+const RECENT_BLOCKS_CONCURRENCY = 4;
+
+async function mapPool<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const workers = Array.from(
+    { length: Math.max(1, Math.min(concurrency, items.length || 1)) },
+    async () => {
+      while (true) {
+        const i = next;
+        next += 1;
+        if (i >= items.length) return;
+        results[i] = await fn(items[i], i);
+      }
+    }
+  );
+  await Promise.all(workers);
+  return results;
+}
+
 /** Newest-first window of recent blocks for home / dashboard widgets. */
 export async function fetchRecentBlocks(
   network: NetworkId,
   count: number
 ): Promise<{ height: number; blocks: Block[] }> {
   const height = await fetchChainHeight(network);
-  const results = await Promise.all(
-    Array.from({ length: Math.max(0, count) }, (_, i) =>
-      // Receipts so aggregates count successful txs only (a failed tx moves nothing but its fee).
-      fetchBlockByHeight(network, Math.max(0, height - i), true)
-    )
+  const heights = Array.from({ length: Math.max(0, count) }, (_, i) =>
+    Math.max(0, height - i)
   );
+  // Soft-fail per height: oversized/truncated deploy blocks must not blank the whole home page.
+  const results = await mapPool(heights, RECENT_BLOCKS_CONCURRENCY, async (h) => {
+    try {
+      // Receipts so aggregates count successful txs only (a failed tx moves nothing but its fee).
+      return await fetchBlockByHeight(network, h, true);
+    } catch {
+      return null;
+    }
+  });
   const blocks = results.filter(
     (b): b is Block => b != null && "hash" in b && "header" in b
   );

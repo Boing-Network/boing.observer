@@ -76,7 +76,15 @@ export async function rpcCall<T>(
     throw new Error(`RPC HTTP ${res.status}: ${res.statusText}`);
   }
 
-  const data = (await res.json()) as JsonRpcResponse<T>;
+  let data: JsonRpcResponse<T>;
+  try {
+    data = (await res.json()) as JsonRpcResponse<T>;
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `RPC returned invalid JSON (${detail}). Often a truncated oversized block response.`
+    );
+  }
   if ("error" in data) {
     throw new Error(data.error.message || `RPC error ${data.error.code}`);
   }
