@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Request policy for the same-origin `/api/rpc` proxy (kept out of `route.ts`: Next route modules may only
  * export handlers/config). Pure and unit-tested; the route handles transport (failover, size caps, timeouts).
  */

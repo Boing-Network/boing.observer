@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Small in-memory TTL cache for RPC promises (shared by in-flight requests, so concurrent callers dedupe).
  * Bounded: without a cap, per-hash / per-address keys grow for the life of the tab (or Worker isolate).
  */

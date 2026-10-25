@@ -1,4 +1,4 @@
-﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cachedRpc, clearRpcCache, RPC_CACHE_MAX_ENTRIES, rpcCacheSize } from "./rpc-cache";
 
 describe("cachedRpc", () => {

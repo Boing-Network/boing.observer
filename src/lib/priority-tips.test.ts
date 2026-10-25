@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { formatPriorityTip, parseTipU128, priorityTipAt, summarizePriorityTips } from "./priority-tips";
 
 describe("parseTipU128", () => {

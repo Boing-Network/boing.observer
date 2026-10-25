@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Optional priority tips (fee market v1). A block may carry `priority_tips`: one u128 per transaction,
  * same order as `transactions`, omitted entirely when nobody tipped. Entries are JSON numbers, or decimal
  * strings above 2^53-1 (see `u128_json` in boing-node `rpc_block_json.rs`). Amounts are ledger units

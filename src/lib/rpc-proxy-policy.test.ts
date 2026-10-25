@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ALLOWED_RPC_METHODS, MAX_RPC_PARAMS, validateProxyRequest } from "./rpc-proxy-policy";
 
 describe("validateProxyRequest", () => {

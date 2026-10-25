@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Baseline security headers for every dynamic response (static assets get the same via `public/_headers`).
  * A full script-src CSP is intentionally not set here: Next inlines bootstrap + JSON-LD scripts and NFT media
  * come from arbitrary https hosts, so a strict policy needs nonces (tracked in HANDOFF.md). These directives

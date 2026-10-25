@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { PDF_HEADERS, SECURITY_HEADERS } from "../../security-headers.mjs";
 
 const get = (list: Array<{ key: string; value: string }>, key: string) =>
