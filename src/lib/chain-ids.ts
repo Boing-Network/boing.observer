@@ -1,14 +1,15 @@
 /**
  * Wallet / dApp EIP-155–style chain IDs for Boing L1 (not read from block headers).
- * Internal network identifiers and chain IDs match boing.network THREE-CODEBASE-ALIGNMENT.md §3.
+ * Chain IDs come from the vendored `docs/chain-metadata.json` (see chain-metadata.ts); internal network ids match boing.network THREE-CODEBASE-ALIGNMENT.md §3.
  */
+import { networkMeta } from "./chain-metadata";
 import type { NetworkId } from "./rpc-types";
 
-export const BOING_TESTNET_CHAIN_ID_HEX = "0x1b01";
-export const BOING_TESTNET_CHAIN_ID_DECIMAL = 6913;
+export const BOING_TESTNET_CHAIN_ID_HEX = networkMeta("testnet").chain_id_hex;
+export const BOING_TESTNET_CHAIN_ID_DECIMAL = networkMeta("testnet").chain_id;
 
-export const BOING_MAINNET_CHAIN_ID_HEX = "0x1b02";
-export const BOING_MAINNET_CHAIN_ID_DECIMAL = 6914;
+export const BOING_MAINNET_CHAIN_ID_HEX = networkMeta("mainnet").chain_id_hex;
+export const BOING_MAINNET_CHAIN_ID_DECIMAL = networkMeta("mainnet").chain_id;
 
 /** Internal network id (portal / wallet / docs), not a JSON-RPC method. */
 export const BOING_TESTNET_NETWORK_ID = "boing-testnet";

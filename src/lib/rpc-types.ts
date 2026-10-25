@@ -184,6 +184,17 @@ export interface BoingHealth {
   head_height?: number;
   rpc_surface?: BoingHealthRpcSurface;
   rpc_metrics?: BoingHealthRpcMetrics;
+  /** Advisory wallet/SDK version hints (never enforced; operators can override them). */
+  client_hints?: BoingClientHints;
+}
+
+/** `client_hints` from `boing_health` / `boing_getNetworkInfo`. All fields optional: older nodes omit them. */
+export interface BoingClientHints {
+  min_wallet_version?: string;
+  recommended_wallet_version?: string;
+  recommended_sdk?: string;
+  sdk_npm_package?: string;
+  note?: string;
 }
 
 export interface Account {
@@ -310,8 +321,19 @@ export interface ContractStorageWord {
 }
 
 /** Embedded method catalog from `boing_getRpcMethodCatalog` (shape varies by node). */
+/**
+ * `method_catalog.protocol_specs`: stable protocol facts for signers and indexers. Additive-only upstream, so
+ * the shape is intentionally loose: unknown sections are rendered generically.
+ */
+export interface RpcProtocolSpecs {
+  version?: number;
+  note?: string;
+  [section: string]: unknown;
+}
+
 export interface RpcMethodCatalogResult {
   description?: string;
+  protocol_specs?: RpcProtocolSpecs;
   methods?: Array<{
     name: string;
     summary?: string;

@@ -5,6 +5,7 @@ import { useNetwork } from "@/context/network-context";
 import { fetchChainHeight, fetchSyncState, tryFetchBoingHealth } from "@/lib/rpc-methods";
 import type { BoingHealth, BoingSyncState } from "@/lib/rpc-types";
 import { QA_RPC_TWO_SURFACES_DOC_URL, RPC_SPEC_URL } from "@/lib/constants";
+import { chainIdMatches, networkMeta } from "@/lib/chain-metadata";
 
 type LoadState = {
   chainHeight: number | null;
@@ -138,6 +139,18 @@ export function NodeHealthPanel() {
         </section>
       )}
 
+      {!loading && data && data.health && !chainIdMatches(network, data.health.chain_id) && (
+        <p
+          className="rounded-lg border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-200"
+          role="alert"
+          data-testid="chain-id-mismatch"
+        >
+          This RPC reports chain id <span className="font-mono">{String(data.health.chain_id)}</span>, but{" "}
+          {network} is chain id <span className="font-mono">{networkMeta(network).chain_id}</span> (
+          {networkMeta(network).chain_id_hex}). The endpoint configured for {network} may point at the wrong network.
+        </p>
+      )}
+
       {!loading && data && data.health && (
         <section className="glass-card space-y-3 p-4 sm:p-6">
           <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">boing_health</h2>
@@ -163,6 +176,28 @@ export function NodeHealthPanel() {
               <dd className="font-mono">{data.health.head_height ?? "—"}</dd>
             </div>
           </dl>
+          {data.health.client_hints && (
+            <div className="pt-2" data-testid="client-hints">
+              <h3 className="mb-2 text-sm font-medium text-[var(--text-primary)]">client_hints (advisory)</h3>
+              <dl className="grid gap-2 text-xs sm:grid-cols-3">
+                {(
+                  [
+                    ["min_wallet_version", data.health.client_hints.min_wallet_version],
+                    ["recommended_wallet_version", data.health.client_hints.recommended_wallet_version],
+                    ["recommended_sdk", data.health.client_hints.recommended_sdk],
+                  ] as const
+                ).map(([k, v]) => (
+                  <div key={k}>
+                    <dt className="text-[var(--text-muted)]">{k}</dt>
+                    <dd className="font-mono text-[var(--text-secondary)]">{v ?? "-"}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">
+                Hints for wallets and SDKs; the node never enforces them.
+              </p>
+            </div>
+          )}
           {data.health.rpc_surface && (
             <div className="table-scroll-wrap pt-2">
               <h3 className="mb-2 text-sm font-medium text-[var(--text-primary)]">rpc_surface</h3>

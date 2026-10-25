@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNetwork } from "@/context/network-context";
 import { fetchRpcMethodCatalog } from "@/lib/rpc-methods";
+import { ProtocolSpecsCard } from "@/components/protocol-specs-card";
 import type { RpcMethodCatalogResult } from "@/lib/rpc-types";
 import { QA_RPC_TWO_SURFACES_DOC_URL, RPC_SPEC_URL } from "@/lib/constants";
 
@@ -97,6 +98,7 @@ export function RpcCatalogPanel() {
       {!loading && !error && data && (
         <>
           {data.description && <p className="text-sm text-[var(--text-secondary)]">{data.description}</p>}
+          <ProtocolSpecsCard specs={data.protocol_specs} />
           <p className="text-sm text-[var(--text-muted)]">
             Showing {filtered.length} of {methods.length} methods.
           </p>

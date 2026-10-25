@@ -8,6 +8,7 @@
   "scripts": {
     "postinstall": "node scripts/copy-pdf-worker.mjs",
     "generate:brand-assets": "node scripts/generate-brand-assets.mjs",
+    "sync:chain-metadata": "node scripts/sync-chain-metadata.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
