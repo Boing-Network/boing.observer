@@ -9,6 +9,7 @@ import { explorerAssetHref } from "@/lib/explorer-href";
 import type { Account } from "@/lib/rpc-types";
 import { isHex64, normalizeAddress, formatBalance, toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
+import { useNativeUnitConfig } from "@/hooks/use-native-unit-config";
 import { CopyButton } from "@/components/copy-button";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 import { AccountBalanceMix } from "@/components/account-balance-mix";
@@ -29,6 +30,7 @@ import { ADDRESS_FORMAT_ALIGNMENT_URL, NETWORK_FAUCET_URL } from "@/lib/constant
 export function AddressExplorerView({ variant }: { variant: "account" | "asset" }) {
   const params = useParams();
   const { network } = useNetwork();
+  useNativeUnitConfig(network);
   const addressParam = params?.address as string;
   const address = addressParam ? normalizeAddress(addressParam) : "";
   const [account, setAccount] = useState<Account | null>(null);

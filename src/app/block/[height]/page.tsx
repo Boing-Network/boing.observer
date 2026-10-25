@@ -7,12 +7,14 @@ import { useNetwork } from "@/context/network-context";
 import { fetchBlockByHeight, fetchNetworkInfo } from "@/lib/rpc-methods";
 import type { Block, BoingNetworkInfo } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
+import { useNativeUnitConfig } from "@/hooks/use-native-unit-config";
 import { BlockDetails } from "@/components/block-details";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 
 export default function BlockByHeightPage() {
   const params = useParams();
   const { network } = useNetwork();
+  useNativeUnitConfig(network);
   const heightParam = params?.height as string;
   const height = heightParam ? parseInt(heightParam, 10) : NaN;
   const [block, setBlock] = useState<Block | null>(null);

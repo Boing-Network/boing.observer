@@ -1,6 +1,7 @@
 "use client";
 
 import { failedTxFeeBaseUnits } from "@/lib/failed-tx";
+import { getNativeUnitConfig } from "@/lib/native-unit-config";
 import { formatPriorityTip } from "@/lib/priority-tips";
 import { compactBoingAt, formatBoingBase } from "@/lib/native-unit";
 import Link from "next/link";
@@ -772,6 +773,7 @@ function ReceiptPanel({
   height?: number | null;
 }) {
   const failedFee = failedTxFeeBaseUnits(receipt, height ?? receipt.block_height, network);
+  const feeCfg = getNativeUnitConfig(network);
   const ok = receipt.success !== false;
   const rd = normalizeHexData(receipt.return_data);
   const txIdRaw = receipt.tx_id ? normalizeHex64(receipt.tx_id) : "";
@@ -827,6 +829,11 @@ function ReceiptPanel({
             <dt className="text-[var(--text-muted)]">Fee charged</dt>
             <dd className="text-[var(--text-primary)]">
               {failedFee != null ? formatBoingBase(failedFee) : "?"} BOING (failed transactions still pay a fee; state was reverted)
+              <span className="ml-1 text-xs text-[var(--text-muted)]" data-testid="fee-policy-source" data-source={feeCfg.source}>
+                {feeCfg.source === "live"
+                  ? `Estimated from the node's live fee policy (${feeCfg.executionGasFeeBps / 100}% of the full gas schedule).`
+                  : "Estimated with the default micro-fee policy (the node did not report one)."}
+              </span>
             </dd>
           </div>
         ) : null}

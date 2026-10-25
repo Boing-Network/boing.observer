@@ -9,6 +9,7 @@ import type { Block, BlockTransaction, TransactionReceipt } from "@/lib/rpc-type
 import { explorerAssetHref } from "@/lib/explorer-href";
 import { isHex64, normalizeHex64, toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
+import { useNativeUnitConfig } from "@/hooks/use-native-unit-config";
 import { priorityTipAt } from "@/lib/priority-tips";
 import { CopyButton } from "@/components/copy-button";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
@@ -17,6 +18,7 @@ import { TransactionInsight } from "@/components/transaction-insight";
 export default function TransactionByIdPage() {
   const params = useParams();
   const { network } = useNetwork();
+  useNativeUnitConfig(network);
   const rawParam = params?.txId as string;
   const txId = rawParam ? normalizeHex64(decodeURIComponent(rawParam)) : "";
 

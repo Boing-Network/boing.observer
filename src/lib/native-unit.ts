@@ -6,23 +6,32 @@
  * amounts from either side of the switch can be added, charted and formatted the same way.
  */
 import { compactAmount, type CompactAmount } from "./format-amount";
+import {
+  DEFAULT_EXECUTION_GAS_FEE_BPS,
+  DEFAULT_GAS_PRICE_BASE_UNITS,
+  DEFAULT_TESTNET_BASE_UNITS_FROM_HEIGHT,
+  getNativeUnitConfig,
+} from "./native-unit-config";
 
 export const BOING_DECIMALS = 18;
 export const BASE_UNITS_PER_BOING = BigInt("1000000000000000000");
 /** Fee per gas in base units at the **full** historical schedule (0.000001 BOING/gas → 0.021 BOING/transfer). */
-export const GAS_PRICE_BASE_UNITS = BigInt("1000000000000");
+export const GAS_PRICE_BASE_UNITS = DEFAULT_GAS_PRICE_BASE_UNITS;
 /**
  * Recommended product share of the historical gas schedule (1% → ~0.00021 BOING/transfer).
  * Matches `MICRO_FEE_EXECUTION_GAS_BPS` in boing.network. Live nodes may still charge full
  * schedule until operators apply `micro_fee_default()` after the activation height.
  */
-export const MICRO_FEE_EXECUTION_GAS_BPS = 100;
+export const MICRO_FEE_EXECUTION_GAS_BPS = DEFAULT_EXECUTION_GAS_FEE_BPS;
 /** Public testnet 6913 switched native amounts from whole BOING to base units at this block. */
-export const TESTNET_BASE_UNITS_FROM_HEIGHT = 1050;
+export const TESTNET_BASE_UNITS_FROM_HEIGHT = DEFAULT_TESTNET_BASE_UNITS_FROM_HEIGHT;
 
-/** First height whose native amounts are in base units (`native_currency.base_units_from_height`). */
+/**
+ * First height whose native amounts are in base units (`native_currency.base_units_from_height`). Uses the
+ * live node value once loaded (see `native-unit-config.ts`), else the per-network fallback.
+ */
 export function baseUnitsFromHeight(network?: string | null): number {
-  return network === "mainnet" ? 0 : TESTNET_BASE_UNITS_FROM_HEIGHT;
+  return getNativeUnitConfig(network).baseUnitsFromHeight;
 }
 
 /**
@@ -119,19 +128,22 @@ export function baseUnitsToChartNumber(base: bigint): number {
 /**
  * Network fee in base units for `gasUsed` under the rule at `height`.
  * Whole-BOING era: ceil(gas/21000) BOING. Base-units era: gas × GAS_PRICE_BASE_UNITS × bps/10000
- * (default bps = {@link MICRO_FEE_EXECUTION_GAS_BPS}). Pass `10000` for the full historical schedule.
+ * Gas price, bps and fixed fee come from the live fee policy once loaded (`native-unit-config.ts`), else the
+ * fallback ({@link MICRO_FEE_EXECUTION_GAS_BPS}). Pass `executionGasFeeBps` to override (10000 = full schedule).
+ * Base-units era total = gas x gas price x bps/10000 + extra fixed fee.
  */
 export function feeBaseUnitsForGas(
   gasUsed: number | bigint,
   height: number | null | undefined,
   network?: string | null,
-  executionGasFeeBps: number = MICRO_FEE_EXECUTION_GAS_BPS,
+  executionGasFeeBps?: number,
 ): bigint {
   const g = BigInt(gasUsed);
   if (g <= BigInt(0)) return BigInt(0);
-  const bps = Math.max(0, Math.min(10_000, Math.floor(executionGasFeeBps)));
+  const cfg = getNativeUnitConfig(network);
+  const bps = Math.max(0, Math.min(10_000, Math.floor(executionGasFeeBps ?? cfg.executionGasFeeBps)));
   if (nativeDecimalsAt(height, network) === 18) {
-    return (g * GAS_PRICE_BASE_UNITS * BigInt(bps)) / BigInt(10_000);
+    return (g * cfg.gasPriceBaseUnits * BigInt(bps)) / BigInt(10_000) + cfg.extraFixedFee;
   }
   // Pre-redenomination era had no micro BPS; keep whole-BOING ceil rule.
   const whole = (g + BigInt(20999)) / BigInt(21000);

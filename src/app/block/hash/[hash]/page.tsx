@@ -8,6 +8,7 @@ import { fetchBlockByHash, fetchNetworkInfo } from "@/lib/rpc-methods";
 import type { Block, BoingNetworkInfo } from "@/lib/rpc-types";
 import { isHex64, normalizeHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
+import { useNativeUnitConfig } from "@/hooks/use-native-unit-config";
 import { CopyButton } from "@/components/copy-button";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 import { BlockDetails } from "@/components/block-details";
@@ -15,6 +16,7 @@ import { BlockDetails } from "@/components/block-details";
 export default function BlockByHashPage() {
   const params = useParams();
   const { network } = useNetwork();
+  useNativeUnitConfig(network);
   const hashParam = params?.hash as string;
   const hash = hashParam ? normalizeHex64(hashParam) : "";
   const [block, setBlock] = useState<Block | null>(null);
