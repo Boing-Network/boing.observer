@@ -51,7 +51,7 @@ const AccountNftGallery = dynamic(
 
 export function AddressExplorerView({ variant }: { variant: "account" | "asset" }) {
   const params = useParams();
-  const { network } = useNetwork();
+  const { network, ready } = useNetwork();
   useNativeUnitConfig(network);
   const addressParam = params?.address as string;
   const address = addressParam ? normalizeAddress(addressParam) : "";
@@ -75,6 +75,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
       setError("Invalid account address");
       return;
     }
+    if (!ready) return; // wait for ?network= / stored preference so a deep link never queries the wrong chain
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -92,7 +93,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
     return () => {
       cancelled = true;
     };
-  }, [network, address]);
+  }, [network, ready, address]);
 
   useEffect(() => {
     if (!isHex64(address)) {
@@ -101,6 +102,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
       setProfileError(null);
       return;
     }
+    if (!ready) return; // wait for ?network= / stored preference so a deep link never queries the wrong chain
     let cancelled = false;
     setProfileLoading(true);
     setProfileError(null);
@@ -141,9 +143,14 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
     return () => {
       cancelled = true;
     };
-  }, [network, address, variant, wantDeployScan]);
+  }, [network, ready, address, variant, wantDeployScan]);
 
   const inDexUniverse = Boolean(assetProfile?.dexToken);
+
+  // Do not mount the data widgets (they fetch with `network`) until the deep-link network is resolved.
+  if (!ready && isHex64(address)) {
+    return <div className="glass-card p-6 text-sm text-[var(--text-muted)]" aria-busy="true">Loading...</div>;
+  }
 
   if (!isHex64(address)) {
     return (

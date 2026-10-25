@@ -13,7 +13,7 @@ import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 
 export default function BlockByHeightPage() {
   const params = useParams();
-  const { network } = useNetwork();
+  const { network, ready } = useNetwork();
   useNativeUnitConfig(network);
   const heightParam = params?.height as string;
   const height = heightParam ? parseInt(heightParam, 10) : NaN;
@@ -28,6 +28,7 @@ export default function BlockByHeightPage() {
       setError("Invalid block height");
       return;
     }
+    if (!ready) return; // wait for ?network= / stored preference so a deep link never queries the wrong chain
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -51,7 +52,7 @@ export default function BlockByHeightPage() {
     return () => {
       cancelled = true;
     };
-  }, [network, height]);
+  }, [network, ready, height]);
 
   if (Number.isNaN(height) || height < 0) {
     return (

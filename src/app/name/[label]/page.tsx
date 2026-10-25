@@ -24,7 +24,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default function NamePage() {
   const params = useParams<{ label: string }>();
-  const { network } = useNetwork();
+  const { network, ready } = useNetwork();
   const raw = decodeURIComponent(params?.label ?? "");
   const v = normalizeBoingName(raw);
   const [info, setInfo] = useState<BoingNameInfo | null | undefined>(undefined);
@@ -32,7 +32,7 @@ export default function NamePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!v.ok) return;
+    if (!v.ok || !ready) return;
     let live = true;
     setInfo(undefined);
     setError("");
@@ -52,7 +52,7 @@ export default function NamePage() {
     return () => {
       live = false;
     };
-  }, [network, v.ok ? v.label : ""]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [network, ready, v.ok ? v.label : ""]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const display = v.ok ? `${v.label}.boing` : raw;
   const rec = info?.record;

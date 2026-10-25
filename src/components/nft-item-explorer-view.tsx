@@ -46,7 +46,7 @@ function tokenLabel(tokenIdU64: number | null, tokenId: string): string {
 
 export function NftItemExplorerView() {
   const params = useParams();
-  const { network } = useNetwork();
+  const { network, ready } = useNetwork();
   const collectionParam = params?.address as string;
   const tokenIdParam = params?.tokenId as string;
   const collection = collectionParam ? normalizeAddress(collectionParam) : "";
@@ -63,6 +63,7 @@ export function NftItemExplorerView() {
       setItem(null);
       return;
     }
+    if (!ready) return; // wait for ?network= / stored preference so a deep link never queries the wrong chain
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -103,7 +104,7 @@ export function NftItemExplorerView() {
     return () => {
       cancelled = true;
     };
-  }, [network, collection, tokenId]);
+  }, [network, ready, collection, tokenId]);
 
   const titleName =
     item?.metadataName != null

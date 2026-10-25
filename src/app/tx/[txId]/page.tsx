@@ -17,7 +17,7 @@ import { TransactionInsight } from "@/components/transaction-insight";
 
 export default function TransactionByIdPage() {
   const params = useParams();
-  const { network } = useNetwork();
+  const { network, ready } = useNetwork();
   useNativeUnitConfig(network);
   const rawParam = params?.txId as string;
   const txId = rawParam ? normalizeHex64(decodeURIComponent(rawParam)) : "";
@@ -35,6 +35,7 @@ export default function TransactionByIdPage() {
       setError("Invalid transaction id");
       return;
     }
+    if (!ready) return; // wait for ?network= / stored preference so a deep link never queries the wrong chain
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -67,7 +68,7 @@ export default function TransactionByIdPage() {
     return () => {
       cancelled = true;
     };
-  }, [network, txId, rawParam]);
+  }, [network, ready, txId, rawParam]);
 
   if (!isHex64(rawParam || "")) {
     return (

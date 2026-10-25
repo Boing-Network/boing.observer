@@ -15,7 +15,7 @@ import { BlockDetails } from "@/components/block-details";
 
 export default function BlockByHashPage() {
   const params = useParams();
-  const { network } = useNetwork();
+  const { network, ready } = useNetwork();
   useNativeUnitConfig(network);
   const hashParam = params?.hash as string;
   const hash = hashParam ? normalizeHex64(hashParam) : "";
@@ -30,6 +30,7 @@ export default function BlockByHashPage() {
       setError("Invalid block hash");
       return;
     }
+    if (!ready) return; // wait for ?network= / stored preference so a deep link never queries the wrong chain
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -53,7 +54,7 @@ export default function BlockByHashPage() {
     return () => {
       cancelled = true;
     };
-  }, [network, hash]);
+  }, [network, ready, hash]);
 
   if (!isHex64(hashParam || "")) {
     return (
