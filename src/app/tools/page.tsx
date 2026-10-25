@@ -88,6 +88,17 @@ export default function ToolsPage() {
           </li>
           <li>
             <Link
+              href="/tools/account-proof"
+              className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
+            >
+              <h2 className="font-display text-lg font-semibold text-network-cyan">Account proof</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
+                Fetch and verify a Merkle proof for an account against a recent state root.
+              </p>
+            </Link>
+          </li>
+          <li>
+            <Link
               href="/tools/qa-check"
               className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
             >

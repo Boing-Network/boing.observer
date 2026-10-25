@@ -16,6 +16,9 @@ export const ALLOWED_RPC_METHODS: ReadonlySet<string> = new Set([
   "boing_getNetworkFeePolicy",
   "boing_getContractCode",
   "boing_getContractStorage",
+  // Account Merkle proofs (read-only; verification is a pure check of caller-supplied bytes)
+  "boing_getAccountProof",
+  "boing_verifyAccountProof",
   "boing_getQaRegistry",
   "boing_qaPoolList",
   "boing_qaPoolConfig",

@@ -16,6 +16,13 @@ describe("validateProxyRequest", () => {
     });
   });
 
+  it("allows the read-only account proof methods", () => {
+    expect(ALLOWED_RPC_METHODS.has("boing_getAccountProof")).toBe(true);
+    expect(ALLOWED_RPC_METHODS.has("boing_verifyAccountProof")).toBe(true);
+    const r = validateProxyRequest({ jsonrpc: "2.0", id: 2, method: "boing_verifyAccountProof", params: ["0xab", "0xcd"] });
+    expect(r.ok).toBe(true);
+  });
+
   it("allows the fee policy method and defaults params to []", () => {
     expect(ALLOWED_RPC_METHODS.has("boing_getNetworkFeePolicy")).toBe(true);
     const r = validateProxyRequest({ jsonrpc: "2.0", id: 1, method: "boing_getNetworkFeePolicy" });

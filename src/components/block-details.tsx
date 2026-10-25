@@ -8,6 +8,7 @@ import { CopyButton } from "@/components/copy-button";
 import { TransactionInsightGroup } from "@/components/transaction-insight-group";
 import { groupTxInsights } from "@/lib/tx-insight-groups";
 import { formatPriorityTip, summarizePriorityTips } from "@/lib/priority-tips";
+import { configuredStorageTreeV2ActivationHeight, describeStorageTree } from "@/lib/storage-tree";
 
 export function BlockDetails({
   block,
@@ -123,6 +124,11 @@ export function BlockDetails({
               <span className="break-all">{block.header.state_root ?? "—"}</span>
               {block.header.state_root ? <CopyButton value={String(block.header.state_root)} label="Copy state root" /> : null}
             </dd>
+            {configuredStorageTreeV2ActivationHeight() != null ? (
+              <p className="basis-full text-xs text-[var(--text-muted)]" data-testid="storage-tree-note">
+                {describeStorageTree(Number(block.header.height), configuredStorageTreeV2ActivationHeight())}
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <dt className="text-[var(--text-muted)]">Tx root</dt>
