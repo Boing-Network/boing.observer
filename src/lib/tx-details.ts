@@ -268,11 +268,30 @@ export function buildPayloadDetailLines(payload: unknown, height?: number | null
     case "CancelBlobSampleOffer":
     case "ChallengeBlobSampleServe":
     case "RespondBlobSampleServe": {
-      const blob = hexForLink(p.blob_id ?? p.blobId);
+      const data = p.data;
+      const stubHash =
+        data && typeof data === "object" && !Array.isArray(data) && typeof (data as { hash?: unknown }).hash === "string"
+          ? hexForLink((data as { hash: string }).hash)
+          : "";
+      const blob = hexForLink(p.blob_id ?? p.blobId) || stubHash;
       if (blob) {
         lines.push({ label: "Blob id", value: shortenHash(blob) || "—", copyValue: `0x${blob}` });
       }
+      const stubSize =
+        data && typeof data === "object" && !Array.isArray(data) && typeof (data as { size?: unknown }).size === "number"
+          ? (data as { size: number }).size
+          : null;
       if (p.size != null) lines.push({ label: "Size", value: String(p.size) });
+      else if (stubSize != null) lines.push({ label: "Size", value: `${stubSize.toLocaleString()} bytes` });
+      if (typeof p.content_type === "string" || typeof p.contentType === "string") {
+        lines.push({
+          label: "Content type",
+          value: String(p.content_type ?? p.contentType),
+        });
+      }
+      if (data && typeof data === "object" && !Array.isArray(data) && (data as { omitted?: unknown }).omitted) {
+        lines.push({ label: "Raw bytes", value: "Omitted in explorer view (use download if permitted)" });
+      }
       if (p.chunk_index != null || p.chunkIndex != null) {
         lines.push({ label: "Chunk index", value: String(p.chunk_index ?? p.chunkIndex) });
       }

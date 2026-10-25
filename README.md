@@ -70,6 +70,8 @@ npm run test:e2e
 | `NEXT_PUBLIC_MAINNET_RPC` | Mainnet RPC. **Leave unset** until a distinct mainnet endpoint is published |
 | `BOING_OPERATOR_RPC_TOKEN` | Server-only; must match validator `X-Boing-Operator`. Never `NEXT_PUBLIC_` |
 | `BOING_QA_VOTE_RPC` | Validator JSON-RPC for `boing_qaPoolVote` (defaults to `https://boing-testnet-1.fly.dev`). Signed Express votes normally submit through the wallet RPC. |
+| `BOING_BLOB_DOWNLOAD_TOKENS` | Comma-separated download permission tokens for `GET /api/blob/download` (also accepts the operator token). |
+| `BOING_BLOB_DOWNLOAD_RPC` | Origin for raw `GET /v1/media/blob?id=…` (defaults to Fly `boing-testnet-1`, not the public gateway). |
 | `NFT_OWNER_INDEXER_URL` | Origin of `workers/nft-owner-indexer` (no trailing slash). Enables **`GET /api/account/nfts?network=&id=`**. |
 | `NEXT_PUBLIC_BOING_LINKED_NFT_TOKEN_REGISTRY` | Optional override for companions registry AccountId (public testnet default baked in) |
 | `NEXT_PUBLIC_BOING_BUILDER_ATTESTATION_REGISTRY` | Optional override for builder attestation registry AccountId (public testnet `0x734077a9…1816`; for future read-only **Builder attested** UI) |

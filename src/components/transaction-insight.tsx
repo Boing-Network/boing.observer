@@ -37,6 +37,8 @@ import type { TxPayloadKind } from "@/lib/rpc-types";
 import { formatPurposeLabel, isNftPurposeOrKind } from "@/lib/asset-kind-label";
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
+import { BlobDownloadPanel } from "@/components/blob-download-panel";
+import { extractPutBlobDownloadHint } from "@/lib/blob-download";
 import { nameHref } from "@/lib/boing-names";
 
 function formatBoingName(name: unknown): string {
@@ -993,6 +995,10 @@ export function TransactionInsight({
   const deployImageUrl = deployDisplay.imageUrl || offchainImage || nftSampleImage;
   const deployLabel = formatAssetDisplayLabel(deployDisplay, "");
   const featured = visualScale === "featured";
+  const blobDownloadHint =
+    kind === "PutBlob" || kind === "BlobAnnounce"
+      ? extractPutBlobDownloadHint(payloadInner)
+      : null;
 
   const isFaucetTransfer =
     kind === "Transfer" && sender === TESTNET_FAUCET_ACCOUNT_HEX.toLowerCase();
@@ -1118,6 +1124,8 @@ export function TransactionInsight({
       {featured && kind === "ContractCall" ? (
         <ContractCallFeaturedVisual payload={payloadInner} network={network} />
       ) : null}
+
+      {blobDownloadHint ? <BlobDownloadPanel hint={blobDownloadHint} network={network} /> : null}
 
       {showContextNote ? (
         <p className="text-sm leading-snug text-[var(--text-secondary)]">

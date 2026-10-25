@@ -31,6 +31,8 @@ const ALLOWED_RPC_METHODS = new Set([
   "boing_checkNames",
   "boing_namesOwnedBy",
   "boing_simulateContractCall",
+  // Media blob metadata (bytes stay on gated /api/blob/download — not this proxy)
+  "boing_getBlobMeta",
 ]);
 
 const UPSTREAM_TIMEOUT_MS = 30_000;
