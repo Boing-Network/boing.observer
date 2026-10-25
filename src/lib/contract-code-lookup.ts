@@ -1,7 +1,7 @@
 /**
- * Find a contract's deploy bytecode without a dedicated RPC.
+ * Find a contract's deploy bytecode. Prefer `boing_getContractCode`; this fallback is for older nodes without it.
  *
- * The node has no `getCode` method and `boing_getAccountTransactions(contract)` lists calls *to* the contract but
+ * `boing_getAccountTransactions(contract)` lists calls *to* the contract but
  * not its deploy. Contract addresses are deterministic (CREATE2 or BLAKE3(sender || nonce)), so we take the earliest
  * accounts that called the contract (deployers almost always configure their contract first), list their own
  * `contract_deploy` transactions, fetch those blocks and recompute each deploy's address until one matches.

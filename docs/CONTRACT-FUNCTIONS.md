@@ -10,7 +10,8 @@ account pages, pools, and advanced expand.
 
 How the explorer builds the "Contract functions" section (`/api/contract/interface`):
 
-1. **Bytecode.** The node has no `getCode` RPC. `boing_getAccountTransactions(contract)` lists calls to the contract,
+1. **Bytecode.** `boing_getContractCode` (bytecode + BLAKE3 code hash) is used first. On older nodes without it, the
+   fallback is: `boing_getAccountTransactions(contract)` lists calls to the contract,
    so the earliest callers (plus the canonical testnet deployer) are treated as candidate deployers; their
    `contract_deploy` transactions are fetched and each deploy address is recomputed (CREATE2 or nonce-derived) until one
    matches. Contracts never called by their deployer may not be located.
@@ -36,4 +37,4 @@ A dependency-free way for deployers to publish an interface without consensus ch
 - Alternatively extend the existing builder attestation registry `note_hash` to carry the interface hash.
 - Explorer side: fetch the record, verify the hash, and prefer it over the selector heuristics.
 
-A `boing_getContractCode` RPC (read-only, no consensus change) would also make step 1 exact for every contract.
+`boing_getContractCode` now exists on the node, so step 1 is exact for every deployed contract; the deploy-search fallback only matters for older nodes.

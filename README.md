@@ -39,13 +39,13 @@ Network selector: **Testnet** by default. **Mainnet** only appears as live when 
 
 - **Next.js 15** (App Router), React 18, TypeScript
 - **Tailwind CSS** with Boing design tokens (Comfortaa, dark theme, aqua/teal)
-- **RPC** — Browser: same-origin `POST /api/rpc`. Server routes: direct HTTP. DEX tooling uses **`@boing-network/boing-sdk@^0.5.24`** from npm
+- **RPC** — Browser: same-origin `POST /api/rpc`. Server routes: direct HTTP. DEX tooling uses **`@boing-network/boing-sdk@^0.5.38`** from npm
 - **Cloudflare** — OpenNext adapter → Workers; custom domain **boing.observer**
 
 ## 🚀 Setup
 
 ```bash
-npm install --legacy-peer-deps
+npm ci --legacy-peer-deps   # or npm install --legacy-peer-deps
 cp .env.example .env.local
 npm run dev
 ```
@@ -54,9 +54,10 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
 npm run lint
-npm run test
+npm run typecheck
+npm test
 npm run build
-npm run test:e2e
+npm run test:e2e   # Playwright, mocked RPC; build first
 ```
 
 (`--legacy-peer-deps` is required because the Cloudflare adapter’s peer range can lag the Next 15 line we actually run.)
@@ -72,15 +73,19 @@ npm run test:e2e
 | `BOING_QA_VOTE_RPC` | Validator JSON-RPC for `boing_qaPoolVote` (defaults to `https://boing-testnet-1.fly.dev`). Signed Express votes normally submit through the wallet RPC. |
 | `BOING_BLOB_DOWNLOAD_TOKENS` | Comma-separated download permission tokens for `GET /api/blob/download` (also accepts the operator token). |
 | `BOING_BLOB_DOWNLOAD_RPC` | Origin for raw `GET /v1/media/blob?id=…` (defaults to Fly `boing-testnet-1`, not the public gateway). |
-| `NFT_OWNER_INDEXER_URL` | Origin of `workers/nft-owner-indexer` (no trailing slash). Enables **`GET /api/account/nfts?network=&id=`**. |
+| `NFT_OWNER_INDEXER_URL` | Origin of `workers/nft-owner-indexer` (no trailing slash; alias `BOING_NFT_OWNER_INDEXER_URL`). Enables **`GET /api/account/nfts?network=&id=`**. |
 | `NEXT_PUBLIC_BOING_LINKED_NFT_TOKEN_REGISTRY` | Optional override for companions registry AccountId (public testnet default baked in) |
 | `NEXT_PUBLIC_BOING_BUILDER_ATTESTATION_REGISTRY` | Optional override for builder attestation registry AccountId (public testnet `0x734077a9…1816`; for future read-only **Builder attested** UI) |
+
+Server-side tuning (`TOKEN_INDEX_CACHE_DIR`, `TOKEN_INDEX_CACHE_TTL_SEC`, `TOKEN_METADATA_GATEWAY_URLS`, `BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS`, `BOING_NATIVE_VM_DEX_FACTORY`) and the Playwright live flags are documented in [docs/OPERATIONS.md](docs/OPERATIONS.md), which also lists every script.
 
 No API keys for read-only RPC. Do not hardcode production RPC URLs.
 
 ### RPC retries and “Method not found”
 
-- Browser calls **`POST /api/rpc`**. Client retries **once** on network errors, HTTP 429, and 5xx. The proxy failsovers to Fly origins on **5xx/530**.
+- Browser calls **`POST /api/rpc`**. Client retries **once** on network errors, HTTP 429, and 5xx. The proxy fails over to Fly origins on **403, 502-504, 521-526, 530** and Cloudflare challenge pages.
+- The proxy only forwards an allow-list of methods (`src/lib/rpc-proxy-policy.ts`), rejects batches, requires `params` to be an array of at most 8 items, and caps request bodies at 1 MiB and responses at 6 MiB. Other methods get JSON-RPC `-32601`.
+- Global security headers (nosniff, `X-Frame-Options: DENY`, HSTS, Permissions-Policy, baseline CSP) come from `security-headers.mjs`.
 - There is **no** automatic failover on **`Method not found`**. `/qa` still shows **canonical QA JSON and doc links** when `boing_getQaRegistry` fails. See [THREE-CODEBASE-ALIGNMENT.md §2.1](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md#21-qa-registry-rpc-boing_getqaregistry--two-different-surfaces).
 - **`/dex/pools`** uses **`@boing-network/boing-sdk` against RPC** today. Optional Worker directory: [HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md).
 
@@ -93,12 +98,13 @@ npm run deploy
 
 Attach **boing.observer** under Workers & Pages → **boing-observer** → Domains & Routes.
 
-GitHub Actions deploys on `main` **after** CI (lint, unit tests, production build, Playwright) succeeds. Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`. Variables: `NEXT_PUBLIC_TESTNET_RPC`.
+GitHub Actions deploys on `main` **after** CI (lint, typecheck, unit tests, production build, Playwright) succeeds. Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`. Variables: `NEXT_PUBLIC_TESTNET_RPC`, `NEXT_PUBLIC_MAINNET_RPC`.
 
 | Command | Description |
 |--------|-------------|
 | `npm run dev` | Local Next.js |
 | `npm run build` | Production Next build |
+| `npm run lint` / `typecheck` / `test` | ESLint / `tsc --noEmit` / Vitest |
 | `npm run test:e2e` | Playwright (run `build` first) |
 | `npm run preview` | OpenNext in Workers runtime |
 | `npm run deploy` | Build and deploy to Cloudflare |
@@ -107,9 +113,10 @@ GitHub Actions deploys on `main` **after** CI (lint, unit tests, production buil
 
 - Protocol docs: `Boing-Network/boing.network` on `main` under `docs/`
 - Alignment: [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md)
-- Linked NFT↔token companions (on-chain registry, read-only on asset/account/NFT item pages): [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md) — public testnet registry `0xebf9f0190f415852f90d0e60343126201248ab96273fdbf8acc5fe5fa03c3dd8` (salt `BOING_NFT_TOKEN_LINK_REG_V1`, selectors `0xE0`–`0xE6`; explorer queries `0xE3`/`0xE4`)
+- Linked NFT↔token companions (on-chain registry, read-only on asset/account/NFT item pages): [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md) — public testnet registry **v2** `0xf704485ad29f56bb6516ac822fcf9ca8fcb6c4266e22c9ed7f9c6908668655dd` (salt `BOING_NFT_TOKEN_LINK_REG_V2`, selectors `0xE0`-`0xE8`; explorer reads `links_count` / `get_link_at`; v1 `0xebf9f019...3dd8` is superseded)
 - Builder attestation (on-chain builder signal; companions remain project authority): [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md) — public testnet registry `0x734077a9f926077d39e84ec278b77b7b600c840f7101809646d8797a6a9e1816` (salt `BOING_BUILDER_ATTEST_REG_V1`, selectors `0xE0`–`0xE6`; read via `attestations_count` / `get_attestation_at`). Explorer UI for **Builder attested** is not shipped yet — document the AccountId here for implementers.
-- Local handoff: [HANDOFF.md](HANDOFF.md)
+- Local handoff (current state, known gaps): [HANDOFF.md](HANDOFF.md)
+- Operations (env, scripts, CI, indexing): [docs/OPERATIONS.md](docs/OPERATIONS.md); contract interface resolution: [docs/CONTRACT-FUNCTIONS.md](docs/CONTRACT-FUNCTIONS.md)
 
 ---
 
