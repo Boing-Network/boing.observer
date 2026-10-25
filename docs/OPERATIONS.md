@@ -25,6 +25,9 @@ dashboard, and secrets with `wrangler secret put`. `NEXT_PUBLIC_*` values are in
 | `BOING_NATIVE_VM_DEX_FACTORY` / `BOING_DEX_FACTORY_HEX` | server | `0x` + 64 hex DEX factory override for discovery (normally resolved from `boing_getNetworkInfo`) |
 | `TOKEN_INDEX_CACHE_DIR` | server | Token index disk cache dir (default `<cwd>/.cache/token-index`; `off` disables) |
 | `TOKEN_INDEX_CACHE_TTL_SEC` (alias `..._SECONDS`) | server | Token index cache TTL (default 600, max 7 days) |
+| `BOING_OBSERVER_RATE_LIMIT` | server | `off` disables `/api/*` rate limiting (default on) |
+| `BOING_OBSERVER_RATE_LIMIT_SCALE` | server | Multiplier for every per-route limit (default `1`; use `2`-`5` behind a shared NAT/proxy) |
+| `BOING_OBSERVER_CSP` | server | `report-only` (default), `off`, `nonce-report-only`, `nonce-enforce` (see Security) |
 | `TOKEN_METADATA_GATEWAY_URLS` | server | Extra comma-separated gateway templates with a `{hash}` placeholder for off-chain token metadata |
 
 Test-only (Playwright): `PLAYWRIGHT_BASE_URL`, `OBSERVER_CONTRACTS_LIVE=1`, `OBSERVER_NAMES_LIVE=1` (run the live testnet
@@ -64,7 +67,18 @@ Workers & Pages -> boing-observer -> Domains & Routes.
   `src/lib/security-headers.test.ts`.
 - `/api/rpc` policy is in `src/lib/rpc-proxy-policy.ts` (allow-list, param/id validation, size caps). To expose a new method
   to the browser, add it to `ALLOWED_RPC_METHODS` and its test.
-- Rate limiting is **not** implemented in the app; configure Cloudflare rate-limit/WAF rules for `/api/rpc` and heavy routes.
+- **Rate limiting** (`src/middleware.ts` + `src/lib/rate-limit.ts`), per client IP (`cf-connecting-ip`, then `x-real-ip` / `x-forwarded-for`), fixed one-minute windows:
+  `/api/rpc` 240, heavy routes (`account/history`, `account/nfts`, `asset/*`, `tokens/index`, `contract/interface`, `dex/*`, `blob/*`) 60,
+  `/api/qa/vote` 10, `/api/csp-report` 20, other `/api/*` 120. Over the limit returns `429` with `Retry-After` and
+  `code: "rate_limited"`; the explorer client shows "Too many requests. Try again in N seconds." and does not auto-retry a
+  `Retry-After` > 1 s. **Caveat:** without a binding the counters live in each Worker isolate's memory, so the global limit is looser
+  than configured and resets when an isolate is evicted. For a shared limit add the Workers Rate Limiting binding named
+  `API_RATE_LIMITER` (sample commented in `wrangler.toml`; both layers must allow a request) and/or a Cloudflare WAF rate rule.
+- **CSP**: static baseline in `security-headers.mjs` plus a `Content-Security-Policy-Report-Only` header from middleware. Violations are
+  logged by `/api/csp-report` (see `wrangler tail`). The nonce modes only help on dynamic routes (prerendered pages cannot carry a
+  per-request nonce), so enforcement is deliberately **not** enabled; the path to it is in HANDOFF.md.
+- Bodies from third-party gateways (token metadata, blob error text) are read with `src/lib/bounded-body.ts`: the size cap is applied
+  while streaming, before the body is buffered.
 
 ## Indexing and caching
 

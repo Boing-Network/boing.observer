@@ -81,6 +81,12 @@ Server-side tuning (`TOKEN_INDEX_CACHE_DIR`, `TOKEN_INDEX_CACHE_TTL_SEC`, `TOKEN
 
 No API keys for read-only RPC. Do not hardcode production RPC URLs.
 
+### Rate limiting, CSP and security headers
+
+`src/middleware.ts` rate-limits `/api/*` per client (in-memory per Worker isolate, plus an optional Workers Rate Limiting binding)
+and sends a Report-Only Content-Security-Policy. Tune with `BOING_OBSERVER_RATE_LIMIT`, `BOING_OBSERVER_RATE_LIMIT_SCALE` and
+`BOING_OBSERVER_CSP`; details and caveats in [docs/OPERATIONS.md](docs/OPERATIONS.md).
+
 ### RPC retries and “Method not found”
 
 - Browser calls **`POST /api/rpc`**. Client retries **once** on network errors, HTTP 429, and 5xx. The proxy fails over to Fly origins on **403, 502-504, 521-526, 530** and Cloudflare challenge pages.

@@ -46,14 +46,18 @@ Search accepts: block height, 64-hex block hash / tx id / account (resolved by R
 - Security headers (`security-headers.mjs`, wired in `next.config.mjs`): nosniff, `X-Frame-Options: DENY`, HSTS,
   Referrer-Policy, Permissions-Policy and a **baseline** CSP (`base-uri`, `object-src`, `form-action`,
   `frame-ancestors`). `/pdfs/*` is relaxed to SAMEORIGIN framing. `public/_headers` covers static assets.
+- `src/middleware.ts` (edge): (1) **rate limiting** for `/api/*` (`src/lib/rate-limit.ts`; Workers Rate Limiting binding
+  `API_RATE_LIMITER` if configured, else per-isolate in-memory best effort), (2) a **Report-Only** full CSP
+  (`src/lib/csp.ts`) with violation reports sent to `/api/csp-report`. See docs/OPERATIONS.md.
 
 ## Network sync status (verified against boing.network `rpc.rs` and the live testnet)
 
 | Area | Status |
 |------|--------|
 | Native denomination | 18 decimals. Testnet used whole BOING before block 1050 (`native_currency.base_units_from_height`), base units after; mainnet/new chains base units from 0. UI formats via `formatBoingAt`. |
-| Fees | `boing_getNetworkFeePolicy` is typed (`BoingNetworkFeePolicy`) and fetched by `tryFetchNetworkFeePolicy` (60 s cache). The tx-page fee estimate still **hard-codes** 100 bps and the 1050 height (matches the live node today, see gaps). |
-| Priority tips | Block `priority_tips` aligned with `transactions` (omitted when empty); u128 as number or decimal string. Decoded in `src/lib/priority-tips.ts`, shown on block and tx pages. |
+| Fees | `boing_getNetworkFeePolicy` is typed (`BoingNetworkFeePolicy`) and fetched by `tryFetchNetworkFeePolicy` (60 s cache). Fee estimates are now **live-driven**: `src/lib/native-unit-config.ts` derives gas price / `execution_gas_fee_bps` / `extra_fixed_fee` / base-unit activation height from `boing_getNetworkFeePolicy` + `boing_getNetworkInfo.native_currency` (loaded by `useNativeUnitConfig`), falling back to the historical constants (100 bps, 1050, 1e12) when a node does not report them; the UI labels which source was used. |
+| Priority tips | Block `priority_tips` aligned with `transactions` (omitted when empty); u128 as number or decimal string. Decoded in `src/lib/priority-tips.ts`; `src/lib/block-normalize.ts` tolerates an absent / short / over-long `priority_tips` and falls back to a per-tx `priority_tip`. Shown on block and tx pages. |
+| Submit rejections | `rpcCall` throws `BoingRpcCallError` (`src/lib/rpc-error.ts`) keeping JSON-RPC `code`, `data`, HTTP status and `Retry-After`. `describeRpcRejection` turns `unknown_sender`, `stale_nonce`, `insufficient_fee`, `already_in_mempool`, `free_pending_limit`, `free_tx_balance_gate`, `native_value_not_active` and the QA codes (-32050..-32057) into user-facing text (used by `getFriendlyRpcErrorMessage`, `mapWalletErrorToUi` and the QA vote gate). |
 | Block fields | `receipts_root`, `blobs_root`, `signatures` typed and displayed. |
 | Accounts | `pending_unbond`, `pending_unbond_boing`, `unbond_unlock_height` typed and shown. |
 | Contract bytecode | `boing_getContractCode` first, deploy-search fallback for older nodes. |
@@ -78,17 +82,22 @@ fallback.
 
 ## Known gaps / backlog (highest value first)
 
-1. **Fee estimate not live-driven** (low-medium): wire `tryFetchNetworkFeePolicy` + `native_currency` into the fee
-   panel instead of the hard-coded 100 bps / 1050.
-2. **No script-src CSP** (medium): needs nonces because Next inlines bootstrap/JSON-LD and NFT media comes from
-   arbitrary https hosts. Add via middleware when ready.
-3. **No app-level rate limiting** on `/api/*` (medium): use Cloudflare WAF/rate-limit rules on `/api/rpc` and the heavy
-   routes (`account/history`, `asset/profile`, `tokens/index`).
-4. `rpcCall` drops the JSON-RPC error `code` (throws message only) (low).
-5. `/asset/[address]` First Load JS is ~251 kB vs ~105-145 kB elsewhere (medium-low): split the NFT/linked-token panels.
-6. `token-metadata-lookup` reads the gateway body before checking size (low; gateways are fixed + operator-configured).
-7. Builder attestation UI, interface registry (see `docs/CONTRACT-FUNCTIONS.md`).
-8. Windows dev boxes that cannot reach `testnet-rpc.boing.network` (TLS) need a VPN/other network for live specs.
+1. **Enforce a script-src CSP** (medium): a Report-Only policy ships today (`BOING_OBSERVER_CSP`, default `report-only`). A
+   nonce policy (`nonce-report-only` / `nonce-enforce`) only works on dynamically rendered routes; the static pages
+   (`/`, `/about`, `/dex/*`, `/faucet`, `/qa*`, `/tokens`, `/tools/*`) are prerendered at build time and cannot receive a
+   per-request nonce. Path to enforcement: review `/api/csp-report` logs, then make the root layout dynamic
+   (`export const dynamic = "force-dynamic"`, read `headers().get("x-nonce")` for the JSON-LD script) and switch to
+   `nonce-report-only`, then `nonce-enforce`. Decision for Nico: accept SSR-on-every-request for strict CSP.
+2. **Distributed rate limiting** (low-medium): the in-memory limiter is per isolate. Add the Workers Rate Limiting binding
+   (`API_RATE_LIMITER`, sample in `wrangler.toml`) and/or Cloudflare WAF rate rules for a global limit.
+3. `@opennextjs/cloudflare` currently pulls `@node-minify/core` -> `glob@10.x` (build-time only); pinned to 10.5.0 via
+   `overrides`. Remove the override when upstream bumps it.
+4. Builder attestation UI, interface registry (see `docs/CONTRACT-FUNCTIONS.md`).
+5. Windows dev boxes that cannot reach `testnet-rpc.boing.network` (TLS) need a VPN/other network for live specs.
+
+Resolved in `optimize/observer-2`: live fee policy, JSON-RPC error codes/data, tolerant tip decoding, `/api/*` rate
+limiting, Report-Only CSP, streaming size cap for gateway/blob bodies, `/asset` + `/account` First Load JS 253 kB -> 140 kB
+(recharts, contract tools and NFT gallery are code-split), `npm audit` = 0 vulnerabilities (vite 7.3.7, glob 10.5.0).
 
 ## Verification checklist
 

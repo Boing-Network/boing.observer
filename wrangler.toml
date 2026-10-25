@@ -21,6 +21,13 @@ service = "boing-observer"
 # Optional factory hints (plain text, same dashboard path) only after the hosted chain publishes a factory.
 # Do not set historical tunnel-ledger hexes. Live source of truth: boing_getNetworkInfo.end_user.canonical_native_dex_factory.
 #   BOING_NATIVE_VM_DEX_FACTORY or BOING_DEX_FACTORY_HEX = 0x + 64 hex (see boing-sdk mergeNativeDexIntegrationDefaults).
+# --- Optional shared rate limiting (not enabled; src/lib/rate-limit.ts uses it when present) ---
+# Workers Rate Limiting binding, checked IN ADDITION to the per-isolate in-memory limiter. Pick a unique namespace_id.
+# [[ratelimits]]
+# name = "API_RATE_LIMITER"
+# namespace_id = "1001"
+# simple = { limit = 240, period = 60 }
+
 [vars]
 BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS = "1"
 # Public origin of workers/nft-owner-indexer (never a boolean like "1").
