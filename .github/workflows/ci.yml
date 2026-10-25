@@ -1,4 +1,4 @@
-# Lint, unit tests, production build, and Playwright e2e on every PR and push.
+# Lint, typecheck, unit tests, production build, and Playwright e2e on every PR and push.
 # Deploy to Cloudflare runs only after `quality` succeeds on pushes to `main`.
 name: CI
 
@@ -26,6 +26,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Unit tests
         run: npm run test
