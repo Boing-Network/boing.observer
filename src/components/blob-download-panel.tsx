@@ -80,8 +80,11 @@ export function BlobDownloadPanel({
       </h4>
       <p className="mt-2 text-sm text-[var(--text-secondary)]">
         {hint.omitted
-          ? "Raw bytes are omitted from this explorer view (public RPC size limit). Operators with download permission can fetch them here."
-          : "Download the published media bytes with a permission token."}
+          ? "Raw bytes are omitted from this explorer view (public RPC size limit)."
+          : "Raw media bytes for this blob."}{" "}
+        Download today requires a <span className="text-[var(--text-primary)]">network operator</span>{" "}
+        permission token (Fly / explorer Worker secret — not issued per blob). Deployer-owned
+        grant/revoke access is planned next.
       </p>
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex flex-wrap items-center gap-2">
@@ -104,16 +107,20 @@ export function BlobDownloadPanel({
       </dl>
 
       <label className="mt-4 block text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
-        Download permission token
+        Operator download token
         <input
           type="password"
           autoComplete="off"
           value={token}
           onChange={(e) => setToken(e.target.value)}
           className="mt-1.5 w-full rounded-md border border-[var(--border-color)] bg-boing-black/40 px-3 py-2 font-mono text-sm text-[var(--text-primary)] outline-none focus:border-violet-400/60"
-          placeholder="Paste token from network operator"
+          placeholder="BOING_OPERATOR_RPC_TOKEN or BOING_BLOB_DOWNLOAD_TOKENS entry"
         />
       </label>
+      <p className="mt-1.5 text-xs text-[var(--text-muted)]">
+        Ask a Boing Network operator for the shared secret, or use the value from Fly secrets /
+        the explorer Worker if you operate the node. Blob publishers cannot mint this token yet.
+      </p>
       <label className="mt-2 flex items-center gap-2 text-xs text-[var(--text-muted)]">
         <input
           type="checkbox"
