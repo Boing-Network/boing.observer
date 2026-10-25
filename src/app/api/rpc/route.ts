@@ -1,39 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRpcBaseUrl, getTestnetRpcCandidates } from "@/lib/rpc-client";
+import { validateProxyRequest } from "@/lib/rpc-proxy-policy";
 import type { NetworkId } from "@/lib/rpc-types";
 
 function isValidNetwork(v: string | null): v is NetworkId {
   return v === "testnet" || v === "mainnet";
 }
-
-/** Methods the explorer browser client may invoke via the same-origin proxy. */
-const ALLOWED_RPC_METHODS = new Set([
-  "boing_chainHeight",
-  "boing_getSyncState",
-  "boing_health",
-  "boing_getBlockByHeight",
-  "boing_getBlockByHash",
-  "boing_getTransactionReceipt",
-  "boing_getAccount",
-  "boing_getNetworkInfo",
-  "boing_getContractCode",
-  "boing_getContractStorage",
-  "boing_getQaRegistry",
-  "boing_qaPoolList",
-  "boing_qaPoolConfig",
-  "boing_getRpcMethodCatalog",
-  "boing_qaCheck",
-  "boing_faucetRequest",
-  // .boing name registry (read-only)
-  "boing_resolveName",
-  "boing_reverseName",
-  "boing_getNameInfo",
-  "boing_checkNames",
-  "boing_namesOwnedBy",
-  "boing_simulateContractCall",
-  // Media blob metadata (bytes stay on gated /api/blob/download — not this proxy)
-  "boing_getBlobMeta",
-]);
 
 const UPSTREAM_TIMEOUT_MS = 30_000;
 const MAX_BODY_BYTES = 1_048_576; // 1 MiB (qaCheck bytecode payloads)
@@ -73,41 +45,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Request body too large" }, { status: 413 });
   }
 
+  // Read as text so the cap is enforced on bytes even for chunked bodies without Content-Length.
+  let raw: string;
+  try {
+    raw = await req.text();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+  if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "Request body too large" }, { status: 413 });
+  }
+
   let body: unknown;
   try {
-    body = await req.json();
+    body = JSON.parse(raw);
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (
-    body === null ||
-    typeof body !== "object" ||
-    (body as { jsonrpc?: unknown }).jsonrpc !== "2.0" ||
-    typeof (body as { method?: unknown }).method !== "string"
-  ) {
-    return NextResponse.json({ error: "Invalid JSON-RPC 2.0 request" }, { status: 400 });
+  const checked = validateProxyRequest(body);
+  if (!checked.ok) {
+    if (checked.kind === "method_not_allowed") {
+      return NextResponse.json(
+        {
+          jsonrpc: "2.0",
+          id: checked.id,
+          error: { code: -32_601, message: `Method not allowed via explorer proxy: ${checked.method}` },
+        },
+        { status: 200 }
+      );
+    }
+    return NextResponse.json({ error: checked.error }, { status: 400 });
   }
-
-  const method = (body as { method: string }).method;
-  const reqId =
-    typeof (body as { id?: unknown }).id === "number" ? (body as { id: number }).id : 0;
-
-  if (!ALLOWED_RPC_METHODS.has(method)) {
-    return NextResponse.json(
-      {
-        jsonrpc: "2.0",
-        id: reqId,
-        error: { code: -32_601, message: `Method not allowed via explorer proxy: ${method}` },
-      },
-      { status: 200 }
-    );
-  }
-
-  const serialized = JSON.stringify(body);
-  if (serialized.length > MAX_BODY_BYTES) {
-    return NextResponse.json({ error: "Request body too large" }, { status: 413 });
-  }
+  const reqId = checked.request.id;
+  const serialized = JSON.stringify(checked.request);
 
   // 403: CF Bot Fight / challenge HTML on the public hostname (not a JSON-RPC body).
   const failoverStatuses = new Set([403, 502, 503, 504, 521, 522, 523, 524, 525, 526, 530]);
