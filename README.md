@@ -31,6 +31,7 @@ flowchart LR
 | 🖼️ Asset | `/asset/:address`, `/asset/:address/item/:tokenId`, `/tokens` | Metadata scan; reference NFT collection + **per-item** profiles (owner/metadata XOR slots). FreshMint-style hash token ids via mint calldata decode in recent blocks ([BOING-REFERENCE-NFT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-REFERENCE-NFT.md) — v3 `mint_batch` n≤500 is one receipt). **Linked tokens & collections** (plain-language UI) resolve official NFT↔fungible links from the on-chain registry on asset, account, and NFT item pages (read-only; `links_count` / `get_link_at`, tombstones skipped) — see [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md). **Builder attested** (planned read-only): optional builder signal from a separate on-chain registry when an active attestation exists for a companion pair — see [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md) |
 | 📡 RPC catalog | `/tools/rpc-catalog` | Live `boing_getRpcMethodCatalog` |
 | ❤️ Node health | `/tools/node-health` | Height, sync, optional `boing_health` |
+| Account proof | `/tools/account-proof` | `boing_getAccountProof` + `boing_verifyAccountProof`, root anchored to recent block state roots |
 | 📖 About | [`/about`](https://boing.observer/about) | Six pillars PDF |
 
 Network selector: **Testnet** by default. **Mainnet** only appears as live when `NEXT_PUBLIC_MAINNET_RPC` is set to a **distinct** URL — never the testnet URL.
@@ -86,6 +87,15 @@ No API keys for read-only RPC. Do not hardcode production RPC URLs.
 `src/middleware.ts` rate-limits `/api/*` per client (in-memory per Worker isolate, plus an optional Workers Rate Limiting binding)
 and sends a Report-Only Content-Security-Policy. Tune with `BOING_OBSERVER_RATE_LIMIT`, `BOING_OBSERVER_RATE_LIMIT_SCALE` and
 `BOING_OBSERVER_CSP`; details and caveats in [docs/OPERATIONS.md](docs/OPERATIONS.md).
+
+### Network deep links and chain metadata
+
+- Detail pages honor `?network=testnet|mainnet` (URL beats the stored choice, which beats the testnet default). A request for
+  an unconfigured mainnet falls back to testnet and shows a notice. Data effects wait for the resolved network (`ready`), so a
+  deep link never queries the wrong chain first.
+- Chain ids, native currency and explorer/wallet/faucet URLs come from `src/data/chain-metadata.json`, a vendored copy of
+  boing.network `docs/chain-metadata.json`. Refresh with `npm run sync:chain-metadata` (reads a sibling `boing.network` checkout,
+  else GitHub raw); a unit test fails if the vendored copy drifts from a sibling checkout.
 
 ### RPC retries and “Method not found”
 

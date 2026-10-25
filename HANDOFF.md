@@ -25,7 +25,7 @@ in boing.finance. Stack: Next.js 15 App Router, React 18, Tailwind, deployed to 
 | `/name/:label` | Name registry lookup |
 | `/dex/pools`, `/dex/tokens`, `/dex/quote` | Read-only DEX directory and constant-product quotes (SDK) |
 | `/qa`, `/qa/rules`, `/tools/qa-check` | QA pool, voting, rule list/PDF, `boing_qaCheck` |
-| `/tools`, `/tools/rpc-catalog`, `/tools/node-health`, `/faucet`, `/about` | Operator and onboarding pages |
+| `/tools`, `/tools/rpc-catalog`, `/tools/node-health`, `/tools/account-proof`, `/faucet`, `/about` | Operator and onboarding pages. Node health flags a chain-id mismatch and shows `client_hints`; the catalog shows `protocol_specs`; account proof verifies `boing_getAccountProof` against recent block state roots |
 | `/api/*` | Server routes, see below |
 
 Search accepts: block height, 64-hex block hash / tx id / account (resolved by RPC probing), and name labels.
@@ -66,6 +66,25 @@ Search accepts: block height, 64-hex block hash / tx id / account (resolved by R
 | Linked NFT/token registry | **v2** `0xf704485a...55dd` (salt `BOING_NFT_TOKEN_LINK_REG_V2`, selectors `0xE0`-`0xE8`, `claim_self 0xE7`, `get_asset_deployer 0xE8`). v1 `0xebf9f019...3dd8` is superseded but still recognised. |
 | Builder attestation registry | AccountId documented only; read-only "Builder attested" UI is **not shipped**. |
 
+## Network selection, chain metadata and deep links
+
+- `src/lib/network-param.ts` resolves the network as URL `?network=` > stored (`boing-explorer-network`) > testnet. A requested but
+  unconfigured mainnet falls back to testnet with a visible notice (`network-link-notice`). `useNetwork()` exposes `ready`; every
+  detail-page data effect waits for it so a deep link never fetches from the wrong chain.
+- `src/data/chain-metadata.json` is a vendored copy of boing.network `docs/chain-metadata.json` (schema_version 1). `src/lib/chain-metadata.ts`
+  feeds `chain-ids.ts`; `npm run sync:chain-metadata` refreshes it, and a drift test compares it with a sibling checkout when one exists.
+- `client_hints` (`boing_health`) and `protocol_specs` (`boing_getRpcMethodCatalog`) are typed and displayed, advisory only.
+
+## Account proofs, storage-tree v2, receipt retention
+
+- `/tools/account-proof`: `boing_getAccountProof` + `boing_verifyAccountProof` (allow-listed). The node verifies its own proof, so the UI
+  also checks the proof root against the newest 3 block `state_root`s and states that trust limit. `boing_getAccount` has no storage root.
+- Storage-tree v2 (`BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT` on the node, consensus-wide, OFF by default) is **not exposed over RPC**.
+  `src/lib/storage-tree.ts` uses the optional `NEXT_PUBLIC_BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT`, or a future node-info field, else
+  reports "unknown" and makes no claim. Proof verification is layout-agnostic.
+- `boing_getTransactionReceipt` is `null` for unknown **and** pruned receipts (default window 1,000,000 blocks). `/tx/:id` keeps "No receipt
+  for this id" and adds a head-aware explanation (`src/lib/receipt-retention.ts`). Indexing note in docs/OPERATIONS.md.
+
 ## Wallet (boing.express) contract
 
 The explorer does not connect a wallet by itself except for QA voting (`/qa`), which uses the injected provider
@@ -95,6 +114,9 @@ fallback.
 4. Builder attestation UI, interface registry (see `docs/CONTRACT-FUNCTIONS.md`).
 5. Windows dev boxes that cannot reach `testnet-rpc.boing.network` (TLS) need a VPN/other network for live specs.
 
+Resolved in `optimize/observer-3`: `?network=` deep links, vendored chain metadata + drift test, `client_hints` / `protocol_specs` / chain-id mismatch UI,
+account proof tool, storage-tree v2 handling (tolerant), null-receipt retention message, Dependabot (API reports 0 open, 100 fixed).
+
 Resolved in `optimize/observer-2`: live fee policy, JSON-RPC error codes/data, tolerant tip decoding, `/api/*` rate
 limiting, Report-Only CSP, streaming size cap for gateway/blob bodies, `/asset` + `/account` First Load JS 253 kB -> 140 kB
 (recharts, contract tools and NFT gallery are code-split), `npm audit` = 0 vulnerabilities (vite 7.3.7, glob 10.5.0).
@@ -110,8 +132,8 @@ npm run build && npm run test:e2e        # live testnet specs are opt-in, see do
 ## Cross-repo follow-ups
 
 - **boing.network:** publish a stable spec for `priority_tips` and block `signatures` in `developer_api.json`/docs;
-  expose a machine-readable chain-metadata source (chain id, native currency, explorer URL) so the explorer and wallet
-  stop duplicating constants; keep `boing_getNetworkFeePolicy` and `native_currency` documented as the client source of truth;
+  publish the storage-tree v2 activation height (and the receipt retention window) in `boing_getNetworkInfo` so
+  explorers need not guess (chain-metadata.json now exists and is vendored here); keep `boing_getNetworkFeePolicy` and `native_currency` documented as the client source of truth;
   rate-limit/WAF guidance for public RPC.
 - **boing.express:** deep-link to `boing.observer/tx/:id` and `/account/:addr` after send; share chain metadata and
   fee-policy parsing with the explorer; tip UX parity with `optional_priority_tips`.

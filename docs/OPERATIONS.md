@@ -25,6 +25,8 @@ dashboard, and secrets with `wrangler secret put`. `NEXT_PUBLIC_*` values are in
 | `BOING_NATIVE_VM_DEX_FACTORY` / `BOING_DEX_FACTORY_HEX` | server | `0x` + 64 hex DEX factory override for discovery (normally resolved from `boing_getNetworkInfo`) |
 | `TOKEN_INDEX_CACHE_DIR` | server | Token index disk cache dir (default `<cwd>/.cache/token-index`; `off` disables) |
 | `TOKEN_INDEX_CACHE_TTL_SEC` (alias `..._SECONDS`) | server | Token index cache TTL (default 600, max 7 days) |
+| `NEXT_PUBLIC_BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT` | build | Optional. Height at which per-contract storage trees switch to 256-bit routing (node env `BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT`, consensus-wide, OFF by default). Not published over RPC, so unset = "unknown" and no storage-layout claims are made |
+| `NEXT_PUBLIC_BOING_RECEIPT_RETENTION_BLOCKS` | build | Optional. Mirror of the node `BOING_RECEIPT_RETENTION_BLOCKS` (default 1000000; `0` = keep all). Only changes wording of the null-receipt hint |
 | `BOING_OBSERVER_RATE_LIMIT` | server | `off` disables `/api/*` rate limiting (default on) |
 | `BOING_OBSERVER_RATE_LIMIT_SCALE` | server | Multiplier for every per-route limit (default `1`; use `2`-`5` behind a shared NAT/proxy) |
 | `BOING_OBSERVER_CSP` | server | `report-only` (default), `off`, `nonce-report-only`, `nonce-enforce` (see Security) |
@@ -45,6 +47,7 @@ specs), `CONTRACT_SHOTS=1`, `NAMES_SHOTS=1` (screenshots), `CI`.
 | `npm run test:e2e` | Playwright; runs against `npm run start` on 127.0.0.1:3000 with mocked RPC (`e2e/fixtures/rpc-mock.ts`). Build first |
 | `npm run preview` | OpenNext build running in the Workers runtime |
 | `npm run deploy` / `npm run upload` | OpenNext build + `wrangler deploy` / version upload |
+| `npm run sync:chain-metadata` | Refresh `src/data/chain-metadata.json` from a sibling `boing.network` checkout (`git show main:docs/chain-metadata.json`), else GitHub raw; accepts a path or URL; refuses unknown `schema_version`. Review the diff, then run unit tests |
 | `npm run cf-typegen` | Regenerate Cloudflare env types |
 | `npm run generate:brand-assets` | `scripts/generate-brand-assets.mjs` |
 | `npm install` (postinstall) | `scripts/copy-pdf-worker.mjs` copies the pdf.js worker so PDFs stay same-origin |
@@ -85,12 +88,41 @@ Workers & Pages -> boing-observer -> Domains & Routes.
 - In-process RPC memoisation: `src/lib/rpc-cache.ts` (bounded, TTL).
 - Token index snapshots: disk cache (`TOKEN_INDEX_CACHE_*`), best effort. Not durable on Workers.
 - Account history: `boing_getAccountTransactions` (cursor paging), block-scan fallback for older nodes.
+- **Receipt retention:** nodes keep receipts for the newest `BOING_RECEIPT_RETENTION_BLOCKS` blocks (default 1,000,000, pruned every
+  256 blocks; `0` keeps all) and `boing_getTransactionReceipt` returns `null` beyond that, which is indistinguishable from an unknown
+  id. `/tx/:id` therefore reads the chain head and says either "unknown / pending / other network" or "may have been pruned (older
+  than about block #N)". Blocks, headers and signed payloads are never pruned. **Indexing note:** an indexer or archive explorer
+  must not rely on receipt lookups for history. Backfill by walking `boing_getBlockByHeight` (the explorer's block fetch can
+  include receipts) while the node still holds them, or run the node with `BOING_RECEIPT_RETENTION_BLOCKS=0`.
 - NFT ownership: optional external indexer Worker (`NFT_OWNER_INDEXER_URL`); without it the API returns 503 and the UI
   explains how to enable it.
+
+## Chain metadata, proofs and storage-tree v2
+
+- **Chain metadata:** `src/data/chain-metadata.json` (schema_version 1) is the single source for chain ids, native currency and
+  explorer/wallet/faucet URLs (`src/lib/chain-metadata.ts`, consumed by `chain-ids.ts`). Upstream changes are a deliberate upgrade:
+  `npm run sync:chain-metadata`, review, test. `/tools/node-health` warns (`chain-id-mismatch`) when a node reports a chain id
+  different from the metadata, and shows `client_hints` (min/recommended wallet version, recommended SDK) as advisory text.
+  `/tools/rpc-catalog` renders `protocol_specs` (additive-only; unknown sections are listed generically).
+- **Account proofs:** `/tools/account-proof` calls `boing_getAccountProof` and `boing_verifyAccountProof` (both allow-listed) and
+  compares the proof `root` with the `state_root` of the newest 3 blocks. The node verifies its own proof, so this is a
+  consistency check, not trust-minimized; the page says so and recommends a second independent node. Older nodes without the
+  methods get a plain explanation.
+- **Storage-tree v2:** the activation height is not exposed by the node. `src/lib/storage-tree.ts` reads it from the optional build
+  env above (or a future `storage_tree_v2_activation_height` in `boing_getNetworkInfo`, tolerated if it appears). When known, block
+  pages and the proof tool say whether a height uses the legacy 64-bit or the 256-bit layout. The proof format is the same, only
+  longer, and verification does not depend on the layout. When unknown, nothing is claimed.
 
 ## Updating for network changes
 
 1. Read `crates/boing-node/src/rpc.rs` and `schemas/developer_api.json` in boing.network.
 2. Update `src/lib/rpc-types.ts`, decoders and tests; bump `@boing-network/boing-sdk` if needed.
 3. Add new browser-callable methods to the proxy allow-list.
-4. Run lint, typecheck, unit, build, e2e; update HANDOFF.md's sync table.
+4. If `docs/chain-metadata.json` changed in boing.network, run `npm run sync:chain-metadata`.
+5. Run lint, typecheck, unit, build, e2e; update HANDOFF.md's sync table.
+
+## Dependabot
+
+Check with `gh api repos/Boing-Network/boing.observer/dependabot/alerts?state=open`. After the `optimize/observer-2` fixes
+(vite 7.3.7, glob 10.5.0 override) the API reported 0 open alerts (100 fixed) while the repo banner still showed 6 for a while;
+the banner lags the API. Re-run `npm audit` after any dependency change.
