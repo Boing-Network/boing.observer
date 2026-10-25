@@ -1,3 +1,5 @@
+import { PDF_HEADERS, SECURITY_HEADERS } from "./security-headers.mjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@boing-network/boing-sdk", "pdfjs-dist"],
@@ -5,16 +7,8 @@ const nextConfig = {
   serverExternalPackages: ["@noble/ed25519", "@noble/hashes"],
   async headers() {
     return [
-      {
-        source: "/pdfs/:path*",
-        headers: [
-          { key: "Content-Type", value: "application/pdf" },
-          { key: "Content-Disposition", value: "inline" },
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
-          { key: "Cache-Control", value: "public, max-age=300, must-revalidate" },
-        ],
-      },
+      { source: "/:path*", headers: SECURITY_HEADERS },
+      { source: "/pdfs/:path*", headers: PDF_HEADERS },
     ];
   },
 };
