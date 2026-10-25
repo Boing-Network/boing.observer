@@ -1,5 +1,9 @@
 import { parseAssetDisplayMetadata, resolveImageUrlFromSources } from "@/lib/extract-media-url";
 import { normalizeHexData } from "@/lib/tx-details";
+import { readTextCapped } from "@/lib/bounded-body";
+
+/** Max off-chain metadata JSON accepted from a gateway (bytes). */
+const MAX_METADATA_BYTES = 512_000;
 
 export type OffchainTokenMetadata = {
   imageUrl: string | null;
@@ -70,8 +74,9 @@ export async function resolveOffchainTokenMetadata(
       });
       if (!res.ok) continue;
       const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
-      const text = await res.text();
-      if (!text || text.length > 512_000) continue;
+      // Enforce the size cap while streaming, before the body is fully buffered.
+      const text = await readTextCapped(res, MAX_METADATA_BYTES);
+      if (!text) continue;
       if (contentType.includes("text/html") && !looksLikeJsonObject(text)) continue;
       if (!looksLikeJsonObject(text) && !contentType.includes("json")) continue;
       const parsed = JSON.parse(text) as unknown;

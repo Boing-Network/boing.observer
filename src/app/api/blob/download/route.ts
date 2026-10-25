@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readTextCapped } from "@/lib/bounded-body";
 import { HOSTED_TESTNET_RPC_FALLBACKS, getRpcBaseUrl, isMainnetConfigured } from "@/lib/rpc-client";
 import { normalizeHex64 } from "@/lib/rpc-types";
 import type { NetworkId } from "@/lib/rpc-types";
@@ -148,7 +149,7 @@ export async function GET(req: NextRequest) {
   if (!upstream.ok) {
     let detail = `Upstream HTTP ${upstream.status}`;
     try {
-      const text = await upstream.text();
+      const text = await readTextCapped(upstream, 16_384);
       if (text) {
         try {
           const j = JSON.parse(text) as { error?: string; hint?: string };

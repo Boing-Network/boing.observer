@@ -50,3 +50,19 @@ describe("resolveOffchainTokenMetadata", () => {
     expect(found).toBeNull();
   });
 });
+
+
+describe("resolveOffchainTokenMetadata size cap", () => {
+  it("skips an oversized gateway response and falls through to the next gateway", async () => {
+    const big = JSON.stringify({ name: "x", pad: "y".repeat(600_000) });
+    const good = JSON.stringify({ name: "Ok", symbol: "OK", image: "https://cdn.example.com/ok.png" });
+    let calls = 0;
+    const fetchImpl = vi.fn(async () => {
+      calls += 1;
+      return new Response(calls === 1 ? big : good, { status: 200, headers: { "content-type": "application/json" } });
+    });
+    const out = await resolveOffchainTokenMetadata(`0x${HASH}`, { fetchImpl: fetchImpl as unknown as typeof fetch });
+    expect(calls).toBeGreaterThanOrEqual(2);
+    expect(out?.imageUrl).toBe("https://cdn.example.com/ok.png");
+  });
+});
