@@ -7,6 +7,7 @@ import { shortenHash, hexForLink, toPrefixedHex64 } from "@/lib/rpc-types";
 import { CopyButton } from "@/components/copy-button";
 import { TransactionInsightGroup } from "@/components/transaction-insight-group";
 import { groupTxInsights } from "@/lib/tx-insight-groups";
+import { formatPriorityTip, summarizePriorityTips } from "@/lib/priority-tips";
 
 export function BlockDetails({
   block,
@@ -24,6 +25,8 @@ export function BlockDetails({
   const txs = block.transactions ?? [];
   const receipts = block.receipts;
   const receiptsWereRequested = Array.isArray(receipts);
+  const tipSummary = summarizePriorityTips(block);
+  const signatureCount = Array.isArray(block.signatures) ? block.signatures.length : 0;
 
   return (
     <>
@@ -128,6 +131,39 @@ export function BlockDetails({
               {block.header.tx_root ? <CopyButton value={String(block.header.tx_root)} label="Copy tx root" /> : null}
             </dd>
           </div>
+          {block.header.receipts_root ? (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <dt className="text-[var(--text-muted)]">Receipts root</dt>
+              <dd className="hash flex flex-wrap items-center gap-2 text-[var(--text-secondary)]">
+                <span className="break-all">{block.header.receipts_root}</span>
+                <CopyButton value={String(block.header.receipts_root)} label="Copy receipts root" />
+              </dd>
+            </div>
+          ) : null}
+          {block.header.blobs_root ? (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <dt className="text-[var(--text-muted)]">Blobs root</dt>
+              <dd className="hash flex flex-wrap items-center gap-2 text-[var(--text-secondary)]">
+                <span className="break-all">{block.header.blobs_root}</span>
+                <CopyButton value={String(block.header.blobs_root)} label="Copy blobs root" />
+              </dd>
+            </div>
+          ) : null}
+          {signatureCount > 0 ? (
+            <div className="flex flex-wrap gap-x-2">
+              <dt className="text-[var(--text-muted)]">Validator signatures</dt>
+              <dd className="font-mono text-[var(--text-secondary)]">{signatureCount}</dd>
+            </div>
+          ) : null}
+          {tipSummary.count > 0 ? (
+            <div className="flex flex-wrap gap-x-2" data-testid="block-priority-tips">
+              <dt className="text-[var(--text-muted)]">Priority tips</dt>
+              <dd className="font-mono text-[var(--text-secondary)]">
+                {formatPriorityTip(tipSummary.total, block.header.height, network)} BOING across {tipSummary.count} tx
+                {tipSummary.count === 1 ? "" : "s"}
+              </dd>
+            </div>
+          ) : null}
         </dl>
       </section>
 

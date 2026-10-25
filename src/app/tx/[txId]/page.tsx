@@ -9,6 +9,7 @@ import type { Block, BlockTransaction, TransactionReceipt } from "@/lib/rpc-type
 import { explorerAssetHref } from "@/lib/explorer-href";
 import { isHex64, normalizeHex64, toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
+import { priorityTipAt } from "@/lib/priority-tips";
 import { CopyButton } from "@/components/copy-button";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 import { TransactionInsight } from "@/components/transaction-insight";
@@ -183,6 +184,7 @@ export default function TransactionByIdPage() {
           receiptsWereRequested
           visualScale="featured"
           blockPlacement={{ height, txIndex }}
+          priorityTip={priorityTipAt(block, txIndex)}
         />
         </section>
       ) : null}

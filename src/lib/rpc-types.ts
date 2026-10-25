@@ -33,6 +33,10 @@ export interface BlockHeader {
   proposer: string;
   tx_root: string;
   state_root: string;
+  /** Merkle root of execution receipts (always present on current nodes). */
+  receipts_root?: string;
+  /** Root of media-blob commitments; omitted when the block carries no blob operations. */
+  blobs_root?: string;
 }
 
 /**
@@ -136,6 +140,13 @@ export interface Block {
   transactions: BlockTransaction[];
   /** Present when RPC is called with `include_receipts: true` (same order as `transactions`). */
   receipts?: (TransactionReceipt | null)[] | null;
+  /** Validator signatures over the block (hex, 64 bytes each); omitted when empty. */
+  signatures?: string[];
+  /**
+   * Optional per-transaction priority tips (ledger units, same order as `transactions`).
+   * Each entry is a JSON number, or a decimal string above 2^53-1 (u128). Omitted when no tx tipped.
+   */
+  priority_tips?: Array<string | number>;
 }
 
 /** Result of `boing_getSyncState` (committed tip; head vs finalized may diverge in future). */
@@ -184,6 +195,11 @@ export interface Account {
   decimals?: number;
   balance_boing?: string;
   stake_boing?: string;
+  /** Stake in the unbonding queue (ledger units); "0" when none. */
+  pending_unbond?: string;
+  pending_unbond_boing?: string;
+  /** Height at which `pending_unbond` can be claimed (`ClaimUnbond`); 0 when nothing is pending. */
+  unbond_unlock_height?: number;
 }
 
 /** Row from `boing_qaPoolList` (public RPC). */
@@ -238,6 +254,54 @@ export interface BoingNetworkInfo {
     canonical_native_cp_pool?: string | null;
     canonical_native_dex_factory?: string | null;
   };
+  /** Native denomination switch (`base_units_from_height`: 0 on chains that were base units from genesis). */
+  native_currency?: {
+    symbol?: string;
+    /** Unit of amounts returned *now*: 18 (base units) at/after the switch height, 0 before. */
+    decimals?: number;
+    base_unit_decimals?: number;
+    base_units_per_boing?: string;
+    base_units_from_height?: number;
+    gas_price_base_units?: string;
+  };
+  /** Treasury account + live fee policy snapshot (same shape as `boing_getNetworkFeePolicy`). */
+  treasury?: {
+    account?: string;
+    balance?: string;
+    fee_policy?: BoingNetworkFeePolicy;
+  };
+  /** Public RPC limits (batch size, log range, rate limit). */
+  rpc_surface?: BoingHealthRpcSurface & { tx_batch_max_calls?: number; tx_payload_batch?: boolean };
+}
+
+/**
+ * Result of `boing_getNetworkFeePolicy`. Amounts are decimal strings in ledger units; BPS fields are
+ * integers out of 10_000. `priority_tip` is paid on top of the network fee and split by `tip_*_bps`.
+ */
+export interface BoingNetworkFeePolicy {
+  /** Share of the base fee: validators / treasury / burn (sum to 10_000). */
+  fee_validators_bps: number;
+  fee_treasury_bps: number;
+  fee_burn_bps: number;
+  /** Execution gas fee as BPS of the full historical schedule (100 = recommended micro fee, 0 = waived). */
+  execution_gas_fee_bps: number;
+  execution_gas_waived?: boolean;
+  micro_fee_execution_gas_bps?: number;
+  extra_fixed_fee: string;
+  transfer_amount_bps: number;
+  blob_base_fee_per_kib: string;
+  blob_forever_pin_fee_per_kib: string;
+  free_tx_min_balance: string;
+  /** How an optional `priority_tip` is split (proposer / treasury / burn). */
+  tip_proposer_bps: number;
+  tip_treasury_bps: number;
+  tip_burn_bps: number;
+  optional_priority_tips?: boolean;
+  treasury_account?: string;
+  gas_price_base_units?: string;
+  fee_formula?: string;
+  fee_formula_base_units?: string;
+  note?: string;
 }
 
 /** Result of `boing_getContractStorage`. */

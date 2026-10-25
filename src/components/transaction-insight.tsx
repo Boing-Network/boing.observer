@@ -1,6 +1,7 @@
 "use client";
 
 import { failedTxFeeBaseUnits } from "@/lib/failed-tx";
+import { formatPriorityTip } from "@/lib/priority-tips";
 import { compactBoingAt, formatBoingBase } from "@/lib/native-unit";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
@@ -891,6 +892,7 @@ export function TransactionInsight({
   receiptsWereRequested,
   visualScale = "standard",
   blockPlacement,
+  priorityTip,
   blockHeight,
   embedded = false,
 }: {
@@ -903,6 +905,8 @@ export function TransactionInsight({
   visualScale?: VisualScale;
   /** When set (e.g. standalone tx page), links to the enclosing block and anchor. */
   blockPlacement?: { height: number; txIndex: number };
+  /** Optional priority tip this tx paid (ledger units; from the block's `priority_tips`). */
+  priorityTip?: bigint | null;
   /** Height of the enclosing block when rendered inside a block page (native amount unit). */
   blockHeight?: number;
   /** Nested under a group row: skip outer glass card + anchor id (parent owns `#tx-N`). */
@@ -1048,6 +1052,15 @@ export function TransactionInsight({
           {tx.nonce !== undefined && tx.nonce !== null ? (
             <p className="text-xs text-[var(--text-muted)]">
               Nonce <span className="font-mono text-[var(--text-secondary)]">{tx.nonce}</span>
+            </p>
+          ) : null}
+          {priorityTip != null && priorityTip > BigInt(0) ? (
+            <p className="text-xs text-[var(--text-muted)]" data-testid="priority-tip">
+              Priority tip{" "}
+              <span className="font-mono text-[var(--text-secondary)]">
+                {formatPriorityTip(priorityTip, txHeight, network)} BOING
+              </span>{" "}
+              (optional, paid on top of the network fee)
             </p>
           ) : null}
         </div>

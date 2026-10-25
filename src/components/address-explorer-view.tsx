@@ -179,6 +179,8 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
       ? `/account/${address}?network=${encodeURIComponent(network)}`
       : explorerAssetHref(address, network);
   const alternateLabel = variant === "asset" ? "Open as account" : "Open as asset";
+  const pendingUnbond =
+    account?.pending_unbond != null ? ledgerToBaseUnits(account.pending_unbond, account.decimals ?? 0) : null;
 
   return (
     <div className="space-y-6">
@@ -340,6 +342,17 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
                   <dt className="text-[var(--text-muted)]">Stake</dt>
                   <dd className="font-mono text-network-primary-light">{formatBoingBase(ledgerToBaseUnits(account.stake, account.decimals ?? 0))} BOING</dd>
                 </div>
+                {pendingUnbond != null && pendingUnbond > BigInt(0) ? (
+                  <div className="flex flex-wrap gap-x-2" data-testid="account-pending-unbond">
+                    <dt className="text-[var(--text-muted)]">Unbonding</dt>
+                    <dd className="font-mono text-[var(--text-secondary)]">
+                      {formatBoingBase(pendingUnbond)} BOING
+                      {account.unbond_unlock_height
+                        ? ` (claimable from block #${account.unbond_unlock_height})`
+                        : ""}
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
               {network === "testnet" && (
                 <p className="text-sm">
