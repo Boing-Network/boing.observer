@@ -1,8 +1,14 @@
 /**
- * Helpers for permission-gated media-blob downloads.
+ * Helpers for permission-gated media-blob downloads (operator token + Phase 34 wallet proofs).
  * Blob id is BLAKE3(data); slim PutBlob stubs expose it as `data.hash`.
  */
 
+import {
+  blobDownloadProofHeaders,
+  blobDownloadProofPreimage,
+  bytesToHex,
+  hexToBytes,
+} from "@boing-network/boing-sdk";
 import { normalizeHex64 } from "./rpc-types";
 
 const DOWNLOAD_TOKEN_STORAGE_KEY = "boing.observer.blobDownloadToken";
@@ -12,6 +18,13 @@ export type PutBlobDownloadHint = {
   size: number | null;
   contentType: string | null;
   omitted: boolean;
+};
+
+export type BlobAccessInfo = {
+  publisher: string;
+  grantees: string[];
+  epoch: number;
+  aclActive: boolean;
 };
 
 export function extractPutBlobDownloadHint(inner: Record<string, unknown>): PutBlobDownloadHint | null {
@@ -74,4 +87,48 @@ export function storeBlobDownloadToken(token: string): void {
 
 export function clearStoredBlobDownloadToken(): void {
   storeBlobDownloadToken("");
+}
+
+/** Random 32-byte nonce for a download proof. */
+export function randomBlobDownloadNonce(): Uint8Array {
+  const nonce = new Uint8Array(32);
+  crypto.getRandomValues(nonce);
+  return nonce;
+}
+
+/** Hex message for `boing_signMessage` (32-byte BLAKE3 preimage). */
+export function blobDownloadProofMessageHex(input: {
+  chainId: number;
+  blobIdHex: string;
+  expiresAtUnix: number;
+  nonce: Uint8Array;
+}): string {
+  const blobId = hexToBytes(input.blobIdHex.startsWith("0x") ? input.blobIdHex : `0x${input.blobIdHex}`);
+  const preimage = blobDownloadProofPreimage({
+    chainId: input.chainId,
+    blobId,
+    expiresAtUnix: input.expiresAtUnix,
+    nonce: input.nonce,
+  });
+  return `0x${bytesToHex(preimage)}`;
+}
+
+export function buildBlobDownloadProofHeaders(input: {
+  downloaderHex: string;
+  expiresAtUnix: number;
+  nonce: Uint8Array;
+  signatureHex: string;
+}): Record<string, string> {
+  const downloader = hexToBytes(
+    input.downloaderHex.startsWith("0x") ? input.downloaderHex : `0x${input.downloaderHex}`
+  );
+  const signature = hexToBytes(
+    input.signatureHex.startsWith("0x") ? input.signatureHex : `0x${input.signatureHex}`
+  );
+  return blobDownloadProofHeaders({
+    downloader,
+    expiresAtUnix: input.expiresAtUnix,
+    nonce: input.nonce,
+    signature64: signature,
+  });
 }

@@ -318,6 +318,8 @@ function SignedPayloadHeadlineRich({
     case "CancelBlobSampleOffer":
     case "ChallengeBlobSampleServe":
     case "RespondBlobSampleServe":
+    case "GrantBlobDownload":
+    case "RevokeBlobDownload":
     case "SubmitSlashAppeal":
     case "ResolveSlashAppeal":
     case "ResolveSlashAppealAttested":

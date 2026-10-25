@@ -73,6 +73,8 @@ export type TxPayloadKind =
   | "ResolveSlashAppeal"
   | "ResolveSlashAppealAttested"
   | "ResolveSlashAppealBlsAggregate"
+  | "GrantBlobDownload"
+  | "RevokeBlobDownload"
   | "Unknown";
 
 /** Execution outcome when blocks are fetched with `include_receipts: true`. */
