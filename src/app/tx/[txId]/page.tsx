@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useNetwork } from "@/context/network-context";
-import { fetchBlockByHeight, fetchTransactionReceipt } from "@/lib/rpc-methods";
+import { fetchBlockByHeight, fetchChainHeight, fetchTransactionReceipt } from "@/lib/rpc-methods";
+import {
+  analyzeMissingReceipt,
+  configuredReceiptRetentionBlocks,
+  describeMissingReceipt,
+} from "@/lib/receipt-retention";
 import type { Block, BlockTransaction, TransactionReceipt } from "@/lib/rpc-types";
 import { explorerAssetHref } from "@/lib/explorer-href";
 import { isHex64, normalizeHex64, toPrefixedHex64 } from "@/lib/rpc-types";
@@ -26,6 +31,23 @@ export default function TransactionByIdPage() {
   const [block, setBlock] = useState<Block | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [headHeight, setHeadHeight] = useState<number | null>(null);
+
+  // Only when the receipt lookup is empty: read the head so we can say whether pruning is even possible.
+  useEffect(() => {
+    if (receipt !== null || !ready) return;
+    let cancelled = false;
+    fetchChainHeight(network)
+      .then((h) => {
+        if (!cancelled) setHeadHeight(h);
+      })
+      .catch(() => {
+        if (!cancelled) setHeadHeight(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [receipt, network, ready]);
 
   useEffect(() => {
     if (!isHex64(rawParam || "")) {
@@ -141,17 +163,22 @@ export default function TransactionByIdPage() {
       {!loading && error ? <p className="text-amber-300" role="alert">{error}</p> : null}
 
       {!loading && !error && receipt === null ? (
-        <p className="text-[var(--text-muted)]">
-          No receipt for this id. Try{" "}
-          <Link href={`/block/hash/${txId}?network=${network}`} className="text-network-cyan hover:underline">
-            block
-          </Link>
-          {" or "}
-          <Link href={explorerAssetHref(txId, network)} className="text-network-cyan hover:underline">
-            asset
-          </Link>
-          .
-        </p>
+        <div className="space-y-2 text-[var(--text-muted)]" data-testid="missing-receipt">
+          <p>
+            No receipt for this id. Try{" "}
+            <Link href={`/block/hash/${txId}?network=${network}`} className="text-network-cyan hover:underline">
+              block
+            </Link>
+            {" or "}
+            <Link href={explorerAssetHref(txId, network)} className="text-network-cyan hover:underline">
+              asset
+            </Link>
+            .
+          </p>
+          <p className="text-sm" role="status" data-testid="missing-receipt-detail">
+            {describeMissingReceipt(analyzeMissingReceipt(headHeight, configuredReceiptRetentionBlocks()), network)}
+          </p>
+        </div>
       ) : null}
 
       {!loading && !error && receipt != null && height == null ? (
