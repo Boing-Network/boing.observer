@@ -31,7 +31,8 @@ export default function BlockByHashPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    void Promise.allSettled([fetchBlockByHash(network, hash, true), fetchNetworkInfo(network)])
+    // include_code=false: PutBlob/deploy bodies can exceed the public RPC gateway cap (~6 MiB).
+    void Promise.allSettled([fetchBlockByHash(network, hash, true, false), fetchNetworkInfo(network)])
       .then((results) => {
         if (cancelled) return;
         const [blockRes, infoRes] = results;

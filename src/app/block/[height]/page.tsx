@@ -29,7 +29,8 @@ export default function BlockByHeightPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    void Promise.allSettled([fetchBlockByHeight(network, height, true), fetchNetworkInfo(network)])
+    // include_code=false: oversized PutBlob/deploy payloads stay stubs so the page can load.
+    void Promise.allSettled([fetchBlockByHeight(network, height, true, false), fetchNetworkInfo(network)])
       .then((results) => {
         if (cancelled) return;
         const [blockRes, infoRes] = results;

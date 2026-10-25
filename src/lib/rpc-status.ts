@@ -47,6 +47,13 @@ export function getFriendlyRpcErrorMessage(
     return NODES_UNAVAILABLE_MESSAGE;
   }
 
+  if (/response (too large|exceeded gateway limit)|truncated or invalid JSON/i.test(msg)) {
+    return (
+      "This block is too large to load in full through the public RPC (often a media blob or huge deploy). " +
+      "Try again after a refresh — explorer pages request a slim block view without raw bytecode/blob bytes."
+    );
+  }
+
   switch (context) {
     case "block":
       return msg || "Failed to load block.";

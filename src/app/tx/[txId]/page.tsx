@@ -47,7 +47,8 @@ export default function TransactionByIdPage() {
           return;
         }
         try {
-          const b = await fetchBlockByHeight(network, r.block_height, true);
+          // Slim block body (no PutBlob/deploy bytes) — receipt already has success/logs/gas.
+          const b = await fetchBlockByHeight(network, r.block_height, true, false);
           if (!cancelled) setBlock(b ?? null);
         } catch (e) {
           if (!cancelled) setError(getFriendlyRpcErrorMessage(e, network, "block"));

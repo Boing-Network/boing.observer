@@ -50,7 +50,7 @@ export function SearchBar({ layout = "inline", className = "max-w-lg", size = "m
       try {
         const [txSettled, blockSettled] = await Promise.allSettled([
           fetchTransactionReceipt(network as NetworkId, hex),
-          fetchBlockByHash(network as NetworkId, hex),
+          fetchBlockByHash(network as NetworkId, hex, false, false),
         ]);
         if (txSettled.status === "fulfilled" && txSettled.value) {
           router.push(`/tx/${hex}?network=${network}`);

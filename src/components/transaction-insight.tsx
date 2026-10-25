@@ -288,7 +288,26 @@ function SignedPayloadHeadlineRich({
     case "ValidatorRegister":
     case "ValidatorDeregister":
     case "ValidatorUnjail":
-    case "PutBlob":
+    case "PutBlob": {
+      const data = inner.data;
+      const size =
+        data && typeof data === "object" && !Array.isArray(data) && "size" in data
+          ? Number((data as { size?: unknown }).size)
+          : typeof data === "string" && data.startsWith("0x")
+            ? Math.max(0, Math.floor((data.length - 2) / 2))
+            : Array.isArray(data)
+              ? data.length
+              : null;
+      return (
+        <>
+          You signed a media blob publish
+          {size != null && Number.isFinite(size) ? ` (${size.toLocaleString()} bytes)` : ""}.
+          {data && typeof data === "object" && (data as { omitted?: unknown }).omitted
+            ? " Raw bytes are omitted in this explorer view."
+            : null}
+        </>
+      );
+    }
     case "BlobAnnounce":
     case "RenewMediaBlobPin":
     case "PayBlobSample":
