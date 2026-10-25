@@ -267,7 +267,9 @@ export function buildPayloadDetailLines(payload: unknown, height?: number | null
     case "SettleBlobSampleMatch":
     case "CancelBlobSampleOffer":
     case "ChallengeBlobSampleServe":
-    case "RespondBlobSampleServe": {
+    case "RespondBlobSampleServe":
+    case "GrantBlobDownload":
+    case "RevokeBlobDownload": {
       const data = p.data;
       const stubHash =
         data && typeof data === "object" && !Array.isArray(data) && typeof (data as { hash?: unknown }).hash === "string"
@@ -294,6 +296,10 @@ export function buildPayloadDetailLines(payload: unknown, height?: number | null
       }
       if (p.chunk_index != null || p.chunkIndex != null) {
         lines.push({ label: "Chunk index", value: String(p.chunk_index ?? p.chunkIndex) });
+      }
+      const grantee = hexForLink(p.grantee);
+      if (grantee) {
+        lines.push({ label: "Grantee", value: shortenHash(grantee) || "—", accountHex64: grantee });
       }
       return lines;
     }
@@ -352,6 +358,8 @@ export function kindBadgeTone(kind: TxPayloadKind): string {
     case "CancelBlobSampleOffer":
     case "ChallengeBlobSampleServe":
     case "RespondBlobSampleServe":
+    case "GrantBlobDownload":
+    case "RevokeBlobDownload":
       return "border-violet-500/35 bg-violet-950/25 text-violet-200";
     case "Unknown":
       return "border-[var(--border-color)] bg-white/5 text-[var(--text-muted)]";

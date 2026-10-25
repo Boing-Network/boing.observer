@@ -114,6 +114,10 @@ function getTxPayloadKindFlat(p: Record<string, unknown>): TxPayloadKind {
     if ("provider" in p && ("chunk_count" in p || "chunkCount" in p)) {
       return "chunk_hash" in p || "chunkHash" in p ? "RespondBlobSampleServe" : "SettleBlobSampleMatch";
     }
+    if ("grantee" in p || typeof p.grantee === "string") {
+      // Grant vs revoke distinguished by tagged kind when present; flat heuristic defaults grant.
+      return "GrantBlobDownload";
+    }
     if (("size" in p || typeof p.size === "number") && ("retention" in p || "content_type" in p)) {
       return "BlobAnnounce";
     }
@@ -256,6 +260,9 @@ export function getTxPayloadSummary(payload: unknown, height?: number | null, ne
     case "ChallengeBlobSampleServe":
     case "RespondBlobSampleServe":
       return `${payloadKindLabel(kind).toLowerCase()} · ${formatShortAddr(p.blob_id ?? p.blobId)}`;
+    case "GrantBlobDownload":
+    case "RevokeBlobDownload":
+      return `${payloadKindLabel(kind).toLowerCase()} · ${formatShortAddr(p.blob_id ?? p.blobId)} → ${formatShortAddr(p.grantee)}`;
     case "SubmitSlashAppeal":
       return `slash appeal · id ${String(p.slash_id ?? p.slashId ?? "")}`;
     case "ResolveSlashAppeal":

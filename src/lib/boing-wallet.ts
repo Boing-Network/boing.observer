@@ -130,6 +130,19 @@ export async function walletSignTransaction(
   return out;
 }
 
+/** Sign raw message bytes (UTF-8 string or `0x` hex). Returns `0x`-prefixed 64-byte signature. */
+export async function walletSignMessage(
+  provider: BoingInjectedProvider,
+  message: string
+): Promise<string> {
+  const out = await provider.request({ method: "boing_signMessage", params: [message] });
+  if (typeof out !== "string" || !out.trim()) {
+    throw new Error("Wallet did not return a message signature.");
+  }
+  const sig = out.trim();
+  return sig.startsWith("0x") ? sig : `0x${sig}`;
+}
+
 type ProviderErrorShape = {
   code?: number;
   message?: string;

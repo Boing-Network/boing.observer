@@ -51,6 +51,8 @@ export const PAYLOAD_VARIANT_LABELS: Record<PayloadVariantName, string> = {
   ResolveSlashAppeal: "Resolve slash appeal",
   ResolveSlashAppealAttested: "Resolve slash appeal (attested)",
   ResolveSlashAppealBlsAggregate: "Resolve slash appeal (BLS aggregate)",
+  GrantBlobDownload: "Grant blob download",
+  RevokeBlobDownload: "Revoke blob download",
 };
 
 /** Variants that are wire-defined but not yet consensus-admitted (or rarely seen). */
