@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
 
   let data: {
     result?: { outcome?: string; mempool?: boolean; duplicate?: boolean; error?: string };
-    error?: { code?: number; message?: string };
+    error?: { code?: number; message?: string; data?: unknown };
   };
   try {
     data = (await upstreamRes.json()) as typeof data;
@@ -124,7 +124,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: data.error.message || "QA pool vote failed",
+        // Preserve the node's numeric code and structured data so the UI can explain the rejection.
         code: data.error.code,
+        data: data.error.data,
       },
       { status: 400 }
     );

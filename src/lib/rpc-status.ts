@@ -3,6 +3,8 @@
  * Used when Boing Network nodes are not yet available (e.g. before incentivized testnet launch).
  */
 
+import { describeRpcRejection, isRateLimitedError } from "./rpc-error";
+
 export function isRpcUnreachableError(error: unknown): boolean {
   if (!error) return false;
   const msg = error instanceof Error ? error.message : String(error);
@@ -42,6 +44,15 @@ export function getFriendlyRpcErrorMessage(
 ): string {
   if (!error) return "Something went wrong.";
   const msg = error instanceof Error ? error.message : String(error);
+
+  if (isRateLimitedError(error)) {
+    const wait = (error as { retryAfterSeconds?: number | null }).retryAfterSeconds;
+    return `Too many requests. ${wait ? `Try again in ${wait} seconds.` : "Please wait a moment and try again."}`;
+  }
+
+  // Node rejections carry a numeric code and `data.reason` (unknown_sender, stale_nonce, insufficient_fee, ...).
+  const rejection = describeRpcRejection(error);
+  if (rejection) return rejection;
 
   if (isRpcUnreachableError(error)) {
     return NODES_UNAVAILABLE_MESSAGE;

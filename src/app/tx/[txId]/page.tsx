@@ -10,7 +10,7 @@ import { explorerAssetHref } from "@/lib/explorer-href";
 import { isHex64, normalizeHex64, toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { useNativeUnitConfig } from "@/hooks/use-native-unit-config";
-import { priorityTipAt } from "@/lib/priority-tips";
+import { txPriorityTip } from "@/lib/block-normalize";
 import { CopyButton } from "@/components/copy-button";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 import { TransactionInsight } from "@/components/transaction-insight";
@@ -186,7 +186,7 @@ export default function TransactionByIdPage() {
           receiptsWereRequested
           visualScale="featured"
           blockPlacement={{ height, txIndex }}
-          priorityTip={priorityTipAt(block, txIndex)}
+          priorityTip={txPriorityTip(block, txIndex, tx as { priority_tip?: unknown })}
         />
         </section>
       ) : null}

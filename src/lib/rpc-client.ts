@@ -6,7 +6,8 @@
  * The same-origin `/api/rpc` proxy also failsover across hosted testnet backends.
  */
 
-import type { JsonRpcRequest, JsonRpcResponse, NetworkId } from "./rpc-types";
+import { BoingRpcCallError } from "./rpc-error";
+import type { JsonRpcRequest, JsonRpcResponse, JsonRpcSuccess, NetworkId } from "./rpc-types";
 
 const PUBLIC_TESTNET_RPC = "https://testnet-rpc.boing.network";
 
@@ -21,7 +22,11 @@ let rpcId = 0;
 
 function isRetryable(error: unknown, res?: Response): boolean {
   if (res) {
-    if (res.status === 429) return true;
+    if (res.status === 429) {
+      // Honour the proxy's Retry-After: do not hammer a limiter that asked for a longer pause.
+      const wait = Number(res.headers.get("retry-after"));
+      return !(Number.isFinite(wait) && wait > 1);
+    }
     if (res.status >= 500 && res.status < 600) return true;
   }
   if (error instanceof TypeError && (error.message === "Failed to fetch" || error.message.includes("network"))) return true;
@@ -73,7 +78,12 @@ export async function rpcCall<T>(
       await new Promise((r) => setTimeout(r, RPC_RETRY_DELAY_MS));
       return rpcCall<T>(network, baseUrl, method, params, true);
     }
-    throw new Error(`RPC HTTP ${res.status}: ${res.statusText}`);
+    const retryAfter = Number(res.headers.get("retry-after"));
+    throw new BoingRpcCallError(`RPC HTTP ${res.status}: ${res.statusText}`, {
+      method,
+      httpStatus: res.status,
+      retryAfterSeconds: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null,
+    });
   }
 
   let data: JsonRpcResponse<T>;
@@ -81,14 +91,20 @@ export async function rpcCall<T>(
     data = (await res.json()) as JsonRpcResponse<T>;
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
-    throw new Error(
-      `RPC returned invalid JSON (${detail}). Often a truncated oversized block response.`
+    throw new BoingRpcCallError(
+      `RPC returned invalid JSON (${detail}). Often a truncated oversized block response.`,
+      { method, httpStatus: res.status },
     );
   }
-  if ("error" in data) {
-    throw new Error(data.error.message || `RPC error ${data.error.code}`);
+  if (data && typeof data === "object" && "error" in data && data.error) {
+    // Keep the node's numeric `code` and structured `data` (e.g. data.reason) for callers and UI.
+    throw new BoingRpcCallError(data.error.message || `RPC error ${data.error.code}`, {
+      code: typeof data.error.code === "number" ? data.error.code : null,
+      data: (data.error as { data?: unknown }).data,
+      method,
+    });
   }
-  return data.result;
+  return (data as JsonRpcSuccess<T>).result;
 }
 
 function stripSlash(url: string): string {

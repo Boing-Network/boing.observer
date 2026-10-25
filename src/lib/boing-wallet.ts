@@ -8,6 +8,7 @@ import {
   BOING_TESTNET_CHAIN_ID_HEX,
 } from "./chain-ids";
 import { isAccountHex, normalizeVoterHex } from "./qa-reviewer-auth";
+import { describeRpcRejection } from "./rpc-error";
 import type { NetworkId } from "./rpc-types";
 import { createBoingWebWalletProvider } from "./boing-web-wallet";
 
@@ -178,6 +179,9 @@ export function mapWalletErrorToUi(err: unknown): string {
   }
   const o = err as ProviderErrorShape;
   const boingCode = typeof o?.data?.boingCode === "string" ? o.data.boingCode : "";
+  // Node rejection forwarded by the wallet (code + data.reason preserved): explain it in plain language.
+  const rejection = describeRpcRejection(err);
+  if (rejection) return rejection;
   const rpcMsg = o?.data?.rpc?.message;
   if (typeof rpcMsg === "string" && rpcMsg.trim()) return rpcMsg.trim();
   if (boingCode === "BOING_WALLET_LOCKED") return "Unlock Boing Express to continue.";

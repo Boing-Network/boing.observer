@@ -22,6 +22,7 @@ import {
   walletMissingMessage,
 } from "@/lib/boing-wallet";
 import { isAccountHex, normalizeVoterHex } from "@/lib/qa-reviewer-auth";
+import { BoingRpcCallError } from "@/lib/rpc-error";
 import type { NetworkId } from "@/lib/rpc-types";
 
 const VOTER_KEY = "boing.observer.qa-voter.account";
@@ -478,9 +479,17 @@ async function submitSignedVoteViaWallet(
         signedTxHex: signed,
       }),
     });
-    const data = (await res.json()) as { error?: string; result?: { outcome?: string; mempool?: boolean } };
+    const data = (await res.json()) as {
+      error?: string;
+      code?: number;
+      data?: unknown;
+      result?: { outcome?: string; mempool?: boolean };
+    };
     if (!res.ok) {
-      throw new Error(data.error || (sendErr instanceof Error ? sendErr.message : `Vote failed (${res.status})`));
+      throw new BoingRpcCallError(
+        data.error || (sendErr instanceof Error ? sendErr.message : `Vote failed (${res.status})`),
+        { code: data.code, data: data.data, httpStatus: res.status, method: "boing_qaPoolVote" },
+      );
     }
     return { note: noteFromOutcome(data.result?.outcome, data.result?.mempool, true) };
   }
@@ -537,10 +546,17 @@ export function QaReviewerVoteButtons({
       });
       const data = (await res.json()) as {
         error?: string;
+        code?: number;
+        data?: unknown;
         result?: { outcome?: string; mempool?: boolean; duplicate?: boolean };
       };
       if (!res.ok) {
-        throw new Error(data.error || `Vote failed (${res.status})`);
+        throw new BoingRpcCallError(data.error || `Vote failed (${res.status})`, {
+          code: data.code,
+          data: data.data,
+          httpStatus: res.status,
+          method: "boing_qaPoolVote",
+        });
       }
       setNote(noteFromOutcome(data.result?.outcome, data.result?.mempool, false));
       onVoted();

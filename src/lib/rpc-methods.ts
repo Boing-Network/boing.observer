@@ -19,6 +19,7 @@ import type {
 } from "./rpc-types";
 import { normalizeHex64 } from "./rpc-types";
 import { cachedRpc } from "./rpc-cache";
+import { normalizeBlock } from "./block-normalize";
 
 export type NetworkId = "testnet" | "mainnet";
 
@@ -75,7 +76,7 @@ export async function fetchBlockByHeight(
     }
   }
   return cachedRpc(cacheKey, ttlMs, () =>
-    rpcCall<Block | null>(network, base, "boing_getBlockByHeight", params)
+    rpcCall<Block | null>(network, base, "boing_getBlockByHeight", params).then((b) => normalizeBlock(b))
   );
 }
 
@@ -95,7 +96,7 @@ export async function fetchBlockByHash(
   // Block hashes are immutable once known; keep a longer TTL even with receipts.
   const ttlMs = includeReceipts ? RECEIPT_BLOCK_TTL_MS : HISTORICAL_BLOCK_TTL_MS;
   return cachedRpc(cacheKey, ttlMs, () =>
-    rpcCall<Block | null>(network, base, "boing_getBlockByHash", params)
+    rpcCall<Block | null>(network, base, "boing_getBlockByHash", params).then((b) => normalizeBlock(b))
   );
 }
 
