@@ -12,11 +12,9 @@ import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { useNativeUnitConfig } from "@/hooks/use-native-unit-config";
 import { CopyButton } from "@/components/copy-button";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
-import { AccountBalanceMix } from "@/components/account-balance-mix";
+import dynamic from "next/dynamic";
 import { formatBoingBase, ledgerToBaseUnits } from "@/lib/native-unit";
 import { AccountContractHints } from "@/components/account-contract-hints";
-import { ContractFunctions } from "@/components/contract-functions";
-import { AccountNftGallery } from "@/components/account-nft-gallery";
 import { AccountTxHistory } from "@/components/account-tx-history";
 import { AccountNames } from "@/components/account-names";
 import { BoingNameTag } from "@/components/boing-name-tag";
@@ -26,6 +24,30 @@ import { LinkedCompanionsSection } from "@/components/linked-companions-section"
 import { formatAssetDisplayLabel, parseAssetDisplayMetadata } from "@/lib/extract-media-url";
 import { formatAssetKindLabel } from "@/lib/asset-kind-label";
 import { ADDRESS_FORMAT_ALIGNMENT_URL, NETWORK_FAUCET_URL } from "@/lib/constants";
+
+/**
+ * Heavy, below-the-fold widgets are code-split so the account/asset First Load JS stays small:
+ * recharts (~90 kB gz) for the balance chart, and the contract call UI / NFT gallery (SDK + crypto).
+ */
+function PanelSkeleton({ label }: { label: string }) {
+  return (
+    <div className="rounded-lg border border-boing-navy-lighter/60 p-4 text-sm text-boing-gray" aria-busy="true">
+      {label}
+    </div>
+  );
+}
+const AccountBalanceMix = dynamic(
+  () => import("@/components/account-balance-mix").then((m) => m.AccountBalanceMix),
+  { ssr: false, loading: () => <PanelSkeleton label="Loading balance chart..." /> }
+);
+const ContractFunctions = dynamic(
+  () => import("@/components/contract-functions").then((m) => m.ContractFunctions),
+  { ssr: false, loading: () => <PanelSkeleton label="Loading contract tools..." /> }
+);
+const AccountNftGallery = dynamic(
+  () => import("@/components/account-nft-gallery").then((m) => m.AccountNftGallery),
+  { ssr: false, loading: () => <PanelSkeleton label="Loading NFTs..." /> }
+);
 
 export function AddressExplorerView({ variant }: { variant: "account" | "asset" }) {
   const params = useParams();
