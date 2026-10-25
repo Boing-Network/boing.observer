@@ -7,6 +7,7 @@ import type {
   Block,
   Account,
   BoingHealth,
+  BoingNetworkFeePolicy,
   BoingNetworkInfo,
   BoingSyncState,
   ContractStorageWord,
@@ -17,33 +18,9 @@ import type {
   TransactionReceipt,
 } from "./rpc-types";
 import { normalizeHex64 } from "./rpc-types";
+import { cachedRpc } from "./rpc-cache";
 
 export type NetworkId = "testnet" | "mainnet";
-
-type CacheEntry<T> = {
-  expiresAt: number;
-  promise: Promise<T>;
-};
-
-const rpcCache = new Map<string, CacheEntry<unknown>>();
-
-function cachedRpc<T>(key: string, ttlMs: number, loader: () => Promise<T>): Promise<T> {
-  const now = Date.now();
-  const cached = rpcCache.get(key) as CacheEntry<T> | undefined;
-  if (cached && cached.expiresAt > now) {
-    return cached.promise;
-  }
-
-  const promise = loader().catch((error) => {
-    rpcCache.delete(key);
-    throw error;
-  });
-  rpcCache.set(key, {
-    expiresAt: now + ttlMs,
-    promise,
-  });
-  return promise;
-}
 
 export async function fetchChainHeight(network: NetworkId): Promise<number> {
   const base = getRpcBaseUrl(network);
@@ -302,6 +279,18 @@ export async function tryFetchContractStorageWord(
   const k = keyHex0x.startsWith("0x") ? keyHex0x : `0x${keyHex0x}`;
   try {
     return await rpcCall<ContractStorageWord>(network, base, "boing_getContractStorage", [c, k]);
+  } catch {
+    return null;
+  }
+}
+
+/** Fee schedule + treasury routing (`boing_getNetworkFeePolicy`). Returns `null` on older nodes. */
+export async function tryFetchNetworkFeePolicy(network: NetworkId): Promise<BoingNetworkFeePolicy | null> {
+  const base = getRpcBaseUrl(network);
+  try {
+    return await cachedRpc(`${base}:boing_getNetworkFeePolicy`, 60_000, () =>
+      rpcCall<BoingNetworkFeePolicy>(network, base, "boing_getNetworkFeePolicy", [])
+    );
   } catch {
     return null;
   }
