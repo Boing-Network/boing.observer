@@ -9,7 +9,7 @@ import { CollaborationBanner } from "@/components/collaboration-banner";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
 import { NetworkLinkNotice } from "@/components/network-link-notice";
 import Link from "next/link";
-import { SITE_URL, WEBSITE_URL, WALLET_URL } from "@/lib/constants";
+import { SITE_URL, WEBSITE_URL, WALLET_URL, DISCORD_URL } from "@/lib/constants";
 
 // Required by the enforcing nonce CSP (src/middleware.ts, src/lib/csp.ts): Next stamps its inline bootstrap scripts
 // with the per-request nonce only when HTML is rendered per request. Prerendered HTML has no nonce, so every page
@@ -149,7 +149,7 @@ export default function RootLayout({
         slogan: "Authentic. Decentralized. Optimal. Quality-Assured.",
         logo: `${SITE_URL}/icon-512.png`,
         image: `${SITE_URL}/og.png`,
-        sameAs: [WEBSITE_URL, WALLET_URL, "https://boing.finance"],
+        sameAs: [WEBSITE_URL, WALLET_URL, "https://boing.finance", DISCORD_URL],
       },
     ],
   };
@@ -193,6 +193,9 @@ export default function RootLayout({
                   </a>
                   <a href={WALLET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
                     Wallet (boing.express)
+                  </a>
+                  <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
+                    Discord
                   </a>
                   <Link href="/qa" className="text-network-cyan hover:underline">
                     QA transparency

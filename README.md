@@ -125,6 +125,10 @@ GitHub Actions deploys on `main` **after** CI (lint, typecheck, unit tests, prod
 | `npm run preview` | OpenNext in Workers runtime |
 | `npm run deploy` | Build and deploy to Cloudflare |
 
+## 💬 Community
+
+Questions or feedback? Join the [Boing Network Discord](https://discord.gg/K3w9nbUw4N).
+
 ## 📚 Reference
 
 - Protocol docs: `Boing-Network/boing.network` on `main` under `docs/`
