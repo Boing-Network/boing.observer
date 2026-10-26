@@ -3,6 +3,7 @@ import {
   InMemoryRateLimiter,
   applyRateLimit,
   clientKey,
+  getBindingLimiter,
   rateLimitConfigFromEnv,
   ruleForPath,
 } from "./rate-limit";
@@ -77,6 +78,26 @@ describe("applyRateLimit", () => {
     for (let i = 0; i < 11; i++) last = await applyRateLimit("/api/qa/vote", headers, cfg, { limiter, binding: null, now: 0 });
     expect(last?.allowed).toBe(false);
     expect(last?.rule.name).toBe("vote");
+  });
+  it("looks up the bucket-specific binding, falling back to the base one", () => {
+    const mk = (id: string) => ({ id, limit: async () => ({ success: true }) });
+    const key = Symbol.for("__cloudflare-context__");
+    const g = globalThis as Record<symbol, unknown>;
+    const prev = g[key];
+    try {
+      g[key] = { env: { API_RATE_LIMITER: mk("base"), API_RATE_LIMITER_VOTE: mk("vote") } };
+      expect((getBindingLimiter("vote") as unknown as { id: string }).id).toBe("vote");
+      expect((getBindingLimiter("heavy") as unknown as { id: string }).id).toBe("base");
+      expect((getBindingLimiter("rpc") as unknown as { id: string }).id).toBe("base");
+      expect((getBindingLimiter() as unknown as { id: string }).id).toBe("base");
+      g[key] = { env: { API_RATE_LIMITER_HEAVY: mk("heavy") } };
+      expect((getBindingLimiter("heavy") as unknown as { id: string }).id).toBe("heavy");
+      expect(getBindingLimiter("rpc")).toBeNull();
+      g[key] = undefined;
+      expect(getBindingLimiter("rpc")).toBeNull();
+    } finally {
+      g[key] = prev;
+    }
   });
   it("honours a denying binding and tolerates a throwing one", async () => {
     const limiter = new InMemoryRateLimiter();

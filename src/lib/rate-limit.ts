@@ -2,8 +2,12 @@
  * App-level rate limiting for `/api/*`, designed for Cloudflare Workers (OpenNext) but dependency-free.
  *
  * Layers (both must allow a request):
- *  1. Optional Workers Rate Limiting binding named `API_RATE_LIMITER` (see wrangler.toml, commented sample).
- *     Counts are shared across isolates/colos per key, so this is the authoritative limiter when configured.
+ *  1. Workers Rate Limiting bindings declared in wrangler.toml: `API_RATE_LIMITER` (240/min: rpc, default and
+ *     csp-report buckets), `API_RATE_LIMITER_HEAVY` (60/min) and `API_RATE_LIMITER_VOTE` (10/min). Each bucket uses
+ *     its own binding when present, else falls back to `API_RATE_LIMITER`; with no binding at all (local dev,
+ *     `next start`) only layer 2 applies. Counts are shared per key across isolates in a colo, so this is the
+ *     authoritative ceiling when configured. A binding has one fixed limit, so it cannot follow
+ *     BOING_OBSERVER_RATE_LIMIT_SCALE; the scale only tightens/loosens layer 2.
  *  2. In-memory fixed-window counters, per isolate. Best-effort only: each isolate counts on its own and
  *     state is lost on eviction, so the effective global limit is looser than configured. Still blunts
  *     naive loops and scrapers hitting a single isolate, and bounds work per client with no extra infra.
@@ -126,13 +130,29 @@ export class InMemoryRateLimiter {
 
 type BindingLimiter = { limit(opts: { key: string }): Promise<{ success: boolean }> };
 
-/** Reads the Workers Rate Limiting binding without importing the OpenNext runtime (keeps middleware edge-safe). */
-export function getBindingLimiter(): BindingLimiter | null {
+/** Binding name per rule bucket; buckets not listed use the base `API_RATE_LIMITER`. */
+const BINDING_BY_RULE: Record<string, string> = {
+  heavy: "API_RATE_LIMITER_HEAVY",
+  vote: "API_RATE_LIMITER_VOTE",
+};
+const BASE_BINDING = "API_RATE_LIMITER";
+
+/**
+ * Reads a Workers Rate Limiting binding without importing the OpenNext runtime (keeps middleware edge-safe).
+ * `ruleName` selects the bucket-specific binding, falling back to the base binding when it is not declared.
+ */
+export function getBindingLimiter(ruleName?: string): BindingLimiter | null {
   const ctx = (globalThis as Record<symbol, unknown>)[Symbol.for("__cloudflare-context__")] as
     | { env?: Record<string, unknown> }
     | undefined;
-  const b = ctx?.env?.API_RATE_LIMITER as BindingLimiter | undefined;
-  return b && typeof b.limit === "function" ? b : null;
+  const env = ctx?.env;
+  if (!env) return null;
+  const pick = (name: string) => {
+    const b = env[name] as BindingLimiter | undefined;
+    return b && typeof b.limit === "function" ? b : null;
+  };
+  const specific = ruleName ? BINDING_BY_RULE[ruleName] : undefined;
+  return (specific ? pick(specific) : null) ?? pick(BASE_BINDING);
 }
 
 const shared = new InMemoryRateLimiter();
@@ -164,7 +184,7 @@ export async function applyRateLimit(
   const key = clientKey(headers);
   const result = (opts.limiter ?? shared).check(key, rule, opts.now);
   if (result.allowed) {
-    const binding = opts.binding === undefined ? getBindingLimiter() : opts.binding;
+    const binding = opts.binding === undefined ? getBindingLimiter(rule.name) : opts.binding;
     if (binding) {
       try {
         const r = await binding.limit({ key: `${rule.name}:${key}` });
