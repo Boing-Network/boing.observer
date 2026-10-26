@@ -84,8 +84,8 @@ No API keys for read-only RPC. Do not hardcode production RPC URLs.
 
 ### Rate limiting, CSP and security headers
 
-`src/middleware.ts` rate-limits `/api/*` per client (in-memory per Worker isolate, plus an optional Workers Rate Limiting binding)
-and sends a Report-Only Content-Security-Policy. Tune with `BOING_OBSERVER_RATE_LIMIT`, `BOING_OBSERVER_RATE_LIMIT_SCALE` and
+`src/middleware.ts` rate-limits `/api/*` per client (Workers Rate Limiting bindings declared in `wrangler.toml`, with an in-memory per-isolate fallback)
+and sends an enforcing, nonce-based Content-Security-Policy (the root layout is dynamic so every page gets a nonce; set `BOING_OBSERVER_CSP=report-only` to roll back). Tune with `BOING_OBSERVER_RATE_LIMIT`, `BOING_OBSERVER_RATE_LIMIT_SCALE` and
 `BOING_OBSERVER_CSP`; details and caveats in [docs/OPERATIONS.md](docs/OPERATIONS.md).
 
 ### Network deep links and chain metadata

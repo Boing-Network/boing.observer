@@ -46,9 +46,10 @@ Search accepts: block height, 64-hex block hash / tx id / account (resolved by R
 - Security headers (`security-headers.mjs`, wired in `next.config.mjs`): nosniff, `X-Frame-Options: DENY`, HSTS,
   Referrer-Policy, Permissions-Policy and a **baseline** CSP (`base-uri`, `object-src`, `form-action`,
   `frame-ancestors`). `/pdfs/*` is relaxed to SAMEORIGIN framing. `public/_headers` covers static assets.
-- `src/middleware.ts` (edge): (1) **rate limiting** for `/api/*` (`src/lib/rate-limit.ts`; Workers Rate Limiting binding
-  `API_RATE_LIMITER` if configured, else per-isolate in-memory best effort), (2) a **Report-Only** full CSP
-  (`src/lib/csp.ts`) with violation reports sent to `/api/csp-report`. See docs/OPERATIONS.md.
+- `src/middleware.ts` (edge): (1) **rate limiting** for `/api/*` (`src/lib/rate-limit.ts`; the Workers Rate Limiting bindings `API_RATE_LIMITER`,
+  `API_RATE_LIMITER_HEAVY`, `API_RATE_LIMITER_VOTE` declared in `wrangler.toml`, plus the per-isolate in-memory limiter as fallback), (2) an
+  **enforcing** nonce-based CSP (`src/lib/csp.ts`, `BOING_OBSERVER_CSP`, default `nonce-enforce`, rollback `report-only`) with violation
+  reports sent to `/api/csp-report`. The root layout is `force-dynamic` so every page can carry the nonce (SSR on every request). See docs/OPERATIONS.md.
 
 ## Network sync status (verified against boing.network `rpc.rs` and the live testnet)
 
@@ -79,11 +80,14 @@ Search accepts: block height, 64-hex block hash / tx id / account (resolved by R
 
 - `/tools/account-proof`: `boing_getAccountProof` + `boing_verifyAccountProof` (allow-listed). The node verifies its own proof, so the UI
   also checks the proof root against the newest 3 block `state_root`s and states that trust limit. `boing_getAccount` has no storage root.
-- Storage-tree v2 (`BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT` on the node, consensus-wide, OFF by default) is **not exposed over RPC**.
-  `src/lib/storage-tree.ts` uses the optional `NEXT_PUBLIC_BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT`, or a future node-info field, else
-  reports "unknown" and makes no claim. Proof verification is layout-agnostic.
+- Storage-tree v2 (`BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT` on the node, consensus-wide, OFF by default). Newer nodes publish
+  `storage_tree_v2_activation_height` (integer, or `null` = not configured) in `boing_getNetworkInfo`; `src/lib/storage-tree.ts` prefers it,
+  then the optional `NEXT_PUBLIC_BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT`, else reports "unknown" and makes no claim (older nodes omit the key).
+  Proof verification is layout-agnostic.
 - `boing_getTransactionReceipt` is `null` for unknown **and** pruned receipts (default window 1,000,000 blocks). `/tx/:id` keeps "No receipt
-  for this id" and adds a head-aware explanation (`src/lib/receipt-retention.ts`). Indexing note in docs/OPERATIONS.md.
+  for this id" and adds a head-aware explanation (`src/lib/receipt-retention.ts`), using `receipt_retention_blocks` from node info when
+  present (integer, or `null` = unbounded), else the build env mirror, else the default. Indexing note in docs/OPERATIONS.md.
+- The node-info fields above are documented in boing.network `docs/RPC-API-SPEC.md`; until a node release returns them the explorer behaves exactly as before.
 
 ## Wallet (boing.express) contract
 
@@ -101,18 +105,18 @@ fallback.
 
 ## Known gaps / backlog (highest value first)
 
-1. **Enforce a script-src CSP** (medium): a Report-Only policy ships today (`BOING_OBSERVER_CSP`, default `report-only`). A
-   nonce policy (`nonce-report-only` / `nonce-enforce`) only works on dynamically rendered routes; the static pages
-   (`/`, `/about`, `/dex/*`, `/faucet`, `/qa*`, `/tokens`, `/tools/*`) are prerendered at build time and cannot receive a
-   per-request nonce. Path to enforcement: review `/api/csp-report` logs, then make the root layout dynamic
-   (`export const dynamic = "force-dynamic"`, read `headers().get("x-nonce")` for the JSON-LD script) and switch to
-   `nonce-report-only`, then `nonce-enforce`. Decision for Nico: accept SSR-on-every-request for strict CSP.
-2. **Distributed rate limiting** (low-medium): the in-memory limiter is per isolate. Add the Workers Rate Limiting binding
-   (`API_RATE_LIMITER`, sample in `wrangler.toml`) and/or Cloudflare WAF rate rules for a global limit.
-3. `@opennextjs/cloudflare` currently pulls `@node-minify/core` -> `glob@10.x` (build-time only); pinned to 10.5.0 via
+1. **Roll out and watch the enforced CSP and rate limits** (code done in `optimize/observer-4`, not yet deployed from this repo by hand):
+   check the `7101`-`7103` namespace ids are free in the Cloudflare account, deploy per the checklist in docs/OPERATIONS.md (a push to `main`
+   deploys via CI), watch `/api/csp-report`, keep `BOING_OBSERVER_CSP=report-only` as the rollback. If SSR-on-every-request cost matters, move
+   the nonce to a small dynamic shell and prerender the rest (not possible with plain `force-dynamic`).
+2. `@opennextjs/cloudflare` currently pulls `@node-minify/core` -> `glob@10.x` (build-time only); pinned to 10.5.0 via
    `overrides`. Remove the override when upstream bumps it.
-4. Builder attestation UI, interface registry (see `docs/CONTRACT-FUNCTIONS.md`).
-5. Windows dev boxes that cannot reach `testnet-rpc.boing.network` (TLS) need a VPN/other network for live specs.
+3. Builder attestation UI, interface registry (see `docs/CONTRACT-FUNCTIONS.md`).
+4. Windows dev boxes that cannot reach `testnet-rpc.boing.network` (TLS) need a VPN/other network for live specs.
+
+Resolved in `optimize/observer-4`: enforced nonce CSP (`nonce-enforce` default, `force-dynamic` root layout, `e2e/csp.spec.ts`), Workers Rate Limiting
+bindings in `wrangler.toml` (three buckets) with the in-memory limiter as fallback, `storage_tree_v2_activation_height` and `receipt_retention_blocks` read
+from `boing_getNetworkInfo` (tolerating absence), deploy checklist and WAF rule equivalents in docs/OPERATIONS.md.
 
 Resolved in `optimize/observer-3`: `?network=` deep links, vendored chain metadata + drift test, `client_hints` / `protocol_specs` / chain-id mismatch UI,
 account proof tool, storage-tree v2 handling (tolerant), null-receipt retention message, Dependabot (API reports 0 open, 100 fixed).
@@ -132,8 +136,8 @@ npm run build && npm run test:e2e        # live testnet specs are opt-in, see do
 ## Cross-repo follow-ups
 
 - **boing.network:** publish a stable spec for `priority_tips` and block `signatures` in `developer_api.json`/docs;
-  publish the storage-tree v2 activation height (and the receipt retention window) in `boing_getNetworkInfo` so
-  explorers need not guess (chain-metadata.json now exists and is vendored here); keep `boing_getNetworkFeePolicy` and `native_currency` documented as the client source of truth;
+  release a node that returns `storage_tree_v2_activation_height` and `receipt_retention_blocks` in `boing_getNetworkInfo` (the explorer already reads them and
+  tolerates absence; chain-metadata.json is vendored here; re-run `npm run sync:chain-metadata` once boing.network publishes its pending metadata change); keep `boing_getNetworkFeePolicy` and `native_currency` documented as the client source of truth;
   rate-limit/WAF guidance for public RPC.
 - **boing.express:** deep-link to `boing.observer/tx/:id` and `/account/:addr` after send; share chain metadata and
   fee-policy parsing with the explorer; tip UX parity with `optional_priority_tips`.

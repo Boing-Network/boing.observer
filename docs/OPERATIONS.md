@@ -25,11 +25,11 @@ dashboard, and secrets with `wrangler secret put`. `NEXT_PUBLIC_*` values are in
 | `BOING_NATIVE_VM_DEX_FACTORY` / `BOING_DEX_FACTORY_HEX` | server | `0x` + 64 hex DEX factory override for discovery (normally resolved from `boing_getNetworkInfo`) |
 | `TOKEN_INDEX_CACHE_DIR` | server | Token index disk cache dir (default `<cwd>/.cache/token-index`; `off` disables) |
 | `TOKEN_INDEX_CACHE_TTL_SEC` (alias `..._SECONDS`) | server | Token index cache TTL (default 600, max 7 days) |
-| `NEXT_PUBLIC_BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT` | build | Optional. Height at which per-contract storage trees switch to 256-bit routing (node env `BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT`, consensus-wide, OFF by default). Not published over RPC, so unset = "unknown" and no storage-layout claims are made |
-| `NEXT_PUBLIC_BOING_RECEIPT_RETENTION_BLOCKS` | build | Optional. Mirror of the node `BOING_RECEIPT_RETENTION_BLOCKS` (default 1000000; `0` = keep all). Only changes wording of the null-receipt hint |
+| `NEXT_PUBLIC_BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT` | build | Optional fallback. Height at which per-contract storage trees switch to 256-bit routing (node env `BOING_STORAGE_TREE_V2_ACTIVATION_HEIGHT`, consensus-wide, OFF by default). Newer nodes publish it as `storage_tree_v2_activation_height` in `boing_getNetworkInfo`, which takes precedence; with neither, the layout is "unknown" and no storage-layout claims are made |
+| `NEXT_PUBLIC_BOING_RECEIPT_RETENTION_BLOCKS` | build | Optional fallback. Mirror of the node `BOING_RECEIPT_RETENTION_BLOCKS` (default 1000000; `0` = keep all). Newer nodes publish `receipt_retention_blocks` in `boing_getNetworkInfo`, which takes precedence. Only changes wording of the null-receipt hint |
 | `BOING_OBSERVER_RATE_LIMIT` | server | `off` disables `/api/*` rate limiting (default on) |
-| `BOING_OBSERVER_RATE_LIMIT_SCALE` | server | Multiplier for every per-route limit (default `1`; use `2`-`5` behind a shared NAT/proxy) |
-| `BOING_OBSERVER_CSP` | server | `report-only` (default), `off`, `nonce-report-only`, `nonce-enforce` (see Security) |
+| `BOING_OBSERVER_RATE_LIMIT_SCALE` | server | Multiplier for the per-isolate in-memory limits (default `1`; use `2`-`5` behind a shared NAT/proxy). Does **not** change the fixed limits of the Workers Rate Limiting bindings in `wrangler.toml` |
+| `BOING_OBSERVER_CSP` | server | `nonce-enforce` (default, also for unset/unrecognised values), `report-only` (rollback), `nonce-report-only`, `off` (see Security). Set it in `wrangler.toml [vars]`: `wrangler deploy` overwrites dashboard-only variables |
 | `TOKEN_METADATA_GATEWAY_URLS` | server | Extra comma-separated gateway templates with a `{hash}` placeholder for off-chain token metadata |
 
 Test-only (Playwright): `PLAYWRIGHT_BASE_URL`, `OBSERVER_CONTRACTS_LIVE=1`, `OBSERVER_NAMES_LIVE=1` (run the live testnet
@@ -76,12 +76,53 @@ Workers & Pages -> boing-observer -> Domains & Routes.
   `code: "rate_limited"`; the explorer client shows "Too many requests. Try again in N seconds." and does not auto-retry a
   `Retry-After` > 1 s. **Caveat:** without a binding the counters live in each Worker isolate's memory, so the global limit is looser
   than configured and resets when an isolate is evicted. For a shared limit add the Workers Rate Limiting binding named
-  `API_RATE_LIMITER` (sample commented in `wrangler.toml`; both layers must allow a request) and/or a Cloudflare WAF rate rule.
-- **CSP**: static baseline in `security-headers.mjs` plus a `Content-Security-Policy-Report-Only` header from middleware. Violations are
-  logged by `/api/csp-report` (see `wrangler tail`). The nonce modes only help on dynamic routes (prerendered pages cannot carry a
-  per-request nonce), so enforcement is deliberately **not** enabled; the path to it is in HANDOFF.md.
+  `API_RATE_LIMITER*` (declared in `wrangler.toml`, set up in "Rate limiting setup" below; both layers must allow a request) and/or Cloudflare WAF rate rules.
+- **CSP** (`src/middleware.ts`, `src/lib/csp.ts`): the static baseline in `security-headers.mjs` (`base-uri`, `object-src`, `form-action`,
+  `frame-ancestors`) plus an **enforcing** `Content-Security-Policy` from middleware by default (`BOING_OBSERVER_CSP=nonce-enforce`):
+  `script-src 'self' 'nonce-<per request>' 'strict-dynamic' 'wasm-unsafe-eval'`, `connect-src 'self'` (all client RPC goes through
+  `/api/rpc`), `img-src`/`media-src` `https:` (NFT media from any gateway), `frame-src 'self'` (same-origin PDFs), `style-src` allows inline styles.
+  Next stamps its own inline bootstrap scripts with the request nonce **only on dynamically rendered pages**, so the root layout is
+  `export const dynamic = "force-dynamic"`: every page is server-rendered per request and HTML is not CDN-cached (static assets under
+  `/_next/static` still are). JSON-LD blocks are data, not scripts. **Rollback without code changes:** set `BOING_OBSERVER_CSP=report-only`
+  (inline scripts allowed, nothing blocked, violations still reported) in `wrangler.toml [vars]` and redeploy, or `wrangler rollback`.
+  Violations are logged by `/api/csp-report` (see `wrangler tail`); after a deploy, watch it for a day. Third-party scripts are not
+  allowed: any new analytics/widget needs a deliberate `script-src` change in `src/lib/csp.ts` plus a test. Coverage: `e2e/csp.spec.ts`
+  (headers, nonce on every script, no `securitypolicyviolation` on nine routes, inline handlers blocked, https images allowed).
 - Bodies from third-party gateways (token metadata, blob error text) are read with `src/lib/bounded-body.ts`: the size cap is applied
   while streaming, before the body is buffered.
+
+## Rate limiting setup (Cloudflare)
+
+`wrangler.toml` declares three Workers Rate Limiting bindings (per client IP, 60 s windows). `src/lib/rate-limit.ts` picks the binding per route
+bucket and falls back to `API_RATE_LIMITER` when a bucket's own binding is missing; with no binding at all (local dev, `next start`) only the
+in-memory limiter applies, and a binding error never takes the API down.
+
+| Binding | Limit | Buckets |
+|---------|-------|---------|
+| `API_RATE_LIMITER` (namespace `7101`) | 240 / 60 s | `/api/rpc`, other `/api/*` (the in-memory 120 still applies per isolate), `/api/csp-report` |
+| `API_RATE_LIMITER_HEAVY` (`7102`) | 60 / 60 s | `account/history`, `account/nfts`, `asset/*`, `tokens/index`, `contract/interface`, `dex/*`, `blob/*` |
+| `API_RATE_LIMITER_VOTE` (`7103`) | 10 / 60 s | `/api/qa/vote` |
+
+Setup notes:
+
+- `namespace_id` is a positive-integer **string** that must be unique across the whole Cloudflare account; every Worker that declares the same id
+  shares one counter. Before the first deploy, check that `7101`-`7103` are unused in your other Workers' `wrangler.toml` files (the dashboard has no
+  list of namespaces) and renumber in `wrangler.toml` if not. There is nothing to create in the dashboard; the namespace exists once a Worker declares it.
+- `period` can only be `10` or `60` seconds, and one binding has one fixed limit, which is why three bindings exist. `BOING_OBSERVER_RATE_LIMIT_SCALE` does
+  not change them; edit `wrangler.toml` and redeploy to retune.
+- Counts are per Cloudflare location (not global) and eventually consistent, so treat them as a good ceiling rather than exact accounting.
+- Validate without deploying: `npx wrangler deploy --dry-run` lists `env.API_RATE_LIMITER (240 requests/60s)` etc. (run `npx opennextjs-cloudflare build` first). `npx wrangler dev --local` supplies local rate limit bindings.
+- **Equivalent Cloudflare WAF rate-limiting rules** (Security -> WAF -> Rate limiting rules; use these instead of, or on top of, the bindings: they act before the
+  Worker runs and are billed/limited by plan, e.g. the Free plan allows few rules and a 10 s period). Characteristic: IP; action: Block (or Managed Challenge)
+  for 60 s with a `429` response.
+
+  | Rule | Expression | Rate |
+  |------|------------|------|
+  | rpc | `http.request.uri.path eq "/api/rpc"` | 240 requests / 1 min |
+  | heavy | `starts_with(http.request.uri.path, "/api/account/history") or starts_with(http.request.uri.path, "/api/account/nfts") or starts_with(http.request.uri.path, "/api/asset/") or starts_with(http.request.uri.path, "/api/tokens/index") or starts_with(http.request.uri.path, "/api/contract/interface") or starts_with(http.request.uri.path, "/api/dex/") or starts_with(http.request.uri.path, "/api/blob/")` | 60 / 1 min |
+  | vote | `http.request.uri.path eq "/api/qa/vote"` | 10 / 1 min |
+  | csp-report | `http.request.uri.path eq "/api/csp-report"` | 20 / 1 min |
+  | other API | `starts_with(http.request.uri.path, "/api/")` (place last) | 120 / 1 min |
 
 ## Indexing and caching
 
@@ -108,10 +149,13 @@ Workers & Pages -> boing-observer -> Domains & Routes.
   compares the proof `root` with the `state_root` of the newest 3 blocks. The node verifies its own proof, so this is a
   consistency check, not trust-minimized; the page says so and recommends a second independent node. Older nodes without the
   methods get a plain explanation.
-- **Storage-tree v2:** the activation height is not exposed by the node. `src/lib/storage-tree.ts` reads it from the optional build
-  env above (or a future `storage_tree_v2_activation_height` in `boing_getNetworkInfo`, tolerated if it appears). When known, block
-  pages and the proof tool say whether a height uses the legacy 64-bit or the 256-bit layout. The proof format is the same, only
-  longer, and verification does not depend on the layout. When unknown, nothing is claimed.
+- **Storage-tree v2:** newer nodes publish `storage_tree_v2_activation_height` in `boing_getNetworkInfo` (and `boing_health`): an integer H, or
+  `null` = not configured (legacy 64-bit routing everywhere). `src/lib/storage-tree.ts` prefers that value, then the optional build env
+  above; older nodes omit the key, which means "unknown" (the key is looked up at the top level or one object deep, so a nesting change
+  does not break it). Block pages and the proof tool say whether a height uses the legacy 64-bit or the 256-bit layout (`null` is reported
+  as "not scheduled"). The proof format is the same, only longer, and verification does not depend on the layout. When unknown, nothing is claimed.
+- **Receipt retention (node info):** `receipt_retention_blocks` is an integer window or `null` = unbounded. `/tx/:id` prefers it over the build
+  env, says "this node reports keeping receipts for the newest N blocks", and never suggests pruning for `null`/`0`.
 
 ## Updating for network changes
 
@@ -120,6 +164,59 @@ Workers & Pages -> boing-observer -> Domains & Routes.
 3. Add new browser-callable methods to the proxy allow-list.
 4. If `docs/chain-metadata.json` changed in boing.network, run `npm run sync:chain-metadata`.
 5. Run lint, typecheck, unit, build, e2e; update HANDOFF.md's sync table.
+
+## Deploy checklist (prepared, not executed)
+
+**Important: a push to `main` deploys.** `.github/workflows/ci.yml` runs `npm run deploy` (OpenNext build + `wrangler deploy`) in the `deploy` job after the
+`quality` job passes on every push to `main`, so merging or pushing to `main` publishes to Cloudflare without a separate step. To publish manually
+instead, change that job to `workflow_dispatch`/tag-only first. The checklist below is the same sequence done by hand; nothing in it has been run for
+the observer-4 changes.
+
+Pre-flight (repo root, on an up-to-date `main`):
+
+```
+git switch main && git pull --ff-only
+npm ci --legacy-peer-deps
+npm run lint && npm run typecheck && npm test
+npm run build
+npx playwright test            # needs the fresh build above; CI=1 makes it start its own server
+```
+
+Config checks:
+
+- `wrangler.toml`: namespace ids `7101`-`7103` are unused elsewhere in the Cloudflare account (see "Rate limiting setup").
+- `BOING_OBSERVER_CSP` is unset (= `nonce-enforce`) or deliberately set; keep a rollback value ready (`report-only`).
+- Build-time variables are set as in CI: `NEXT_PUBLIC_TESTNET_RPC`, `NEXT_PUBLIC_MAINNET_RPC` (and optionally the storage-tree / retention fallbacks).
+- Optional: `npm run sync:chain-metadata` once boing.network publishes new chain metadata (the unit test that compares with a sibling checkout fails while that
+  checkout has unpublished metadata edits; it is skipped in CI).
+
+Build and validate the Worker without publishing:
+
+```
+npx opennextjs-cloudflare build
+npx wrangler deploy --dry-run --outdir .wrangler-dryrun    # lists bindings incl. the three rate limit bindings; uploads nothing
+npx wrangler dev --local --port 8787                       # optional: run it in workerd, then curl http://127.0.0.1:8787/about
+```
+
+Deploy (authenticated as the account that owns the `boing-observer` Worker):
+
+```
+npx wrangler login                    # or set CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID
+npx opennextjs-cloudflare build
+npx wrangler deploy                   # equivalent: npm run deploy (build + deploy)
+```
+
+Smoke test right after the deploy (replace the host):
+
+```
+curl -sI https://boing.observer/about | grep -i content-security-policy     # enforcing header with script-src ... 'nonce-...' 'strict-dynamic'
+curl -s https://boing.observer/tokens | grep -o '<script[^>]*>' | grep -vc nonce   # expect 0 (JSON-LD aside)
+for i in $(seq 1 12); do curl -s -o /dev/null -w '%{http_code} ' https://boing.observer/api/qa/vote; done   # 429 after 10 (your IP)
+npx wrangler tail boing-observer --format pretty                             # watch /api/csp-report violations for a while
+```
+
+Then open `/`, `/tx/<id>`, `/tools/account-proof`, `/tools/node-health`, `/about` (PDF viewer) and an NFT page in a browser with the console open: there should be no
+"Refused to ..." messages. Rollback: set `BOING_OBSERVER_CSP=report-only` in `wrangler.toml [vars]` and redeploy, or `npx wrangler rollback` to the previous version.
 
 ## Dependabot
 
