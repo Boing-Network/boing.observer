@@ -4,6 +4,9 @@ export const SITE_URL = "https://boing.observer";
 /** Canonical website; desktop clients may merge `GET https://boing.network/api/networks` → `meta` / `meta.ecosystem` (VIBEMINER-INTEGRATION.md). */
 export const WEBSITE_URL = "https://boing.network";
 
+/** Official Boing Network community Discord invite. */
+export const DISCORD_URL = "https://discord.gg/K3w9nbUw4N";
+
 /** Canonical Boing Wallet (boing.express). */
 export const WALLET_URL = "https://boing.express";
 

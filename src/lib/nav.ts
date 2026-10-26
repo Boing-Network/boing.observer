@@ -1,4 +1,4 @@
-import { NETWORK_FAUCET_URL, WALLET_URL } from "@/lib/constants";
+import { DISCORD_URL, NETWORK_FAUCET_URL, WALLET_URL } from "@/lib/constants";
 
 export type NavItem = {
   href: string;
@@ -51,6 +51,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { href: WALLET_URL, label: "Wallet (boing.express)", external: true },
       { href: NETWORK_FAUCET_URL, label: "Faucet", external: true },
+      { href: DISCORD_URL, label: "Discord", external: true },
     ],
   },
 ] as const;
