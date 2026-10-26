@@ -69,11 +69,12 @@ test.describe("app-level rate limiting", () => {
 });
 
 test.describe("CSP + security headers", () => {
-  test("pages carry a Report-Only CSP and the static baseline", async ({ request }) => {
+  test("pages carry an enforcing CSP and the static baseline", async ({ request }) => {
     const res = await request.get("/about");
     const h = res.headers();
-    expect(h["content-security-policy-report-only"]).toContain("object-src 'none'");
-    expect(h["content-security-policy-report-only"]).toContain("report-uri /api/csp-report");
+    expect(h["content-security-policy-report-only"]).toBeUndefined();
+    expect(h["content-security-policy"]).toContain("object-src 'none'");
+    expect(h["content-security-policy"]).toContain("report-uri /api/csp-report");
     expect(h["content-security-policy"]).toContain("frame-ancestors 'none'");
     expect(h["x-content-type-options"]).toBe("nosniff");
   });

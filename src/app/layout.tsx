@@ -11,6 +11,12 @@ import { NetworkLinkNotice } from "@/components/network-link-notice";
 import Link from "next/link";
 import { SITE_URL, WEBSITE_URL, WALLET_URL } from "@/lib/constants";
 
+// Required by the enforcing nonce CSP (src/middleware.ts, src/lib/csp.ts): Next stamps its inline bootstrap scripts
+// with the per-request nonce only when HTML is rendered per request. Prerendered HTML has no nonce, so every page
+// would lose hydration under `script-src 'nonce-...' 'strict-dynamic'`. Cost: SSR on each page request and no CDN
+// caching of HTML (static assets under /_next/static stay immutable-cached).
+export const dynamic = "force-dynamic";
+
 const comfortaa = Comfortaa({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],

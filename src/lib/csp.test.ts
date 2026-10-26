@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 import { buildCsp, cspHeaderName, generateNonce, parseCspMode } from "./csp";
 
 describe("csp", () => {
-  it("parses modes with report-only as the default", () => {
-    expect(parseCspMode(undefined)).toBe("report-only");
-    expect(parseCspMode("garbage")).toBe("report-only");
+  it("parses modes with nonce-enforce as the default (and for unrecognised values)", () => {
+    expect(parseCspMode(undefined)).toBe("nonce-enforce");
+    expect(parseCspMode("")).toBe("nonce-enforce");
+    expect(parseCspMode("garbage")).toBe("nonce-enforce");
+    expect(parseCspMode("report-only")).toBe("report-only");
+    expect(parseCspMode(" Report-Only ")).toBe("report-only");
+    expect(parseCspMode("nonce-report-only")).toBe("nonce-report-only");
     expect(parseCspMode("off")).toBe("off");
     expect(parseCspMode("NONCE-ENFORCE")).toBe("nonce-enforce");
   });

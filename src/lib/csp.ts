@@ -2,24 +2,23 @@
  * Content-Security-Policy builder used by `src/middleware.ts`.
  *
  * Modes (env BOING_OBSERVER_CSP):
+ *  - "nonce-enforce" (default): nonce + 'strict-dynamic' script-src, ENFORCED. Requires every page to be rendered
+ *                           per request (root layout `export const dynamic = "force-dynamic"`), because Next
+ *                           cannot add a per-request nonce to HTML prerendered at build time.
+ *  - "nonce-report-only"  : the same policy as Report-Only (staging / debugging a violation).
+ *  - "report-only"        : ROLLBACK switch. Report-Only policy that allows inline scripts
+ *                           (script-src 'self' 'unsafe-inline'); blocks nothing, reports go to /api/csp-report.
+ *                           The pages stay dynamic; only the middleware policy is relaxed.
  *  - "off"                : no CSP from middleware (static baseline in security-headers.mjs still applies).
- *  - "report-only" (default): Report-Only policy that matches the current static-prerendered pages
- *                           (script-src 'self' 'unsafe-inline'). Surfaces connect/img/frame/etc. violations
- *                           without blocking anything; reports go to /api/csp-report.
- *  - "nonce-report-only"  : nonce + 'strict-dynamic' script-src, Report-Only. Only meaningful for
- *                           dynamically rendered routes, because Next cannot add a per-request nonce to HTML
- *                           that was prerendered at build time (about, dex/*, faucet, qa/*, tools/*, tokens, /).
- *  - "nonce-enforce"      : same policy, enforced. Do NOT enable until every route is dynamic
- *                           (root layout `export const dynamic = "force-dynamic"`) and reports are clean.
  */
 
 export type CspMode = "off" | "report-only" | "nonce-report-only" | "nonce-enforce";
 
 export function parseCspMode(v: string | undefined): CspMode {
-  const m = (v ?? "report-only").trim().toLowerCase();
+  const m = (v ?? "").trim().toLowerCase();
   if (m === "off" || m === "0" || m === "false") return "off";
-  if (m === "nonce-report-only" || m === "nonce-enforce") return m;
-  return "report-only";
+  if (m === "report-only" || m === "nonce-report-only") return m;
+  return "nonce-enforce"; // default, including unset and unrecognised values (fail closed, not open)
 }
 
 export function generateNonce(): string {
