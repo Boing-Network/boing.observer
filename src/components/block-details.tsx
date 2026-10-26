@@ -8,17 +8,20 @@ import { CopyButton } from "@/components/copy-button";
 import { TransactionInsightGroup } from "@/components/transaction-insight-group";
 import { groupTxInsights } from "@/lib/tx-insight-groups";
 import { formatPriorityTip, summarizePriorityTips } from "@/lib/priority-tips";
-import { configuredStorageTreeV2ActivationHeight, describeStorageTree } from "@/lib/storage-tree";
+import { describeStorageTree, type StorageActivation } from "@/lib/storage-tree";
 
 export function BlockDetails({
   block,
   network,
   consensusHint,
+  storageActivation = null,
 }: {
   block: Block;
   network: string;
   /** From `boing_getNetworkInfo.consensus` on the same RPC (optional). */
   consensusHint?: { validatorCount: number | null; model?: string };
+  /** From `resolveStorageActivation(boing_getNetworkInfo)`; the layout note is shown only when known. */
+  storageActivation?: StorageActivation;
 }) {
   const proposerHex = hexForLink(block.header.proposer);
   const parentHash = hexForLink(block.header.parent_hash);
@@ -124,9 +127,9 @@ export function BlockDetails({
               <span className="break-all">{block.header.state_root ?? "—"}</span>
               {block.header.state_root ? <CopyButton value={String(block.header.state_root)} label="Copy state root" /> : null}
             </dd>
-            {configuredStorageTreeV2ActivationHeight() != null ? (
+            {storageActivation != null ? (
               <p className="basis-full text-xs text-[var(--text-muted)]" data-testid="storage-tree-note">
-                {describeStorageTree(Number(block.header.height), configuredStorageTreeV2ActivationHeight())}
+                {describeStorageTree(Number(block.header.height), storageActivation)}
               </p>
             ) : null}
           </div>

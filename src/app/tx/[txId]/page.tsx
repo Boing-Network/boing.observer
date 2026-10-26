@@ -5,11 +5,8 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useNetwork } from "@/context/network-context";
 import { fetchBlockByHeight, fetchChainHeight, fetchTransactionReceipt } from "@/lib/rpc-methods";
-import {
-  analyzeMissingReceipt,
-  configuredReceiptRetentionBlocks,
-  describeMissingReceipt,
-} from "@/lib/receipt-retention";
+import { analyzeMissingReceipt, describeMissingReceipt } from "@/lib/receipt-retention";
+import { useNodeProtocolInfo } from "@/hooks/use-node-protocol-info";
 import type { Block, BlockTransaction, TransactionReceipt } from "@/lib/rpc-types";
 import { explorerAssetHref } from "@/lib/explorer-href";
 import { isHex64, normalizeHex64, toPrefixedHex64 } from "@/lib/rpc-types";
@@ -24,6 +21,7 @@ export default function TransactionByIdPage() {
   const params = useParams();
   const { network, ready } = useNetwork();
   useNativeUnitConfig(network);
+  const { receiptRetention } = useNodeProtocolInfo(network, ready);
   const rawParam = params?.txId as string;
   const txId = rawParam ? normalizeHex64(decodeURIComponent(rawParam)) : "";
 
@@ -176,7 +174,7 @@ export default function TransactionByIdPage() {
             .
           </p>
           <p className="text-sm" role="status" data-testid="missing-receipt-detail">
-            {describeMissingReceipt(analyzeMissingReceipt(headHeight, configuredReceiptRetentionBlocks()), network)}
+            {describeMissingReceipt(analyzeMissingReceipt(headHeight, receiptRetention), network)}
           </p>
         </div>
       ) : null}

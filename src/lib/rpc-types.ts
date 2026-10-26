@@ -250,6 +250,10 @@ export interface BoingNetworkInfo {
   chain_id?: number | null;
   chain_name?: string | null;
   head_height: number;
+  /** Height at which per-contract storage trees switch to 256-bit routing; `null` = not configured (legacy 64-bit). Newer nodes only. */
+  storage_tree_v2_activation_height?: number | string | null;
+  /** Receipts are kept for the newest N blocks; `null` = unbounded. Newer nodes only. */
+  receipt_retention_blocks?: number | string | null;
   consensus?: {
     validator_count?: number;
     model?: string;

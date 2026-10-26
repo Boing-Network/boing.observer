@@ -4,6 +4,8 @@ import {
   analyzeMissingReceipt,
   describeMissingReceipt,
   parseRetentionBlocks,
+  readRetentionFromNodeInfo,
+  resolveReceiptRetention,
 } from "./receipt-retention";
 
 describe("parseRetentionBlocks", () => {
@@ -14,6 +16,36 @@ describe("parseRetentionBlocks", () => {
     expect(parseRetentionBlocks("-5")).toBe(DEFAULT_RECEIPT_RETENTION_BLOCKS);
     expect(parseRetentionBlocks("250000")).toBe(250_000);
     expect(parseRetentionBlocks("0")).toBe(0);
+  });
+});
+
+describe("node info", () => {
+  it("reads receipt_retention_blocks at top level or one level down, including 0", () => {
+    expect(readRetentionFromNodeInfo({ receipt_retention_blocks: 500 })).toBe(500);
+    expect(readRetentionFromNodeInfo({ end_user: { receipt_retention_blocks: "250" } })).toBe(250);
+    expect(readRetentionFromNodeInfo({ receipt_retention_blocks: 0 })).toBe(0);
+  });
+  it("reads an explicit null as unbounded (keep everything), per the node RPC spec", () => {
+    expect(readRetentionFromNodeInfo({ receipt_retention_blocks: null })).toBe(0);
+    expect(resolveReceiptRetention({ receipt_retention_blocks: null })).toEqual({ blocks: 0, source: "node" });
+  });
+  it("tolerates absence and junk", () => {
+    expect(readRetentionFromNodeInfo({ head_height: 1 })).toBeNull();
+    expect(readRetentionFromNodeInfo({ receipt_retention_blocks: -1 })).toBeNull();
+    expect(readRetentionFromNodeInfo({ receipt_retention_blocks: "junk" })).toBeNull();
+    expect(readRetentionFromNodeInfo(undefined)).toBeNull();
+  });
+  it("resolve: node info, else default (no build mirror in tests)", () => {
+    expect(resolveReceiptRetention({ receipt_retention_blocks: 10 })).toEqual({ blocks: 10, source: "node" });
+    expect(resolveReceiptRetention(null)).toEqual({ blocks: DEFAULT_RECEIPT_RETENTION_BLOCKS, source: "default" });
+  });
+  it("words the message by source", () => {
+    const fromNode = describeMissingReceipt(analyzeMissingReceipt(2_000, { blocks: 500, source: "node" }), "testnet");
+    expect(fromNode).toMatch(/this node reports keeping receipts for the newest 500 blocks/);
+    expect(fromNode).toMatch(/#1500/);
+    const keepAll = describeMissingReceipt(analyzeMissingReceipt(9_000_000, { blocks: 0, source: "node" }), "testnet");
+    expect(keepAll).toMatch(/keeps every receipt/);
+    expect(keepAll).not.toMatch(/pruned/);
   });
 });
 

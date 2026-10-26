@@ -3,13 +3,15 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNetwork } from "@/context/network-context";
 import { checkAccountProof, isMethodNotFound, type AccountProofCheck } from "@/lib/account-proof";
-import { configuredStorageTreeV2ActivationHeight, describeStorageTree } from "@/lib/storage-tree";
+import { describeStorageTree, type StorageActivation } from "@/lib/storage-tree";
+import { useNodeProtocolInfo } from "@/hooks/use-node-protocol-info";
 import { isHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { CopyButton } from "@/components/copy-button";
 
 export function AccountProofPanel() {
   const { network, ready } = useNetwork();
+  const { storageActivation: activation } = useNodeProtocolInfo(network, ready);
   const [address, setAddress] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +45,6 @@ export function AccountProofPanel() {
       setBusy(false);
     }
   }
-
-  const activation = configuredStorageTreeV2ActivationHeight();
 
   return (
     <div className="space-y-6">
@@ -91,7 +91,7 @@ export function AccountProofPanel() {
   );
 }
 
-function ProofResult({ r, activation }: { r: AccountProofCheck; activation: number | null }) {
+function ProofResult({ r, activation }: { r: AccountProofCheck; activation: StorageActivation }) {
   const rows: Array<[string, string, string?]> = [
     ["Account", r.address],
     ["State root", r.root, "Copy state root"],

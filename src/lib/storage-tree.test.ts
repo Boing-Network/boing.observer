@@ -3,6 +3,7 @@ import {
   describeStorageTree,
   parseActivationHeight,
   readActivationFromNodeInfo,
+  resolveStorageActivation,
   storageTreeModeAt,
 } from "./storage-tree";
 
@@ -23,6 +24,9 @@ describe("storageTreeModeAt", () => {
   it("is unknown without an activation height (never guesses)", () => {
     expect(storageTreeModeAt(5, null)).toBe("unknown");
   });
+  it("is legacy at every height when the node reports v2 is off", () => {
+    expect(storageTreeModeAt(5_000_000, "off")).toBe("legacy-64bit");
+  });
   it("switches exactly at the activation height", () => {
     expect(storageTreeModeAt(99, 100)).toBe("legacy-64bit");
     expect(storageTreeModeAt(100, 100)).toBe("v2-256bit");
@@ -42,12 +46,23 @@ describe("readActivationFromNodeInfo", () => {
     expect(readActivationFromNodeInfo({ state: { storage_tree_v2_activation_height: "77" } })).toBe(77);
     expect(readActivationFromNodeInfo({ state: { storage_tree_v2_activation_height: "off" } })).toBeNull();
   });
+  it("reads an explicit null as off (not scheduled) and distinguishes it from an absent key", () => {
+    expect(readActivationFromNodeInfo({ storage_tree_v2_activation_height: null })).toBe("off");
+    expect(readActivationFromNodeInfo({ head_height: 1 })).toBeNull();
+    expect(readActivationFromNodeInfo({ storage_tree_v2_activation_height: "junk" })).toBeNull();
+  });
+  it("resolve: node info wins, absent falls back to unknown (no build mirror in tests)", () => {
+    expect(resolveStorageActivation({ storage_tree_v2_activation_height: 9 })).toBe(9);
+    expect(resolveStorageActivation({ storage_tree_v2_activation_height: null })).toBe("off");
+    expect(resolveStorageActivation(undefined)).toBeNull();
+  });
 });
 
 describe("describeStorageTree", () => {
   it("describes each mode", () => {
     expect(describeStorageTree(10, 5)).toMatch(/256 bits/);
     expect(describeStorageTree(1, 5)).toMatch(/64 bits/);
-    expect(describeStorageTree(1, null)).toMatch(/not published over RPC/);
+    expect(describeStorageTree(1, null)).toMatch(/does not report a storage-tree v2 activation height/);
+    expect(describeStorageTree(1, "off")).toMatch(/not scheduled/);
   });
 });

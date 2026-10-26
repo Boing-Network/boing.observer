@@ -9,6 +9,7 @@ import type { Block, BoingNetworkInfo } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 import { useNativeUnitConfig } from "@/hooks/use-native-unit-config";
 import { BlockDetails } from "@/components/block-details";
+import { resolveStorageActivation } from "@/lib/storage-tree";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 
 export default function BlockByHeightPage() {
@@ -91,6 +92,7 @@ export default function BlockByHeightPage() {
           <BlockDetails
             block={block}
             network={network}
+            storageActivation={resolveStorageActivation(netInfo)}
             consensusHint={{
               validatorCount: netInfo?.consensus?.validator_count ?? null,
               model: netInfo?.consensus?.model,

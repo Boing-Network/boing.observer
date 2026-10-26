@@ -12,6 +12,7 @@ import { useNativeUnitConfig } from "@/hooks/use-native-unit-config";
 import { CopyButton } from "@/components/copy-button";
 import { ExplorerCrumbs } from "@/components/explorer-crumbs";
 import { BlockDetails } from "@/components/block-details";
+import { resolveStorageActivation } from "@/lib/storage-tree";
 
 export default function BlockByHashPage() {
   const params = useParams();
@@ -98,6 +99,7 @@ export default function BlockByHashPage() {
           <BlockDetails
             block={block}
             network={network}
+            storageActivation={resolveStorageActivation(netInfo)}
             consensusHint={{
               validatorCount: netInfo?.consensus?.validator_count ?? null,
               model: netInfo?.consensus?.model,
