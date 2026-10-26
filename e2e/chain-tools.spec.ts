@@ -132,7 +132,7 @@ test.describe("node health + RPC catalog use chain metadata and protocol specs",
       boing_health: () => ({ ok: true, client_version: "x", chain_id: 6913, chain_name: "Boing Testnet", head_height: 10 }),
     });
     await page.goto("/tools/node-health");
-    await expect(page.getByText("boing_health", { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("heading", { name: "boing_health", exact: true })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("chain-id-mismatch")).toHaveCount(0);
     await expect(page.getByTestId("client-hints")).toHaveCount(0);
   });
