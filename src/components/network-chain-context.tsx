@@ -6,6 +6,8 @@ import { useNetwork } from "@/context/network-context";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
 import { RPC_SPEC_URL, WEBSITE_URL } from "@/lib/constants";
 import { fetchSyncState } from "@/lib/rpc-methods";
+import { useNodeProtocolInfo } from "@/hooks/use-node-protocol-info";
+import { describeActivationStatus } from "@/lib/storage-tree";
 import type { BoingSyncState } from "@/lib/rpc-types";
 import { hexForLink, shortenHash } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
@@ -18,6 +20,7 @@ export function NetworkChainContext() {
   const [sync, setSync] = useState<BoingSyncState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { storageActivation } = useNodeProtocolInfo(network);
 
   const load = useCallback(async () => {
     setError(null);
@@ -86,6 +89,12 @@ export function NetworkChainContext() {
                   ) : (
                     <span className="text-[var(--text-muted)]">—</span>
                   )}
+                </dd>
+              </div>
+              <div className="flex flex-wrap items-baseline justify-between gap-2" data-testid="storage-tree-activation">
+                <dt className="text-[var(--text-muted)]">Storage-tree v2</dt>
+                <dd className="text-right text-[var(--text-secondary)]">
+                  {describeActivationStatus(sync.head_height, storageActivation).detail}
                 </dd>
               </div>
               <p className="pt-2 text-xs leading-relaxed text-[var(--text-muted)]">

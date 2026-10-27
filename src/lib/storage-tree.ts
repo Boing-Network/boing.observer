@@ -71,3 +71,41 @@ export function describeStorageTree(height: number, activation: StorageActivatio
       return "This node does not report a storage-tree v2 activation height, so this explorer cannot tell which routing applies at this height. Account proofs verify the same way under either layout.";
   }
 }
+
+export type ActivationState = "unknown" | "off" | "pending" | "active";
+
+export interface ActivationStatus {
+  state: ActivationState;
+  /** Blocks until H (`H - head`, at least 1) while pending, else `null`. */
+  blocksRemaining: number | null;
+  /** Status text without the "Storage-tree v2" label (for a labelled row). */
+  detail: string;
+  /** The same text with the "Storage-tree v2: " label prefix. */
+  summary: string;
+}
+
+const fmt = (n: number): string => n.toLocaleString("en-US");
+
+function status(state: ActivationState, blocksRemaining: number | null, detail: string): ActivationStatus {
+  return { state, blocksRemaining, detail, summary: `Storage-tree v2: ${detail}` };
+}
+
+/**
+ * Network-level status of storage-tree v2 relative to the chain head: not yet active (and how many blocks remain),
+ * active, not scheduled, or unknown. Block `H` is the first block that uses v2, so v2 is active once `head >= H`.
+ */
+export function describeActivationStatus(headHeight: number | null, activation: StorageActivation): ActivationStatus {
+  if (activation == null) return status("unknown", null, "this node does not report an activation height.");
+  if (activation === "off") return status("off", null, "not scheduled on this node (legacy 64-bit routing).");
+  if (headHeight == null || !Number.isSafeInteger(headHeight) || headHeight < 0) {
+    return status("pending", null, `activates at height ${fmt(activation)}.`);
+  }
+  if (headHeight >= activation) return status("active", null, `active since height ${fmt(activation)}.`);
+  const remaining = activation - headHeight;
+  const unit = remaining === 1 ? "block" : "blocks";
+  return status(
+    "pending",
+    remaining,
+    `not yet active. Activates at height ${fmt(activation)} (${fmt(remaining)} ${unit} to go).`,
+  );
+}
