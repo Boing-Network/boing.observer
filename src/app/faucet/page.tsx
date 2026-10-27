@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
 import { explorerAccountHref } from "@/lib/explorer-href";
 import { NETWORK_FAUCET_URL, NETWORK_TESTNET_URL } from "@/lib/constants";
+import { TestnetStatus } from "@/components/testnet-status";
 import { faucetRequest, type FaucetResult } from "@/lib/rpc-methods";
 import { toPrefixedHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
@@ -74,6 +75,7 @@ export default function FaucetPage() {
 
       <header className="space-y-2">
         <h1 className="page-title font-display">Testnet faucet helper</h1>
+        <TestnetStatus />
         <p className="mt-2 text-[var(--text-secondary)]">
           Request testnet BOING (once per 60 seconds per account). The canonical faucet is the{" "}
           <a href={NETWORK_FAUCET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">

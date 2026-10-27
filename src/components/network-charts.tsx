@@ -168,12 +168,12 @@ export function NetworkCharts() {
                       }
                       labelFormatter={(label) => `Block #${Number(label).toLocaleString()}`}
                     />
-                    <Bar dataKey="transfer" stackId="v" fill="var(--network-cyan)" name="transfer" />
-                    <Bar dataKey="bond" stackId="v" fill="var(--network-primary-light)" name="bond" />
+                    <Bar dataKey="transfer" stackId="v" fill="var(--chart-transfer)" name="transfer" />
+                    <Bar dataKey="bond" stackId="v" fill="var(--chart-bond)" name="bond" />
                     <Bar
                       dataKey="unbond"
                       stackId="v"
-                      fill="rgba(251, 191, 36, 0.85)"
+                      fill="var(--chart-unbond)"
                       name="unbond"
                       radius={[2, 2, 0, 0]}
                     />

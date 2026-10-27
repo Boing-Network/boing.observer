@@ -24,7 +24,7 @@ export function SiteLogo({ variant = "header", className = "", headingId }: Site
   const inner = (
     <>
       <LogoMark
-        className={`${markClass} transition-[filter] ${headingId ? "" : "group-hover:drop-shadow-[0_0_12px_rgba(0,232,200,0.35)]"}`}
+        className={`${markClass} text-[var(--text-primary)] transition-[filter] ${headingId ? "" : "group-hover:drop-shadow-[0_0_12px_rgba(59, 140, 255,0.35)]"}`}
       />
       <span className={`min-w-0 ${textClass}`}>
         <span className="hidden min-[360px]:inline">Boing </span>

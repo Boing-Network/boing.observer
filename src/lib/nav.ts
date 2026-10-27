@@ -1,4 +1,4 @@
-import { DISCORD_URL, NETWORK_FAUCET_URL, WALLET_URL } from "@/lib/constants";
+import { DISCORD_URL, FINANCE_URL, NETWORK_FAUCET_URL, WALLET_URL, WEBSITE_URL } from "@/lib/constants";
 
 export type NavItem = {
   href: string;
@@ -21,8 +21,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { href: "/", label: "Home", exact: true },
       { href: "/about", label: "About" },
-      { href: "/qa", label: "QA", exact: true },
-      { href: "/qa/rules", label: "QA rules" },
+      { href: "/qa", label: "Quality Gate", exact: true },
+      { href: "/qa/rules", label: "Gate rules" },
     ],
   },
   {
@@ -41,7 +41,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { href: "/tools", label: "Tools", exact: true },
       { href: "/tools/rpc-catalog", label: "RPC catalog" },
-      { href: "/tools/qa-check", label: "QA check" },
+      { href: "/tools/qa-check", label: "QA pre-flight" },
       { href: "/tools/node-health", label: "Node health" },
     ],
   },
@@ -49,7 +49,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     id: "ecosystem",
     label: "Ecosystem",
     items: [
-      { href: WALLET_URL, label: "Wallet (boing.express)", external: true },
+      { href: WEBSITE_URL, label: "Boing Network", external: true },
+      { href: WALLET_URL, label: "Boing Express", external: true },
+      { href: FINANCE_URL, label: "Boing Finance", external: true },
       { href: NETWORK_FAUCET_URL, label: "Faucet", external: true },
       { href: DISCORD_URL, label: "Discord", external: true },
     ],

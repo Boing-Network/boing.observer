@@ -4,6 +4,8 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
 import { QA_DOC_URL } from "@/lib/constants";
+import { BRAND } from "@/lib/brand";
+import { TestnetStatus } from "@/components/testnet-status";
 import { qaCheck, type QaCheckResult } from "@/lib/rpc-methods";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
 
@@ -78,16 +80,23 @@ export default function QaCheckPage() {
             </Link>
           </li>
           <li aria-hidden="true">/</li>
-          <li className="text-[var(--text-primary)]">QA pre-flight</li>
+          <li className="text-[var(--text-primary)]">Pre-flight</li>
         </ol>
       </nav>
 
       <header>
-        <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">QA pre-flight</h1>
-        <p className="mt-2 max-w-2xl text-[var(--text-secondary)]">
-          Preview whether bytecode would pass deploy QA on the selected network before you submit. Full rule catalog:{" "}
+        <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">Quality Gate pre-flight</h1>
+        <div className="mt-3">
+          <TestnetStatus />
+        </div>
+        <p className="mt-3 max-w-2xl leading-relaxed text-[var(--text-secondary)]">
+          {BRAND.qualityGateSummary} This check asks the selected network whether the bytecode and metadata would be
+          Allowed, Rejected, or referred to the pool. It does not submit a deployment.
+        </p>
+        <p className="mt-2 max-w-2xl text-sm text-[var(--text-muted)]">
+          {BRAND.transparentDefault} Full catalog:{" "}
           <Link href="/qa/rules" className="text-network-cyan hover:underline">
-            QA gate rules
+            Gate rules
           </Link>
           .
         </p>
@@ -223,7 +232,7 @@ export default function QaCheckPage() {
           )}
           {result.result === "unsure" && (
             <p className="mt-3 text-sm text-[var(--text-secondary)]">
-              This deployment would go to the community QA pool for review.
+              Automated checks were not decisive. This deployment would go to the community pool, and the outcome stays visible on the Quality Gate.
             </p>
           )}
         </output>

@@ -1,11 +1,11 @@
 import type { SVGProps } from "react";
 
-const TEAL = "#00e8c8";
-
 type LogoMarkProps = SVGProps<SVGSVGElement>;
 
 /**
- * Boing Observer mark: hex “block” frame + stacked lines + focal dot (Express teal).
+ * Observer mark: rounded aperture with a single inner block.
+ * Geometric, monochrome-legible, and free of coin, shield, chain, or rocket motifs.
+ * Final lockup and mascot art are still a design handoff — this is the working symbol.
  */
 export function LogoMark({ className, ...props }: LogoMarkProps) {
   return (
@@ -17,21 +17,16 @@ export function LogoMark({ className, ...props }: LogoMarkProps) {
       aria-hidden
       {...props}
     >
-      <path d="M16 9.5 22.5 13.25v5.5L16 22.5 9.5 18.75v-5.5L16 9.5z" fill={TEAL} fillOpacity={0.08} />
-      <path
-        d="M16 9.5 22.5 13.25v5.5L16 22.5 9.5 18.75v-5.5L16 9.5z"
-        stroke={TEAL}
-        strokeWidth={1.65}
-        strokeLinejoin="round"
+      <rect
+        x="2.25"
+        y="2.25"
+        width="27.5"
+        height="27.5"
+        rx="8"
+        stroke="currentColor"
+        strokeWidth="2"
       />
-      <path
-        d="M11.5 14h6.5M11.5 17h9.5M11.5 20h4.5"
-        stroke={TEAL}
-        strokeWidth={1.35}
-        strokeLinecap="round"
-        opacity={0.95}
-      />
-      <circle cx={16} cy={16.75} r={1.15} fill={TEAL} />
+      <rect x="10" y="10" width="12" height="12" rx="3.5" fill="var(--accent)" />
     </svg>
   );
 }
