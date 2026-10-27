@@ -85,7 +85,7 @@ Workers & Pages -> boing-observer -> Domains & Routes.
   `export const dynamic = "force-dynamic"`: every page is server-rendered per request and HTML is not CDN-cached (static assets under
   `/_next/static` still are). JSON-LD blocks are data, not scripts. **Rollback without code changes:** set `BOING_OBSERVER_CSP=report-only`
   (inline scripts allowed, nothing blocked, violations still reported) in `wrangler.toml [vars]` and redeploy, or `wrangler rollback`.
-  Violations are logged by `/api/csp-report` (see `wrangler tail`); after a deploy, watch it for a day. Third-party scripts are not
+  Violations are logged by `/api/csp-report` (see `wrangler tail`); after a deploy, watch it for a day. To summarize a capture (grouped by directive and blocked origin, with page paths), run `npx wrangler tail boing-observer --format json > csp.log` while traffic flows, then `npm run csp:summary -- csp.log` (add `--exclude smoke-test` to set aside the synthetic post-deploy report; excluded reports are still counted separately). **There is nothing to delete:** the route stores nothing, so a report such as the "smoke-test" one is just a log line that ages out of `wrangler tail` / Workers Logs retention; filter it with `--exclude` instead. Third-party scripts are not
   allowed: any new analytics/widget needs a deliberate `script-src` change in `src/lib/csp.ts` plus a test. Coverage: `e2e/csp.spec.ts`
   (headers, nonce on every script, no `securitypolicyviolation` on nine routes, inline handlers blocked, https images allowed).
 - Bodies from third-party gateways (token metadata, blob error text) are read with `src/lib/bounded-body.ts`: the size cap is applied
@@ -153,7 +153,7 @@ Setup notes:
   `null` = not configured (legacy 64-bit routing everywhere). `src/lib/storage-tree.ts` prefers that value, then the optional build env
   above; older nodes omit the key, which means "unknown" (the key is looked up at the top level or one object deep, so a nesting change
   does not break it). Block pages and the proof tool say whether a height uses the legacy 64-bit or the 256-bit layout (`null` is reported
-  as "not scheduled"). The proof format is the same, only longer, and verification does not depend on the layout. When unknown, nothing is claimed.
+  as "not scheduled"). The home page "Chain tip" card also compares H with the committed head (`describeActivationStatus`): before H it reads "not yet active ... (N blocks to go)", from H it reads "active since height H". The proof format is the same, only longer, and verification does not depend on the layout. When unknown, nothing is claimed.
 - **Receipt retention (node info):** `receipt_retention_blocks` is an integer window or `null` = unbounded. `/tx/:id` prefers it over the build
   env, says "this node reports keeping receipts for the newest N blocks", and never suggests pruning for `null`/`0`.
 
