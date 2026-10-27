@@ -1,10 +1,7 @@
-/** Shared "Boing apps" switcher (same links on boing.network, boing.express, boing.finance, boing.observer). */
-export const BOING_APPS = [
-  { name: "Boing Network", desc: "Home, docs, faucet", href: "https://boing.network" },
-  { name: "Boing Express", desc: "Wallet", href: "https://boing.express" },
-  { name: "Boing Observer", desc: "Block explorer", href: "https://boing.observer" },
-  { name: "boing.finance", desc: "Swap, pools, deploy tokens", href: "https://boing.finance" },
-] as const;
+import { BOING_APPS } from "@/lib/brand";
+
+/** Shared app switcher. Names and lines match boing.network, boing.express, and boing.finance. */
+export { BOING_APPS };
 
 export function BoingAppsMenu() {
   return (

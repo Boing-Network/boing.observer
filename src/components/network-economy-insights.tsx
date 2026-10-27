@@ -80,9 +80,9 @@ function volumePieWeights(bond: bigint, unbond: bigint, transfer: bigint): VolPi
   if (total === BigInt(0)) return [];
   const w = (b: bigint) => Number((b * BigInt(100000)) / total);
   const rows: VolPieRow[] = [
-    { name: "Bond", value: w(bond), fill: "var(--network-primary-light)", raw: bond },
-    { name: "Unbond", value: w(unbond), fill: "rgba(251, 191, 36, 0.9)", raw: unbond },
-    { name: "Transfer", value: w(transfer), fill: "var(--network-cyan)", raw: transfer },
+    { name: "Bond", value: w(bond), fill: "var(--chart-bond)", raw: bond },
+    { name: "Unbond", value: w(unbond), fill: "var(--chart-unbond)", raw: unbond },
+    { name: "Transfer", value: w(transfer), fill: "var(--chart-transfer)", raw: transfer },
   ];
   return rows.filter((r) => r.value > 0);
 }

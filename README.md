@@ -1,12 +1,27 @@
-# 🔭 Boing Observer — Blockchain Explorer
+# Boing Observer — See what happens on-chain
 
-Browse blocks, transactions, accounts, QA, and native DEX on **Boing Network**. Live at **[boing.observer](https://boing.observer)**.
+**Boing Observer — an explorer with integrated QA transparency.** Live at **[boing.observer](https://boing.observer)**.
 
-**Boundary:** Boing Observer is a **Boing-native** explorer (Boing RPC + `@boing-network/boing-sdk`). It is **not** an Etherscan clone and does **not** embed an EVM runtime. EVM explorers/contracts live under **boing.finance**.
+Boing is an independent Layer 1 where quality is enforced by the protocol. **Boing Network — Quality, enforced by the protocol.**
 
-> 👋 **Everyday users:** paste a block height, block hash, or 64-character account into search. Testnet is the default. Get coins at [boing.network/faucet](https://boing.network/faucet).  
-> 🛠️ **Developers:** Next.js 15 App Router. Browser traffic goes through same-origin `POST /api/rpc` (CORS-safe). Direct node calls happen only on the server.  
-> 🛰️ **Operators:** `NEXT_PUBLIC_TESTNET_RPC` defaults to `https://testnet-rpc.boing.network/`. Upgrading a laptop node does **not** change production explorer RPC.
+**Public testnet — mainnet not live.**
+
+| Product | Role |
+|---------|------|
+| **Boing Network** | Core protocol |
+| **Boing Express** | Wallet. Your gateway to Boing |
+| **Boing Observer** | Explorer and transparency layer. See what happens on-chain |
+| **Boing Finance** | DeFi and liquidity. Move liquidity across chains |
+
+The **Boing Quality Gate** screens deployments against transparent rules before they reach the ledger. Automated checks handle clear cases. A decentralized community pool reviews edge cases. This explorer is where those rules, deployments, and outcomes stay visible and auditable.
+
+Designed to reduce malicious, deceptive and low-quality deployments through transparent, protocol-level checks. Boing introduces protocol-level deployment checks designed to identify and restrict deployments that fail transparent quality criteria before they are accepted on-chain.
+
+Observer reads Boing RPC through `@boing-network/boing-sdk`. Liquidity and EVM contract work live on **Boing Finance**.
+
+> **People using the chain:** paste a block height, block hash, or 64-character account into search. Testnet is the default. Get testnet coins at [boing.network/faucet](https://boing.network/faucet).  
+> **Developers:** deployment QA status is on [`/qa`](https://boing.observer/qa) and [`/tools/qa-check`](https://boing.observer/tools/qa-check). Next.js 15 App Router. Browser traffic goes through same-origin `POST /api/rpc` (CORS-safe). Direct node calls happen only on the server.  
+> **Validators and node operators:** participation and endpoint health are on [`/tools/node-health`](https://boing.observer/tools/node-health). `NEXT_PUBLIC_TESTNET_RPC` defaults to `https://testnet-rpc.boing.network/`. Upgrading a laptop node does not change the production explorer RPC. Designed for verifiability and institutional review.
 
 ```mermaid
 flowchart LR
@@ -24,9 +39,9 @@ flowchart LR
 | 🧱 Block | `/block/:height` or `/block/hash/:hash` | Header + transactions |
 | 👤 Account | `/account/:address` | Balance, nonce, stake (32-byte hex) |
 | 📄 Transaction | `/tx/:txId` | Receipt when the node has one |
-| ✅ QA transparency | [`/qa`](https://boing.observer/qa) | Live pool + public Allow/Reject voting |
-| 📜 QA gate rules | [`/qa/rules`](https://boing.observer/qa/rules) | Every Allow / Reject / Unsure rule + PDF |
-| 🧪 QA check | `/tools/qa-check` | Pre-flight `boing_qaCheck` |
+| Quality Gate | [`/qa`](https://boing.observer/qa) | Live Boing Quality Gate: registry, pool, and public Allow/Reject voting |
+| Gate rules | [`/qa/rules`](https://boing.observer/qa/rules) | Plain-language outcomes plus every Allow / Reject / Unsure rule + PDF |
+| QA pre-flight | `/tools/qa-check` | Pre-flight `boing_qaCheck` |
 | 💱 DEX | `/dex/pools`, `/dex/quote` | Read-only directory + CP quotes via `@boing-network/boing-sdk` |
 | 🖼️ Asset | `/asset/:address`, `/asset/:address/item/:tokenId`, `/tokens` | Metadata scan; reference NFT collection + **per-item** profiles (owner/metadata XOR slots). FreshMint-style hash token ids via mint calldata decode in recent blocks ([BOING-REFERENCE-NFT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-REFERENCE-NFT.md) — v3 `mint_batch` n≤500 is one receipt). **Linked tokens & collections** (plain-language UI) resolve official NFT↔fungible links from the on-chain registry on asset, account, and NFT item pages (read-only; `links_count` / `get_link_at`, tombstones skipped) — see [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md). **Builder attested** (planned read-only): optional builder signal from a separate on-chain registry when an active attestation exists for a companion pair — see [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md) |
 | 📡 RPC catalog | `/tools/rpc-catalog` | Live `boing_getRpcMethodCatalog` |
@@ -39,7 +54,7 @@ Network selector: **Testnet** by default. **Mainnet** only appears as live when 
 ## 🧰 Tech stack
 
 - **Next.js 15** (App Router), React 18, TypeScript
-- **Tailwind CSS** with Boing design tokens (Comfortaa, dark theme, aqua/teal)
+- **Tailwind CSS** with Boing design tokens (Comfortaa, deep navy, electric yellow accent)
 - **RPC** — Browser: same-origin `POST /api/rpc`. Server routes: direct HTTP. DEX tooling uses **`@boing-network/boing-sdk@^0.5.38`** from npm
 - **Cloudflare** — OpenNext adapter → Workers; custom domain **boing.observer**
 
@@ -140,4 +155,6 @@ Questions or feedback? Join the [Boing Network Discord](https://discord.gg/K3w9n
 
 ---
 
-*Boing Network — Authentic. Decentralized. Optimal. Sustainable.*
+*Boing Network — Quality, enforced by the protocol.*
+
+*Public testnet — mainnet not live.*

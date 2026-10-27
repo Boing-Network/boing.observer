@@ -270,7 +270,8 @@ export function TokensIndexPanel() {
               <p className="mt-4 text-sm text-[var(--text-muted)]">
                 {data.entries.length === 0 ? (
                   <>
-                    No included contract deploys in this window. Mempool accept on boing.finance is not enough — wait for
+                    No included contract deploys in this window. A Boing Finance “Deploy submitted” toast is mempool
+                    accept, not a listing here — wait for
                     a block, then Rescan. DEX-listed tokens need a published factory; see{" "}
                     <Link href="/dex/tokens" className="text-network-cyan hover:underline">
                       DEX token directory

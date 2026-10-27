@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE_URL, NETWORK_FAUCET_URL, RPC_SPEC_URL } from "@/lib/constants";
+import { BRAND } from "@/lib/brand";
+import { TestnetStatus } from "@/components/testnet-status";
 
 export const metadata: Metadata = {
   title: "Developer tools",
   description:
-    "Boing Observer utilities: faucet helper, node health, RPC catalog, QA pre-flight, token and DEX directories.",
+    "Boing Observer tools for developers and node operators: Quality Gate pre-flight, node health, RPC catalog, account proofs, and read-only token and DEX directories. Public testnet — mainnet not live.",
   alternates: { canonical: `${SITE_URL}/tools` },
 };
 
@@ -26,8 +28,12 @@ export default function ToolsPage() {
 
       <header>
         <h1 className="page-title font-display">Developer tools</h1>
-        <p className="mt-2 max-w-2xl text-[var(--text-secondary)]">
-          Helpers for builders and operators. Everyday onboarding:{" "}
+        <div className="mt-3">
+          <TestnetStatus />
+        </div>
+        <p className="mt-3 max-w-2xl text-[var(--text-secondary)]">
+          Deployment QA status, endpoint health, and the published RPC surface. {BRAND.verifiability} Everyday
+          onboarding:{" "}
           <a
             href={NETWORK_FAUCET_URL}
             target="_blank"
@@ -102,9 +108,9 @@ export default function ToolsPage() {
               href="/tools/qa-check"
               className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
             >
-              <h2 className="font-display text-lg font-semibold text-network-cyan">QA pre-flight</h2>
+              <h2 className="font-display text-lg font-semibold text-network-cyan">Quality Gate pre-flight</h2>
               <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-                Check bytecode against live deploy QA rules before submitting.
+                Screen bytecode and metadata against the live Boing Quality Gate before you submit.
               </p>
             </Link>
           </li>
@@ -113,9 +119,9 @@ export default function ToolsPage() {
               href="/qa/rules"
               className="glass-card block h-full p-5 transition-colors hover:border-[var(--border-hover)]"
             >
-              <h2 className="font-display text-lg font-semibold text-network-cyan">QA gate rules</h2>
+              <h2 className="font-display text-lg font-semibold text-network-cyan">Quality Gate rules</h2>
               <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
-                Full Allow / Reject / Unsure catalog and downloadable PDF.
+                Allow, Reject, and Unsure in plain language, plus the operational catalog and PDF.
               </p>
             </Link>
           </li>
@@ -169,7 +175,7 @@ export default function ToolsPage() {
       <p className="text-sm text-[var(--text-muted)]">
         Live pool:{" "}
         <Link href="/qa" className="text-network-cyan hover:underline">
-          QA transparency
+          Quality Gate
         </Link>
       </p>
     </div>

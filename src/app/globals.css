@@ -4,48 +4,53 @@
 
 :root {
   color-scheme: dark;
-  /* Engraved slab (same treatment as boing.express wallet shell) */
-  --canvas-bg: #070a0e;
-  --canvas-stone-deep: #06080c;
-  --canvas-stone-mid: #0c1018;
-  --canvas-stone-vein-end: #121a24;
-  --canvas-surface: #0a1628;
-  --canvas-surface-2: #0d1f3c;
-  --canvas-border: rgba(0, 232, 200, 0.16);
-  --canvas-border-subtle: rgba(0, 180, 216, 0.12);
-  /* Boing Express tokens — https://boing.express/ (readability on dark slab) */
-  --boing-black: #050c18;
-  --boing-navy: #0a1628;
-  --boing-navy-mid: #0d1f3c;
-  --boing-navy-light: #122244;
-  --boing-navy-deep: #050c18;
-  --express-primary: #00e8c8;
-  --express-primary-glow: rgba(0, 232, 200, 0.25);
-  --express-secondary: #00b4d8;
-  --express-soft: #90e0ef;
-  --text-primary: #f0f9ff;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --card-bg: rgba(10, 22, 40, 0.78);
-  --card-border: rgba(0, 232, 200, 0.18);
-  --card-border-hover: rgba(0, 232, 200, 0.45);
-  --nav-bg: rgba(5, 12, 24, 0.88);
-  --nav-border: rgba(0, 232, 200, 0.12);
+  /* Deep navy foundation. One accent: electric yellow. */
+  --canvas-bg: #050b16;
+  --canvas-stone-deep: #040914;
+  --canvas-stone-mid: #071222;
+  --canvas-stone-vein-end: #0c1c34;
+  --canvas-surface: #071222;
+  --canvas-surface-2: #0c1c34;
+  --canvas-border: rgba(255, 225, 74, 0.18);
+  --canvas-border-subtle: rgba(255, 225, 74, 0.1);
+  --boing-black: #050b16;
+  --boing-navy: #071222;
+  --boing-navy-mid: #0c1c34;
+  --boing-navy-light: #132844;
+  --boing-navy-deep: #040914;
+  --accent: #ffe14a;
+  --accent-soft: #fff3a8;
+  --accent-glow: rgba(255, 225, 74, 0.22);
+  /* Legacy token names map to the single accent so existing utilities stay in the system. */
+  --express-primary: var(--accent);
+  --express-primary-glow: var(--accent-glow);
+  --express-secondary: var(--accent);
+  --express-soft: var(--accent-soft);
+  --text-primary: #f4f7fb;
+  --text-secondary: #c5d0de;
+  --text-muted: #8b9bb0;
+  --card-bg: rgba(7, 18, 34, 0.82);
+  --card-border: rgba(255, 225, 74, 0.16);
+  --card-border-hover: rgba(255, 225, 74, 0.42);
+  --nav-bg: rgba(5, 11, 22, 0.9);
+  --nav-border: rgba(255, 225, 74, 0.14);
   --border-color: var(--card-border);
   --border-hover: var(--card-border-hover);
-  /* Brand accents */
-  --network-primary: #7c3aed;
-  --network-primary-light: #a78bfa;
-  --network-cyan: var(--express-primary);
-  --network-cyan-light: var(--express-soft);
-  --network-aurora: var(--express-secondary);
-  --network-nebula: #a78bfa;
-  --network-gold: #fbbf24;
-  --link-accent: var(--express-primary);
-  /* Content scrim (lifts type off decorative neon) */
-  --overlay-from: rgba(5, 12, 24, 0.5);
-  --overlay-mid: rgba(5, 12, 24, 0.28);
-  --overlay-light: rgba(5, 12, 24, 0.12);
+  --network-primary: var(--accent);
+  --network-primary-light: var(--accent-soft);
+  --network-cyan: var(--accent);
+  --network-cyan-light: var(--accent-soft);
+  --network-aurora: var(--accent);
+  --network-nebula: var(--accent-soft);
+  --network-gold: var(--accent);
+  --link-accent: var(--accent);
+  /* Chart series stay distinguishable from the single brand accent. */
+  --chart-bond: #d7e0ec;
+  --chart-unbond: #8ea0b5;
+  --chart-transfer: var(--accent);
+  --overlay-from: rgba(4, 9, 20, 0.55);
+  --overlay-mid: rgba(4, 9, 20, 0.32);
+  --overlay-light: rgba(4, 9, 20, 0.12);
   --font-sans: var(--font-comfortaa), system-ui, sans-serif;
 }
 
@@ -83,16 +88,24 @@ body.app-page-canvas {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 100% 55% at 15% -5%, rgba(55, 68, 88, 0.22), transparent 52%),
-    radial-gradient(ellipse 80% 50% at 92% 12%, rgba(40, 48, 62, 0.18), transparent 48%),
-    radial-gradient(ellipse 70% 45% at 8% 88%, rgba(35, 42, 54, 0.2), transparent 50%),
-    radial-gradient(ellipse 90% 60% at 78% 96%, rgba(48, 58, 72, 0.15), transparent 55%),
+    radial-gradient(ellipse 80% 50% at 12% -8%, rgba(255, 225, 74, 0.06), transparent 46%),
+    radial-gradient(ellipse 70% 45% at 100% 0%, rgba(19, 40, 68, 0.55), transparent 50%),
     linear-gradient(
-      168deg,
+      180deg,
       var(--canvas-stone-deep) 0%,
-      var(--canvas-stone-mid) 42%,
+      var(--canvas-stone-mid) 48%,
       var(--canvas-stone-vein-end) 100%
     );
+}
+
+.app-engrave-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255, 225, 74, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 225, 74, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 20%, #000 15%, transparent 72%);
 }
 
 .app-engrave-stone::after {
@@ -123,7 +136,7 @@ body.app-page-canvas {
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.3;
+  opacity: 0.12;
 }
 
 .app-engrave-vein__shadow {
@@ -134,14 +147,14 @@ body.app-page-canvas {
   opacity: 0.92;
 }
 
-/* Static neon accents — toned down so body copy stays readable like boing.express. */
+/* One restrained accent glow. Charts and diagrams carry the technical detail. */
 .app-neon-layer {
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
-  opacity: 0.34;
+  opacity: 0.22;
 }
 
 .app-neon {
@@ -165,29 +178,38 @@ body.app-page-canvas {
   opacity: var(--neon-base-o, 0.55);
 }
 
+.app-neon--a,
+.app-neon--b,
+.app-neon--c,
+.app-neon--d,
+.app-neon--e,
+.app-neon--f,
+.app-neon--g,
+.app-neon--h,
+.app-neon--i {
+  --neon-c: #ffe14a;
+}
+
 .app-neon--a {
-  --neon-c: #4a9fe8;
   left: 8%;
   top: 6%;
-  --neon-base-o: 0.45;
+  --neon-base-o: 0.28;
 }
 
 .app-neon--b {
-  --neon-c: #7c6cf0;
   right: 4%;
   top: 22%;
   width: min(22vw, 160px);
   height: min(22vw, 160px);
-  --neon-base-o: 0.38;
+  --neon-base-o: 0.18;
 }
 
 .app-neon--c {
-  --neon-c: #5ecf9a;
   left: 2%;
   bottom: 12%;
   width: min(32vw, 240px);
   height: min(32vw, 240px);
-  --neon-base-o: 0.32;
+  --neon-base-o: 0.14;
 }
 
 .app-neon--arc {
@@ -204,20 +226,18 @@ body.app-page-canvas {
 }
 
 .app-neon--d {
-  --neon-c: #5ab0ff;
   right: -8%;
   top: 38%;
   clip-path: inset(0 48% 48% 0);
 }
 
 .app-neon--e {
-  --neon-c: #b894f5;
   left: -12%;
   bottom: 18%;
   clip-path: inset(48% 0 0 42%);
   width: min(48vw, 360px);
   height: min(48vw, 360px);
-  opacity: 0.3;
+  opacity: 0.16;
 }
 
 .app-neon--dash {
@@ -238,19 +258,17 @@ body.app-page-canvas {
 }
 
 .app-neon--f {
-  --neon-c: #4a9fe8;
   left: 18%;
   top: 52%;
   transform: rotate(-18deg);
 }
 
 .app-neon--g {
-  --neon-c: #6ee0c0;
   right: 12%;
   bottom: 28%;
   width: min(28vw, 200px);
   transform: rotate(24deg);
-  opacity: 0.4;
+  opacity: 0.22;
 }
 
 .app-neon--dot {
@@ -265,13 +283,11 @@ body.app-page-canvas {
 }
 
 .app-neon--h {
-  --neon-c: #7eb8ff;
   left: 72%;
   top: 14%;
 }
 
 .app-neon--i {
-  --neon-c: #9f8fff;
   left: 42%;
   bottom: 8%;
 }
@@ -303,7 +319,7 @@ body.app-page-canvas {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: 0 4px 32px rgba(0, 0, 0, 0.35);
   transition:
     border-color 0.2s ease,
@@ -384,7 +400,7 @@ body.app-page-canvas {
 
 .data-card {
   display: block;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid var(--border-color);
   background: var(--card-bg);
   padding: 1rem;
@@ -443,7 +459,7 @@ body.app-page-canvas {
     height: 2.75rem;
     transform: translateY(-50%);
     border-radius: 999px;
-    background: rgba(0, 232, 200, 0.45);
+    background: rgba(255, 225, 74, 0.55);
     pointer-events: none;
     transition: opacity 0.15s ease-out;
   }

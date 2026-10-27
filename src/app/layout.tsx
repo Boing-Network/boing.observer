@@ -9,7 +9,9 @@ import { CollaborationBanner } from "@/components/collaboration-banner";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
 import { NetworkLinkNotice } from "@/components/network-link-notice";
 import Link from "next/link";
-import { SITE_URL, WEBSITE_URL, WALLET_URL, DISCORD_URL } from "@/lib/constants";
+import { SITE_URL, WEBSITE_URL, WALLET_URL, FINANCE_URL, DISCORD_URL } from "@/lib/constants";
+import { BRAND } from "@/lib/brand";
+import { TestnetStatus } from "@/components/testnet-status";
 
 // Required by the enforcing nonce CSP (src/middleware.ts, src/lib/csp.ts): Next stamps its inline bootstrap scripts
 // with the per-request nonce only when HTML is rendered per request. Prerendered HTML has no nonce, so every page
@@ -40,7 +42,7 @@ const OG_IMAGE = {
   url: "/og.png",
   width: 1200,
   height: 630,
-  alt: "Boing Observer — blockchain explorer for Boing Network",
+  alt: "Boing Observer — See what happens on-chain",
 };
 
 /** Enables edge-to-edge layout on notched iOS devices; pairs with safe-area env() in CSS. */
@@ -48,32 +50,29 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#050c18",
+  themeColor: "#050b16",
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Boing Observer — Blockchain Explorer | Boing Network",
+    default: "Boing Observer — See what happens on-chain",
     template: "%s | Boing Observer",
   },
   description:
-    "Explore blocks, transactions, and accounts on Boing Network. Browse Boing testnet today, with mainnet support enabled when configured. Search by block height, block hash, or account address at boing.observer.",
+    "Boing Observer — an explorer with integrated QA transparency. See accounts, blocks, and transactions on Boing Network. Public testnet — mainnet not live. The Boing Quality Gate screens deployments before they reach the ledger.",
   keywords: [
     "Boing Network",
     "Boing Observer",
-    "blockchain explorer",
+    "block explorer",
     "blocks",
     "transactions",
     "accounts",
     "Boing",
-    "crypto",
-    "block explorer",
     "testnet",
-    "mainnet",
+    "Boing Quality Gate",
     "quality assurance",
-    "consensus",
-    "True QA",
+    "transparency",
     "DEX",
   ],
   authors: [{ name: "Boing Network", url: WEBSITE_URL }],
@@ -92,15 +91,15 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "Boing Observer",
-    title: "Boing Observer — Blockchain Explorer | Boing Network",
+    title: "Boing Observer — See what happens on-chain",
     description:
-      "Explore blocks, transactions, and accounts on Boing Network. Browse Boing testnet today, with mainnet support enabled when configured.",
+      "An explorer with integrated QA transparency for Boing Network. Public testnet — mainnet not live.",
     images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Boing Observer — Blockchain Explorer | Boing Network",
-    description: "Explore blocks, transactions, and accounts on Boing Network.",
+    title: "Boing Observer — See what happens on-chain",
+    description: `${BRAND.observerBoundary} ${BRAND.testnetStatus}.`,
     images: [OG_IMAGE],
   },
   alternates: {
@@ -138,7 +137,7 @@ export default function RootLayout({
         "@id": `${SITE_URL}/#website`,
         url: SITE_URL,
         name: "Boing Observer",
-        description: "Blockchain explorer for Boing Network. Browse blocks, transactions, and accounts.",
+        description: BRAND.observerBoundary,
         publisher: { "@id": `${SITE_URL}/#organization` },
       },
       {
@@ -146,10 +145,11 @@ export default function RootLayout({
         "@id": `${SITE_URL}/#organization`,
         name: "Boing Network",
         url: WEBSITE_URL,
-        slogan: "Authentic. Decentralized. Optimal. Quality-Assured.",
+        slogan: BRAND.tagline,
+        description: BRAND.core,
         logo: `${SITE_URL}/icon-512.png`,
         image: `${SITE_URL}/og.png`,
-        sameAs: [WEBSITE_URL, WALLET_URL, "https://boing.finance", DISCORD_URL],
+        sameAs: [WEBSITE_URL, WALLET_URL, FINANCE_URL, DISCORD_URL],
       },
     ],
   };
@@ -186,19 +186,25 @@ export default function RootLayout({
                 {children}
               </main>
               <footer className="mt-auto border-t border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 py-6 text-center text-xs text-[var(--text-muted)] backdrop-blur-md sm:px-6 sm:text-sm">
-                <p className="mb-2 leading-relaxed">Boing Network — Authentic. Decentralized. Optimal. Quality-Assured.</p>
+                <p className="mb-2 leading-relaxed">{BRAND.tagline}</p>
+                <div className="mb-3 flex justify-center">
+                  <TestnetStatus />
+                </div>
                 <nav aria-label="Site links" className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4">
                   <a href={WEBSITE_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
-                    boing.network
+                    Boing Network
                   </a>
                   <a href={WALLET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
-                    Wallet (boing.express)
+                    Boing Express
+                  </a>
+                  <a href={FINANCE_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
+                    Boing Finance
                   </a>
                   <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
                     Discord
                   </a>
                   <Link href="/qa" className="text-network-cyan hover:underline">
-                    QA transparency
+                    Quality Gate
                   </Link>
                   <Link href="/tools" className="text-network-cyan hover:underline">
                     Tools

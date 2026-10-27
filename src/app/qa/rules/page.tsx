@@ -4,6 +4,8 @@ import Link from "next/link";
 import { PdfDocument } from "@/components/pdf-document";
 import { QA_DOC_URL, SITE_URL } from "@/lib/constants";
 import { publicPdfSrc } from "@/lib/public-pdf";
+import { BRAND } from "@/lib/brand";
+import { TestnetStatus } from "@/components/testnet-status";
 import {
   CONTENT_BLOCKLIST_TERMS,
   EVALUATION_STEPS,
@@ -16,13 +18,13 @@ import {
 } from "@/lib/qa-gate-rules";
 
 export const metadata: Metadata = {
-  title: "QA gate rules",
+  title: "Quality Gate rules",
   description:
-    "Every protocol QA rule a Boing Network contract deploy must pass to be Allowed into a block — hard rejects, Unsure pool referrals, opcodes, content policy, and RPC codes.",
+    "Plain-language and operational catalog of the Boing Quality Gate: transparent Allow, Reject, and Unsure rules a deployment must pass before it reaches the ledger. Public testnet — mainnet not live.",
   openGraph: {
-    title: "QA gate rules | Boing Observer",
+    title: "Boing Quality Gate rules | Boing Observer",
     description:
-      "Operational catalog of Allow / Reject / Unsure rules for Boing Network contract deployment.",
+      "Observable rules for Boing Network deployments. Automated checks handle clear cases. The community pool reviews edge cases.",
   },
   alternates: {
     canonical: `${SITE_URL}/qa/rules`,
@@ -84,27 +86,43 @@ export default function QaGateRulesPage() {
             </Link>
           </li>
           <li aria-hidden="true">/</li>
-          <li className="text-[var(--text-primary)]">Gate rules</li>
+          <li className="text-[var(--text-primary)]">Rules</li>
         </ol>
       </nav>
 
       <header>
-        <h1 className="page-title font-display">QA gate rules</h1>
-        <p className="mt-3 max-w-2xl leading-relaxed text-[var(--text-secondary)]">
-          Every automated rule a contract deploy must satisfy before it can be{" "}
-          <strong className="text-[var(--text-primary)]">Allowed</strong> into a block. Source: protocol crate{" "}
-          <code className="rounded bg-white/10 px-1.5 py-0.5 text-sm">boing-qa</code> as of {QA_GATE_RULES_AS_OF}.
-          List contents (hashes, patterns, terms) are governance-mutable; rule IDs and matching logic are code.
-        </p>
+        <h1 className="page-title font-display">{BRAND.qualityGateName} rules</h1>
+        <div className="mt-3">
+          <TestnetStatus />
+        </div>
+        <div className="mt-4 max-w-2xl space-y-3 leading-relaxed text-[var(--text-secondary)]">
+          <p>{BRAND.qualityGateSummary}</p>
+          <p>
+            <strong className="text-[var(--text-primary)]">Allow</strong> means the deployment met the published rules
+            and can be included in a block. <strong className="text-[var(--text-primary)]">Reject</strong> means it
+            failed a published rule and is not accepted — the response names the rule.{" "}
+            <strong className="text-[var(--text-primary)]">Unsure</strong> means the automated checks were not decisive,
+            so the community pool reviews it. {BRAND.outcomesVisible}
+          </p>
+          <p>{BRAND.transparentDefault}</p>
+          <p>{BRAND.reduceMalicious}</p>
+          <p>{BRAND.protocolChecks}</p>
+          <p className="text-sm text-[var(--text-muted)]">
+            The tables below are the operational catalog from protocol crate{" "}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-sm">boing-qa</code> as of {QA_GATE_RULES_AS_OF}.
+            List contents (hashes, patterns, terms) can change by governance. Rule IDs and matching logic are code.
+            The live registry on the RPC you query is the authority for what is enforced right now.
+          </p>
+        </div>
         <p className="mt-2 text-sm text-[var(--text-muted)]">
           Pre-flight:{" "}
           <Link href="/tools/qa-check" className="text-network-cyan hover:underline">
-            QA check
+            QA pre-flight
           </Link>
           {" · "}
           Live queue:{" "}
           <Link href="/qa" className="text-network-cyan hover:underline">
-            QA transparency
+            Quality Gate
           </Link>
           {" · "}
           Design spec:{" "}
@@ -114,7 +132,7 @@ export default function QaGateRulesPage() {
         </p>
       </header>
 
-      <PdfDocument src={pdfSrc} title="QA gate rules" fileName="QA-GATE-RULES.pdf" />
+      <PdfDocument src={pdfSrc} title="Boing Quality Gate rules" fileName="QA-GATE-RULES.pdf" />
 
       <section className="glass-card border-amber-500/30 bg-amber-950/15 p-4 sm:p-5" aria-labelledby="live-heading">
         <h2 id="live-heading" className="font-display text-lg font-semibold text-amber-100">
@@ -311,11 +329,12 @@ export default function QaGateRulesPage() {
           Community pool (Unsure)
         </h2>
         <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-          Anyone with a 32-byte account may vote Allow, Reject, or Abstain (live public testnet has open voting). The
-          deployer cannot vote on their own item. Counted votes are Allow+Reject; 2/3 of those decide after quorum.
-          Default on the 7-day window expiry is <strong className="text-[var(--text-primary)]">reject</strong>. Pool
-          voters should reject scams, phishing, rug-pulls, malware, impersonation, deceptive naming, Ponzi patterns, and
-          spam — not memes or experimental work.
+          {BRAND.reduceMalicious} Reviewers look for phishing, rug-pulls, malware, impersonation, deceptive naming,
+          Ponzi patterns, and spam. Meme and experimental work are not rejected as a class. Anyone with a 32-byte
+          account may vote Allow, Reject, or Abstain on the public testnet. The deployer cannot vote on their own item.
+          Counted votes are Allow and Reject; two thirds of those decide after quorum. The default when the 7-day window
+          expires is <strong className="text-[var(--text-primary)]">reject</strong>. The decision stays on the Quality
+          Gate page.
         </p>
       </section>
 

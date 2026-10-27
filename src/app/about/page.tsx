@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PdfDocument } from "@/components/pdf-document";
-import { SITE_URL, QA_DOC_URL } from "@/lib/constants";
+import { SITE_URL, QA_DOC_URL, WEBSITE_URL, WALLET_URL, FINANCE_URL } from "@/lib/constants";
 import { publicPdfSrc } from "@/lib/public-pdf";
+import { BRAND } from "@/lib/brand";
+import { TestnetStatus } from "@/components/testnet-status";
 
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Boing Network six pillars as a PDF: Security, Scalability, Decentralization, Authenticity, Transparency, and True Quality Assurance.",
+    "Boing is an independent Layer 1 where quality is enforced by the protocol. Boing Observer is the explorer and transparency layer. Public testnet — mainnet not live.",
   openGraph: {
     title: "About Boing Network | Boing Observer",
     description:
-      "Six pillars PDF — Security, Scalability, Decentralization, Authenticity, Transparency, True QA.",
+      "Quality, enforced by the protocol. See how Boing Network, Boing Express, Boing Observer, and Boing Finance fit together.",
   },
   alternates: {
     canonical: `${SITE_URL}/about`,
@@ -41,12 +43,96 @@ export default function AboutPage() {
         </ol>
       </nav>
 
-      <header>
+      <header className="space-y-3">
         <h1 className="page-title font-display">About Boing Network</h1>
-        <p className="mt-2 text-[var(--text-secondary)]">
-          <em>Authentic. Decentralized. Optimal. Quality-Assured.</em> Written network documents are published as PDFs.
+        <p className="text-lg text-[var(--text-primary)]">{BRAND.tagline}</p>
+        <TestnetStatus />
+        <p className="max-w-2xl leading-relaxed text-[var(--text-secondary)]">{BRAND.core}</p>
+        <p className="max-w-2xl leading-relaxed text-[var(--text-secondary)]">{BRAND.promise}</p>
+        <p className="max-w-2xl text-sm leading-relaxed text-[var(--text-muted)]">
+          {BRAND.verifiability} {BRAND.testnetStatus} is the current public state, and the records on this explorer are
+          what you can check.
         </p>
       </header>
+
+      <section className="space-y-4" aria-labelledby="products-heading">
+        <h2 id="products-heading" className="font-display text-xl font-semibold text-[var(--text-primary)]">
+          Where to look
+        </h2>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          <li className="glass-card p-4">
+            <h3 className="font-display font-semibold text-[var(--text-primary)]">{BRAND.networkName}</h3>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">{BRAND.networkLine}. {BRAND.primaryMessage}</p>
+            <a href={WEBSITE_URL} className="mt-2 inline-block text-sm text-network-cyan hover:underline">
+              boing.network
+            </a>
+          </li>
+          <li className="glass-card p-4">
+            <h3 className="font-display font-semibold text-[var(--text-primary)]">{BRAND.expressName}</h3>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">{BRAND.expressLine}.</p>
+            <a href={WALLET_URL} className="mt-2 inline-block text-sm text-network-cyan hover:underline">
+              boing.express
+            </a>
+          </li>
+          <li className="glass-card p-4">
+            <h3 className="font-display font-semibold text-[var(--text-primary)]">{BRAND.observerName}</h3>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              {BRAND.observerLine}. {BRAND.observerBoundary}
+            </p>
+            <Link href="/" className="mt-2 inline-block text-sm text-network-cyan hover:underline">
+              This explorer
+            </Link>
+          </li>
+          <li className="glass-card p-4">
+            <h3 className="font-display font-semibold text-[var(--text-primary)]">{BRAND.financeName}</h3>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">{BRAND.financeLine}.</p>
+            <a href={FINANCE_URL} className="mt-2 inline-block text-sm text-network-cyan hover:underline">
+              boing.finance
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <section className="space-y-3" aria-labelledby="audiences-heading">
+        <h2 id="audiences-heading" className="font-display text-xl font-semibold text-[var(--text-primary)]">
+          Who this is for
+        </h2>
+        <ul className="space-y-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+          <li>
+            <strong className="text-[var(--text-primary)]">People using the chain</strong> can look up accounts, blocks,
+            and transactions.
+          </li>
+          <li>
+            <strong className="text-[var(--text-primary)]">Developers</strong> can read deployment QA status and the
+            published rules before they submit.
+          </li>
+          <li>
+            <strong className="text-[var(--text-primary)]">Validators and node operators</strong> can see participation
+            and endpoint health against the same public rules.
+          </li>
+        </ul>
+      </section>
+
+      <section className="glass-card space-y-3 p-5 sm:p-6" aria-labelledby="gate-heading">
+        <h2 id="gate-heading" className="font-display text-xl font-semibold text-[var(--text-primary)]">
+          {BRAND.qualityGateName}
+        </h2>
+        <p className="leading-relaxed text-[var(--text-secondary)]">{BRAND.qualityGateSummary}</p>
+        <p className="leading-relaxed text-[var(--text-secondary)]">
+          {BRAND.transparentDefault} {BRAND.outcomesVisible}
+        </p>
+        <p className="leading-relaxed text-[var(--text-secondary)]">{BRAND.reduceMalicious}</p>
+        <p className="leading-relaxed text-[var(--text-secondary)]">{BRAND.protocolChecks}</p>
+        <p className="text-sm">
+          <Link href="/qa" className="text-network-cyan hover:underline">
+            Open the Quality Gate
+          </Link>
+          {" · "}
+          <Link href="/qa/rules" className="text-network-cyan hover:underline">
+            Read the rules
+          </Link>
+        </p>
+      </section>
 
       <section className="space-y-4" aria-labelledby="pillars-heading">
         <h2 id="pillars-heading" className="font-display text-xl font-semibold text-[var(--text-primary)]">
@@ -72,8 +158,8 @@ export default function AboutPage() {
           Documentation
         </h2>
         <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-          Explorer pages stay focused on what happened on-chain. Specs, method names, and operator notes live here and in
-          the links below.
+          Explorer pages show what happened on-chain. Specs, method names, and operator notes live in the links below.
+          The six-pillars PDF is a published network document; the lines above are the current product language.
         </p>
         <ul className="grid gap-3 sm:grid-cols-2">
           <li>
@@ -81,7 +167,7 @@ export default function AboutPage() {
               href="/qa/rules"
               className="block rounded-xl border border-[var(--border-color)] bg-boing-navy-mid/40 px-4 py-3 text-sm text-network-cyan hover:border-network-cyan/50"
             >
-              QA gate rules (catalog + PDF)
+              Boing Quality Gate rules (catalog + PDF)
             </Link>
           </li>
           <li>
@@ -116,7 +202,7 @@ export default function AboutPage() {
         <p className="text-sm text-[var(--text-muted)]">
           Live QA pool:{" "}
           <Link href="/qa" className="text-network-cyan hover:underline">
-            QA transparency
+            Quality Gate
           </Link>
           . Policy source:{" "}
           <a href={QA_DOC_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
@@ -131,7 +217,7 @@ export default function AboutPage() {
           This explorer
         </h2>
         <p className="leading-relaxed text-[var(--text-secondary)]">
-          Search by block height, transaction, or account address. Use{" "}
+          {BRAND.observerBoundary} Search by block height, transaction, or account address. Use{" "}
           <Link href="/tools" className="text-network-cyan hover:underline">
             Tools
           </Link>{" "}

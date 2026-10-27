@@ -27,14 +27,14 @@ export function NetworkSelector() {
           aria-label="Select network"
         >
           <option value="testnet">Testnet</option>
-          <option value="mainnet" disabled={!mainnetConfigured} title={mainnetConfigured ? undefined : "Coming soon"}>
+          <option value="mainnet" disabled={!mainnetConfigured} title={mainnetConfigured ? undefined : "Mainnet not live"}>
             Mainnet
           </option>
         </select>
       </div>
       <span
         className="hidden text-[0.65rem] font-mono text-[var(--text-secondary)] tabular-nums lg:block lg:border-l lg:border-[var(--border-color)] lg:pl-2"
-        title={`${boingNetworkId(network)} — chain ID for dApps (Boing Express / boing.finance); not returned by block RPC.`}
+        title={`${boingNetworkId(network)} — chain ID for dApps (Boing Express / Boing Finance); not returned by block RPC.`}
       >
         Chain {boingChainIdLabel(network)}
       </span>

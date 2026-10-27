@@ -11,6 +11,9 @@ import { NetworkStats } from "@/components/network-stats";
 import { NetworkChainContext } from "@/components/network-chain-context";
 import { shortenHash, hexForLink } from "@/lib/rpc-types";
 import { NETWORK_FAUCET_URL } from "@/lib/constants";
+import { BRAND } from "@/lib/brand";
+import { LogoMark } from "@/components/logo-mark";
+import { TestnetStatus } from "@/components/testnet-status";
 
 const chartSkeleton = (
   <div className="glass-card flex h-48 items-center justify-center text-[var(--text-muted)]" aria-busy="true">
@@ -49,7 +52,8 @@ function LatestBlocksSection() {
         </div>
       ) : blocks.length === 0 && !error ? (
         <div className="mt-4 glass-card p-6 text-center text-[var(--text-muted)] sm:p-8">
-          <p>No blocks loaded — try another network or refresh.</p>
+          <LogoMark className="mx-auto h-10 w-10 text-[var(--accent)]" />
+          <p className="mt-3">No blocks in this view yet. Try another network or refresh.</p>
         </div>
       ) : (
         <>
@@ -181,8 +185,14 @@ function HomePageBody() {
     <div className="space-y-8">
       <section aria-labelledby="home-intro-heading">
         <SiteLogo variant="hero" headingId="home-intro-heading" />
-        <p className="mt-1 max-w-2xl text-[var(--text-secondary)]">
-          Blocks, accounts, tokens, and transactions on Boing.{" "}
+        <p className="mt-2 font-display text-base font-semibold text-[var(--text-primary)] sm:text-lg">
+          {BRAND.observerLine}
+        </p>
+        <div className="mt-3">
+          <TestnetStatus />
+        </div>
+        <p className="mt-4 max-w-2xl text-[var(--text-secondary)]">
+          {BRAND.observerBoundary} Accounts, blocks, and transactions stay readable here.{" "}
           <Link href="/tokens" className="text-network-cyan hover:underline">
             Token index
           </Link>
@@ -199,6 +209,13 @@ function HomePageBody() {
           >
             Testnet faucet
           </a>
+          .
+        </p>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)]">
+          {BRAND.qualityGateSummary} {BRAND.transparentDefault}{" "}
+          <Link href="/qa" className="text-network-cyan hover:underline">
+            {BRAND.qualityGateName}
+          </Link>
           .
         </p>
         <div className="mt-6">

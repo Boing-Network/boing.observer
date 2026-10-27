@@ -36,7 +36,8 @@ export default function NodeHealthPage() {
           Node health &amp; sync
         </h1>
         <p className="max-w-2xl text-[var(--text-secondary)] leading-relaxed">
-          Tip height, sync state, and optional health metrics for the selected network endpoint.
+          Tip height, sync state, and optional health metrics for the selected network endpoint. Validators and node
+          operators can compare this public view with the participation rules published by Boing Network.
         </p>
       </header>
 

@@ -10,18 +10,18 @@ const config: Config = {
     extend: {
       colors: {
         boing: {
-          black: "#050c18",
-          navy: "#0a1628",
-          "navy-mid": "#0d1f3c",
+          black: "#050b16",
+          navy: "#071222",
+          "navy-mid": "#0c1c34",
         },
         network: {
-          primary: "#7c3aed",
-          "primary-light": "#a78bfa",
-          cyan: "#00e8c8",
-          "cyan-light": "#90e0ef",
-          aurora: "#00b4d8",
-          nebula: "#a78bfa",
-          gold: "#fbbf24",
+          primary: "#ffe14a",
+          "primary-light": "#fff3a8",
+          cyan: "#ffe14a",
+          "cyan-light": "#fff3a8",
+          aurora: "#ffe14a",
+          nebula: "#fff3a8",
+          gold: "#ffe14a",
         },
       },
       fontFamily: {
@@ -30,8 +30,8 @@ const config: Config = {
         mono: ["var(--font-jetbrains-mono)", "monospace"],
       },
       boxShadow: {
-        glow: "0 0 24px rgba(124, 58, 237, 0.22)",
-        "glow-cyan": "0 0 24px rgba(0, 232, 200, 0.22)",
+        glow: "0 0 24px rgba(255, 225, 74, 0.22)",
+        "glow-cyan": "0 0 24px rgba(255, 225, 74, 0.22)",
       },
     },
   },

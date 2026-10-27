@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  FINANCE_URL,
   HANDOFF_DEPENDENT_PROJECTS_URL,
   NATIVE_DEX_DIRECTORY_R2_HANDOFF_DOC_URL,
   SITE_URL,
 } from "@/lib/constants";
+import { BRAND } from "@/lib/brand";
 import { TechnicalDetails } from "@/components/technical-details";
 import { PoolsPanel } from "./pools-panel";
 
@@ -33,7 +35,11 @@ export default function DexPoolsPage() {
         <h1 className="page-title font-display">Native DEX directory</h1>
         <p className="max-w-2xl text-[var(--text-secondary)] leading-relaxed">
           Browse native pools and factory contracts for this network — reserves, fees, and pair listings when a factory
-          is published.
+          is published. Liquidity movement lives on {BRAND.financeName} — {BRAND.financeLine.toLowerCase()}.{" "}
+          <a href={FINANCE_URL} className="text-network-cyan hover:underline" target="_blank" rel="noopener noreferrer">
+            {BRAND.financeName}
+          </a>
+          .
         </p>
         <p className="text-sm">
           <Link href="/tokens" className="text-network-cyan hover:underline">

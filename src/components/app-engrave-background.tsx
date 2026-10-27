@@ -3,8 +3,8 @@
 import { useId } from "react";
 
 /**
- * Colosseum-style canvas: stone slab, grain, chiseled vein SVG, static soft neon accents.
- * Layering matches https://colloseum-hackathon.vercel.app/ (neon glows are static — no motion).
+ * Deep-navy canvas with a technical grid and one static accent glow.
+ * The vein drawing stays faint so the surface reads as an instrument, not a poster.
  */
 export function AppEngraveBackground() {
   const uid = useId().replace(/:/g, "");
@@ -14,6 +14,7 @@ export function AppEngraveBackground() {
   return (
     <div className="app-engrave-bg" aria-hidden>
       <div className="app-engrave-stone" />
+      <div className="app-engrave-grid" />
       <div className="app-engrave-grain" />
       <svg
         className="app-engrave-vein"
