@@ -5,10 +5,10 @@ import { useNetwork } from "@/context/network-context";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
 import { fetchBlockByHeight, fetchChainHeight } from "@/lib/rpc-methods";
 
-/** The banner appears when the newest block is older than this. */
-export const STALE_AFTER_MS = 10 * 60 * 1000;
+/** The notice appears when the newest block is older than this. */
+export const IDLE_AFTER_MS = 10 * 60 * 1000;
 const CHECK_INTERVAL_MS = 60_000;
-const DISMISS_KEY = "boing-observer:stale-tip-dismissed";
+const DISMISS_KEY = "boing-observer:idle-tip-dismissed";
 
 export function formatAge(ms: number): string {
   const mins = Math.floor(ms / 60_000);
@@ -19,11 +19,13 @@ export function formatAge(ms: number): string {
 }
 
 /**
- * Warns when the public testnet has stopped producing blocks. Uses the same RPC and cache as the rest of the
- * explorer. Shows nothing if the RPC is unreachable (the RPC-unreachable banner covers that), and says nothing
- * about mainnet. Dismissal is remembered per tip height for the browser session.
+ * Neutral info line for an idle chain. The Boing node only produces a block when there are transactions to
+ * include, so a tip that is hours old is normal on a quiet testnet and is NOT a fault. This is deliberately not a
+ * warning. Real trouble (RPC unreachable or erroring) is reported by `NetworkStatusBanner`, so this component
+ * stays silent on RPC errors. It says nothing about mainnet. Dismissal is remembered per tip height for the
+ * browser session.
  */
-export function ChainStaleBanner() {
+export function ChainIdleNotice() {
   const { network } = useNetwork();
   const [tip, setTip] = useState<{ height: number; ageMs: number } | null>(null);
   const [dismissedAt, setDismissedAt] = useState<string | null>(null);
@@ -61,22 +63,23 @@ export function ChainStaleBanner() {
 
   useVisibleInterval(() => void check(), CHECK_INTERVAL_MS);
 
-  if (!tip || tip.ageMs < STALE_AFTER_MS || dismissedAt === String(tip.height)) return null;
+  if (!tip || tip.ageMs < IDLE_AFTER_MS || dismissedAt === String(tip.height)) return null;
 
   return (
     <div
       role="status"
-      data-testid="chain-stale-banner"
-      className="flex items-start justify-center gap-3 border-b border-amber-500/40 bg-amber-950/30 px-3 py-2.5 text-center text-xs text-amber-200 sm:px-4 sm:text-sm"
+      data-testid="chain-idle-notice"
+      className="flex items-start justify-center gap-3 border-b border-[var(--border-color)] bg-white/[0.03] px-3 py-2.5 text-center text-xs text-[var(--text-secondary)] sm:px-4 sm:text-sm"
     >
       <p className="m-0 leading-snug">
-        <strong>Testnet block production looks stalled</strong> — last block {formatAge(tip.ageMs)} ago (height{" "}
-        {tip.height.toLocaleString()}). Data shown here may be out of date.
+        <strong className="font-semibold text-[var(--text-primary)]">No transactions recently.</strong> The Boing
+        testnet only produces a block when there are transactions to include. Last block {formatAge(tip.ageMs)} ago
+        (height {tip.height.toLocaleString()}).
       </p>
       <button
         type="button"
-        aria-label="Dismiss stalled-testnet notice"
-        className="-my-1 min-h-[44px] min-w-[44px] shrink-0 rounded-md text-amber-100 underline underline-offset-2 hover:text-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-300"
+        aria-label="Dismiss idle-chain notice"
+        className="-my-1 min-h-[44px] min-w-[44px] shrink-0 rounded-md text-network-cyan underline underline-offset-2 hover:text-network-cyan-light focus:outline-none focus:ring-2 focus:ring-network-cyan"
         onClick={() => {
           try {
             window.sessionStorage.setItem(DISMISS_KEY, String(tip.height));

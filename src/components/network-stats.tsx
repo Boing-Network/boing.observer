@@ -87,7 +87,7 @@ export function NetworkStats() {
         <StatCard
           label="Avg block interval"
           value={stats?.avgBlockTimeSec != null ? formatIntervalLabel(stats.avgBlockTimeSec) : "—"}
-          sub="between sampled blocks"
+          sub="between sampled blocks; blocks need transactions"
           loading={loading}
         />
         <StatCard
@@ -95,7 +95,7 @@ export function NetworkStats() {
           value={
             stats?.secondsSinceLastBlock != null ? formatIntervalLabel(stats.secondsSinceLastBlock) : "—"
           }
-          sub="from this browser clock"
+          sub="idle is normal: blocks only form when transactions arrive"
           loading={loading}
         />
         <StatCard
