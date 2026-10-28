@@ -11,6 +11,8 @@ import { CONTRACT_INTERFACES, type ContractFunction } from "./contract-interface
 
 export type TokenMeta = { symbol: string | null; name: string | null; decimals: number | null };
 export type PoolMeta = { tokenA: string; tokenB: string; feeBps: number | null };
+/** An LP vault (v2): the custody pool it adds liquidity to and its token pair (read from vault storage 0xe2..0xe4). */
+export type VaultMeta = { pool: string; tokenA: string; tokenB: string };
 
 /** What the server (or a test) knows about the addresses a transaction mentions. All keys are 64 lowercase hex. */
 export type DecodeContext = {
@@ -18,6 +20,8 @@ export type DecodeContext = {
   interfaceId: string | null;
   tokens: Record<string, TokenMeta>;
   pools: Record<string, PoolMeta>;
+  /** LP vaults by address; optional so older callers and tests keep working. */
+  vaults?: Record<string, VaultMeta>;
   /** Human labels for well-known addresses (routers, canonical pools, vaults). */
   labels: Record<string, string>;
 };
@@ -235,6 +239,44 @@ export function parseAmmEvents(logs: ReadonlyArray<{ topics?: string[]; data?: s
   return out;
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// LP vault v2 logs (`native_lp_vault_v2.rs`): topic0 label + caller/recipient topic + 3 u128 words
+// ---------------------------------------------------------------------------------------------------------
+
+export type VaultEvent =
+  | { kind: "deposit"; amountA: bigint; amountB: bigint; shares: bigint }
+  /** Withdraw logs the caller's MINIMUMS (min_a, min_b), not what the pool paid: use the pool RMLP log for actuals. */
+  | { kind: "withdraw"; shares: bigint; minA: bigint; minB: bigint }
+  | { kind: "transfer"; to: string; shares: bigint };
+
+const VAULT_LOG_LABELS: Record<string, VaultEvent["kind"]> = {
+  BOING_LP_VAULT_V2_DEPOSIT: "deposit",
+  BOING_LP_VAULT_V2_WITHDRAW: "withdraw",
+  BOING_LP_VAULT_V2_TRANSFER: "transfer",
+};
+
+/** Parse LP vault v2 `Log2` rows in log order; other logs are skipped. */
+export function parseVaultEvents(logs: ReadonlyArray<{ topics?: string[]; data?: string }> | null | undefined): VaultEvent[] {
+  const out: VaultEvent[] = [];
+  for (const log of logs ?? []) {
+    const t0 = log.topics?.[0];
+    if (!t0) continue;
+    const kind = VAULT_LOG_LABELS[asciiLabel(t0) ?? ""];
+    if (!kind) continue;
+    const words = calldataWords(log.data ?? "");
+    if (!words || words.length !== 3) continue;
+    const [a, b, c] = words.map((w) => wordU128(w!));
+    if (a == null || b == null || c == null) continue;
+    if (kind === "deposit") out.push({ kind, amountA: a, amountB: b, shares: c });
+    else if (kind === "withdraw") out.push({ kind, shares: a, minA: b, minB: c });
+    else {
+      const to = (log.topics?.[1] ?? "").replace(/^0x/i, "").toLowerCase();
+      if (HEX64.test(to)) out.push({ kind, to, shares: b });
+    }
+  }
+  return out;
+}
+
 export type ReceiptLike = {
   success?: boolean;
   return_data?: string;
@@ -282,7 +324,7 @@ export type Segment =
 export type DetailRow = { label: string; value: Segment[] };
 
 export type TxDescription = {
-  kind: "approve" | "transfer" | "transfer_from" | "swap" | "add_liquidity" | "remove_liquidity" | "mint" | "call";
+  kind: "approve" | "transfer" | "transfer_from" | "swap" | "add_liquidity" | "remove_liquidity" | "vault_deposit" | "vault_withdraw" | "vault_transfer_shares" | "mint" | "call";
   /** Short action label, e.g. "Swap". */
   title: string;
   /** One sentence for lists and the top of the detail page. */
@@ -496,6 +538,69 @@ function describeLiquidity(call: DecodedCall, sender: string, receipt: ReceiptLi
   return { kind: "remove_liquidity", title: "Remove liquidity", headline, rows, failed };
 }
 
+/** Token pair and pool of an LP vault, from the context (read from the vault's own storage). */
+function vaultTokens(vault: string, ctx: DecodeContext): { a: string; b: string; pool: string | null } | null {
+  const v = ctx.vaults?.[vault];
+  if (v) return { a: v.tokenA, b: v.tokenB, pool: v.pool };
+  return null;
+}
+
+function describeVault(call: DecodedCall, sender: string, receipt: ReceiptLike, ctx: DecodeContext): TxDescription | null {
+  const name = call.fn.name;
+  if (name !== "deposit" && name !== "withdraw" && name !== "transfer_shares") return null;
+  const failed = receipt?.success === false;
+  const ok = receipt?.success === true;
+  const vault = call.contract;
+  const tk = vaultTokens(vault, ctx);
+  const side = (raw: bigint, which: "a" | "b"): Segment[] => (tk ? amountTok(raw, which === "a" ? tk.a : tk.b, ctx) : [amt(raw, null, ctx), t(" (raw units)")]);
+  const shares = (raw: bigint): Segment => amt(raw, null, ctx);
+  const vaultRow: DetailRow = {
+    label: "Vault",
+    value: tk ? [tok(tk.a, ctx), t(" / "), tok(tk.b, ctx), t(" vault "), bare(vault)] : [acct(vault, ctx, "contract")],
+  };
+  const rows: DetailRow[] = [vaultRow];
+  if (tk?.pool) rows.push({ label: "Pool", value: [bare(tk.pool)] });
+  const events = ok ? parseVaultEvents(receipt?.logs) : [];
+  const pool = ok ? parseAmmEvents(receipt?.logs) : [];
+
+  if (name === "deposit") {
+    const ev = events.find((e): e is Extract<VaultEvent, { kind: "deposit" }> => e.kind === "deposit");
+    // The vault log carries the amounts the pool actually took (the pool may use less than offered).
+    const a = ev?.amountA ?? argU(call, "amount_a");
+    const b = ev?.amountB ?? argU(call, "amount_b");
+    const headline: Segment[] = [t(failed ? "Attempted vault deposit: " : ok ? "Deposited into vault: " : "Vault deposit: "), ...side(a, "a"), t(" + "), ...side(b, "b")];
+    rows.push({ label: ev ? "Deposited A" : "Offered A", value: side(a, "a") }, { label: ev ? "Deposited B" : "Offered B", value: side(b, "b") });
+    if (ev) {
+      headline.push(t(", minted "), shares(ev.shares), t(" vault shares"));
+      rows.push({ label: "Shares minted", value: [shares(ev.shares)] });
+    } else rows.push({ label: "Minimum shares", value: [shares(argU(call, "min_shares"))] });
+    rows.push({ label: "Depositor (signer)", value: [acct(sender, ctx)] });
+    return { kind: "vault_deposit", title: "Vault deposit", headline, rows, failed };
+  }
+
+  if (name === "withdraw") {
+    const burned = argU(call, "shares");
+    // The pool's own remove-liquidity log has what was paid out; the vault log only repeats the minimums.
+    const rm = pool.find((e): e is Extract<AmmEvent, { kind: "removeLiquidity" }> => e.kind === "removeLiquidity");
+    const headline: Segment[] = [t(failed ? "Attempted vault withdrawal: burn " : ok ? "Withdrew from vault: burned " : "Vault withdrawal: burn "), shares(burned), t(" vault shares")];
+    rows.push({ label: "Shares burned", value: [shares(burned)] });
+    if (rm) {
+      headline.push(t(" for "), ...side(rm.amountA, "a"), t(" + "), ...side(rm.amountB, "b"));
+      rows.push({ label: "Received A", value: side(rm.amountA, "a") }, { label: "Received B", value: side(rm.amountB, "b") });
+    }
+    rows.push({ label: "Minimum A", value: side(argU(call, "min_a"), "a") }, { label: "Minimum B", value: side(argU(call, "min_b"), "b") });
+    rows.push({ label: "Holder (signer)", value: [acct(sender, ctx)] });
+    return { kind: "vault_withdraw", title: "Vault withdrawal", headline, rows, failed };
+  }
+
+  const to = argAcct(call, "to");
+  const amount = argU(call, "amount");
+  const headline: Segment[] = [t(failed ? "Attempted to send " : ok ? "Sent " : "Send "), shares(amount), t(" vault shares"), ...(to ? [t(" to "), acct(to, ctx)] : [])];
+  rows.push({ label: "Shares", value: [shares(amount)] }, { label: "From (signer)", value: [acct(sender, ctx)] });
+  if (to) rows.push({ label: "To", value: [acct(to, ctx)] });
+  return { kind: "vault_transfer_shares", title: "Transfer vault shares", headline, rows, failed };
+}
+
 function describeToken(call: DecodedCall, sender: string, receipt: ReceiptLike, ctx: DecodeContext): TxDescription | null {
   const token = call.contract;
   const failed = receipt?.success === false;
@@ -592,6 +697,10 @@ export function describeDecodedCall(
     if (effective.fn.name === "add_liquidity" || effective.fn.name === "remove_liquidity" || effective.fn.name === "remove_liquidity_to") {
       return describeLiquidity(effective, sender, receipt, ctx);
     }
+  }
+  if (call.interfaceId === "lp-vault-v2") {
+    const d = describeVault(call, sender, receipt, ctx);
+    if (d) return d;
   }
   if (FUNGIBLE_IFACES.has(call.interfaceId)) {
     const d = describeToken(call, sender, receipt, ctx);

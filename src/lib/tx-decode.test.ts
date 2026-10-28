@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import fixture from "./__fixtures__/testnet-swap-blocks-1334-1335.json";
+import vaultFixture from "./__fixtures__/testnet-vault-blocks-105-106.json";
 import {
   calldataWords,
   decodeContractCall,
   describeDecodedCall,
   formatTokenAmount,
   parseAmmEvents,
+  parseVaultEvents,
   referencedIds,
   segmentsToText,
   type DecodeContext,
@@ -167,5 +169,88 @@ describe("formatTokenAmount", () => {
     expect(formatTokenAmount(BigInt("1000000000000000000000"), 18)).toBe("1,000");
     expect(formatTokenAmount(BigInt(2398), 0)).toBe("2,398");
     expect(formatTokenAmount(BigInt(2398), null)).toBe("2,398");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// LP vault v2: real testnet transactions (canonical USDC / BOING vault, block 105 deposit, block 106 withdraw)
+// ---------------------------------------------------------------------------------------------------------
+
+const VAULT = "236a851dd50faaa268e2e1b7ba95cfb9993773abf63a4c0d949183d8302e65c7";
+const vaultBlocks = vaultFixture as unknown as Record<string, Fx>;
+const vaultCall = (h: string) => vaultBlocks[h]!.transactions[0]!.payload.ContractCall;
+const vaultCtx = (withVault: boolean): DecodeContext => ({
+  ...ctx("lp-vault-v2"),
+  vaults: withVault ? { [VAULT]: { pool: POOL, tokenA: USDC, tokenB: BOING } } : {},
+  labels: { [VAULT]: "LP vault v2 (canonical USDC/BOING)", [POOL]: "USDC / tBOING pool (native CP pool v9)" },
+});
+const rowsOf = (d: ReturnType<typeof describeDecodedCall>) => Object.fromEntries(d.rows.map((r) => [r.label, segmentsToText(r.value)]));
+
+describe("LP vault v2 (real testnet txs)", () => {
+  it("block 105: deposit(50, 50, min 48) mints 49 shares", () => {
+    const { contract, calldata } = vaultCall("105");
+    const c = decodeContractCall({ contract, calldata, interfaceId: "lp-vault-v2" })!;
+    expect(c.fn.name).toBe("deposit");
+    const receipt = vaultBlocks["105"]!.receipts[0] as never;
+    const d = describeDecodedCall(c, { sender: SIGNER, receipt, ctx: vaultCtx(true) });
+    expect(d.kind).toBe("vault_deposit");
+    expect(segmentsToText(d.headline)).toBe("Deposited into vault: 50 USDC + 50 BOING, minted 49 vault shares");
+    const rows = rowsOf(d);
+    expect(rows["Shares minted"]).toBe("49");
+    expect(rows["Vault"]).toContain("USDC / BOING vault");
+    expect(rows["Deposited A"]).toBe("50 USDC");
+    expect(d.failed).toBe(false);
+  });
+
+  it("block 106: withdraw(20 shares) pays 20 USDC + 19 BOING (from the pool log, not the minimums)", () => {
+    const { contract, calldata } = vaultCall("106");
+    const c = decodeContractCall({ contract, calldata, interfaceId: "lp-vault-v2" })!;
+    expect(c.fn.name).toBe("withdraw");
+    const receipt = vaultBlocks["106"]!.receipts[0] as never;
+    const d = describeDecodedCall(c, { sender: SIGNER, receipt, ctx: vaultCtx(true) });
+    expect(d.kind).toBe("vault_withdraw");
+    expect(segmentsToText(d.headline)).toBe("Withdrew from vault: burned 20 vault shares for 20 USDC + 19 BOING");
+    const rows = rowsOf(d);
+    expect(rows["Received A"]).toBe("20 USDC");
+    expect(rows["Received B"]).toBe("19 BOING");
+    expect(rows["Minimum A"]).toBe("19 USDC");
+    expect(rows["Minimum B"]).toBe("18 BOING");
+  });
+
+  it("without the vault's token pair it still decodes, in raw units", () => {
+    const { contract, calldata } = vaultCall("105");
+    const c = decodeContractCall({ contract, calldata, interfaceId: "lp-vault-v2" })!;
+    const d = describeDecodedCall(c, { sender: SIGNER, receipt: vaultBlocks["105"]!.receipts[0] as never, ctx: vaultCtx(false) });
+    expect(d.kind).toBe("vault_deposit");
+    expect(segmentsToText(d.headline)).toContain("50 (raw units) + 50 (raw units)");
+  });
+
+  it("without a receipt a withdrawal is phrased as a request, and a failed one as attempted", () => {
+    const { contract, calldata } = vaultCall("106");
+    const c = decodeContractCall({ contract, calldata, interfaceId: "lp-vault-v2" })!;
+    const pending = describeDecodedCall(c, { sender: SIGNER, ctx: vaultCtx(true) });
+    expect(segmentsToText(pending.headline)).toBe("Vault withdrawal: burn 20 vault shares");
+    const failed = describeDecodedCall(c, { sender: SIGNER, receipt: { success: false, logs: [] }, ctx: vaultCtx(true) });
+    expect(failed.failed).toBe(true);
+    expect(segmentsToText(failed.headline)).toBe("Attempted vault withdrawal: burn 20 vault shares");
+  });
+
+  it("transfer_shares and configure", () => {
+    const to = "ab".repeat(32);
+    const word = (n: bigint) => n.toString(16).padStart(64, "0");
+    const calldata = `0x${word(BigInt(0xc3))}${to}${word(BigInt(7))}`;
+    const c = decodeContractCall({ contract: VAULT, calldata, interfaceId: "lp-vault-v2" })!;
+    const d = describeDecodedCall(c, { sender: SIGNER, ctx: vaultCtx(true) });
+    expect(d.kind).toBe("vault_transfer_shares");
+    expect(segmentsToText(d.headline)).toContain("Send 7 vault shares to ");
+    const cfg = decodeContractCall({ contract: VAULT, calldata: `0x${word(BigInt(0xc0))}${POOL}${USDC}${BOING}`, interfaceId: "lp-vault-v2" })!;
+    expect(describeDecodedCall(cfg, { sender: SIGNER, ctx: vaultCtx(true) }).kind).toBe("call");
+  });
+
+  it("parseVaultEvents reads the DEPOSIT / WITHDRAW logs", () => {
+    const dep = parseVaultEvents((vaultBlocks["105"]!.receipts[0] as { logs: never }).logs);
+    expect(dep).toEqual([{ kind: "deposit", amountA: BigInt(50), amountB: BigInt(50), shares: BigInt(49) }]);
+    const wd = parseVaultEvents((vaultBlocks["106"]!.receipts[0] as { logs: never }).logs);
+    expect(wd).toEqual([{ kind: "withdraw", shares: BigInt(20), minA: BigInt(19), minB: BigInt(18) }]);
   });
 });

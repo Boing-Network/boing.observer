@@ -37,7 +37,7 @@ export function useTxDescription(
     void fetchTxContext(network, contract, ids).then((res) => {
       if (cancelled || !res) return;
       setLoaded({
-        ctx: { interfaceId: res.contract?.interfaceId ?? null, tokens: res.tokens, pools: res.pools, labels: res.labels },
+        ctx: { interfaceId: res.contract?.interfaceId ?? null, tokens: res.tokens, pools: res.pools, vaults: res.vaults ?? {}, labels: res.labels },
         isPool: res.contract?.isPool === true,
       });
     });

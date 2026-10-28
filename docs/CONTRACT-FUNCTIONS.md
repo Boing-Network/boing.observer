@@ -24,6 +24,24 @@ How the explorer builds the "Contract functions" section (`/api/contract/interfa
    selectors that no interface names are listed as unknown.
 4. **Read calls.** Read functions can be queried with `boing_simulateContractCall` (dry run, no transaction).
 
+## Readable transaction summaries (`/api/tx/context`)
+
+`src/lib/tx-decode.ts` turns a contract call plus its receipt into a sentence ("Swapped 2,398 BOING for 2,464 USDC").
+`/api/tx/context` supplies what the decoder cannot know:
+
+- **Token names, symbols and decimals.** For every token the transaction touches (called contract, pool and vault pairs,
+  other ids) the route calls `boing_getTokenMetadata`, so tokens that are in no DEX pool are named too. Name and symbol
+  exist only when the deployer declared them in the deploy transaction; otherwise they stay empty and the UI shows a short
+  address. The DEX directory (`boing_listDexTokens`) is the fallback and fills any gap. Nodes (and the public gateway)
+  without the method answer "method not found" / 403; the route notes that for 10 minutes and uses the DEX directory only.
+  Code: `src/lib/tx-context-rpc.ts`.
+- **Decimals are on-chain facts.** Reference tokens (v1/v2/secured) store no decimals, so amounts are whole units
+  (decimals 0). The wrapped BOING token reports 18. Nothing is guessed.
+- **LP vault v2** (`lp-vault-v2`, selectors 0xC0..0xC3): the route reads the vault's pool and token pair from its storage
+  (0xe2 pool, 0xe3 token A, 0xe4 token B). Deposit is described from the vault's DEPOSIT log (amounts the pool took, shares
+  minted); withdraw from the pool's remove-liquidity log, because the vault's WITHDRAW log only repeats the caller's
+  minimums. Fixtures are real testnet blocks 105 (deposit) and 106 (withdraw): `src/lib/__fixtures__/testnet-vault-blocks-105-106.json`.
+
 ## Proposal: publishing an interface on chain (not built)
 
 A dependency-free way for deployers to publish an interface without consensus changes:

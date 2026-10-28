@@ -6,7 +6,8 @@ import { resolveNativeDexFactoryForExplorer } from "@/lib/resolve-native-dex-fac
 import { createServerBoingClient } from "@/lib/server-boing-client";
 import { isMainnetConfigured } from "@/lib/rpc-client";
 import { normalizeHex64, type NetworkId } from "@/lib/rpc-types";
-import type { PoolMeta, TokenMeta } from "@/lib/tx-decode";
+import { createRpcCaller, fetchTokenMetadata, fetchVaultMeta, mergeTokenMeta, MAX_TOKEN_LOOKUPS } from "@/lib/tx-context-rpc";
+import type { PoolMeta, TokenMeta, VaultMeta } from "@/lib/tx-decode";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -15,6 +16,8 @@ export type TxContextResponse = {
   contract: { id: string; interfaceId: string | null; label: string | null; isPool: boolean } | null;
   tokens: Record<string, TokenMeta>;
   pools: Record<string, PoolMeta>;
+  /** LP vaults (v2) in play: pool and token pair read from the vault's storage. */
+  vaults: Record<string, VaultMeta>;
   labels: Record<string, string>;
 };
 
@@ -102,7 +105,7 @@ export async function GET(req: NextRequest) {
     new Set((req.nextUrl.searchParams.get("ids") ?? "").split(",").map((s) => h64(s)).filter(Boolean)),
   ).slice(0, MAX_IDS);
 
-  const out: TxContextResponse = { contract: null, tokens: {}, pools: {}, labels: {} };
+  const out: TxContextResponse = { contract: null, tokens: {}, pools: {}, vaults: {}, labels: {} };
   const canonical = network === "testnet" ? CANONICAL_TESTNET_CONTRACTS : {};
   const want = contract ? [...ids, contract] : ids;
   for (const id of want) {
@@ -112,19 +115,6 @@ export async function GET(req: NextRequest) {
 
   try {
     const dir = await getDirectory(network, want);
-    const addToken = (id: string) => {
-      const m = dir.tokens[id];
-      if (m) out.tokens[id] = m;
-    };
-    for (const id of want) {
-      const pool = dir.pools[id];
-      if (pool) {
-        out.pools[id] = pool;
-        addToken(pool.tokenA);
-        addToken(pool.tokenB);
-      }
-      addToken(id);
-    }
     if (contract) {
       const known = canonical[contract];
       if (known) {
@@ -136,6 +126,45 @@ export async function GET(req: NextRequest) {
         out.contract = { id: contract, interfaceId: r.interfaceId, label: r.label, isPool: !!r.interfaceId?.startsWith("pool-") };
         if (r.label) out.labels[contract] = r.label;
       }
+    }
+
+    const call = createRpcCaller(network);
+    // LP vault v2: the pool and token pair live in the vault's own storage.
+    if (contract && out.contract?.interfaceId === "lp-vault-v2") {
+      try {
+        const v = await fetchVaultMeta(network, contract, call);
+        if (v) out.vaults[contract] = v;
+      } catch {
+        /* the decoder then shows raw units; not worth failing the whole context */
+      }
+    }
+
+    // Everything that may be a token, most relevant first: the called contract, pool / vault pairs, then the rest.
+    const tokenIds = new Set<string>();
+    if (contract) tokenIds.add(contract);
+    for (const id of want) {
+      const pool = dir.pools[id];
+      if (pool) {
+        out.pools[id] = pool;
+        tokenIds.add(pool.tokenA);
+        tokenIds.add(pool.tokenB);
+      }
+    }
+    for (const v of Object.values(out.vaults)) {
+      const pool = dir.pools[v.pool];
+      if (pool) out.pools[v.pool] = pool;
+      tokenIds.add(v.tokenA);
+      tokenIds.add(v.tokenB);
+    }
+    for (const id of want) tokenIds.add(id);
+
+    // Names, symbols and decimals straight from the node for every token (not only DEX pool tokens); the DEX
+    // directory is the fallback on nodes without `boing_getTokenMetadata`.
+    const ordered = [...tokenIds];
+    const rpcTokens = await fetchTokenMetadata(network, ordered.slice(0, Math.max(MAX_TOKEN_LOOKUPS, 1)), call).catch(() => ({}) as Record<string, TokenMeta>);
+    for (const id of ordered) {
+      const m = mergeTokenMeta(dir.tokens[id], rpcTokens[id] ?? null);
+      if (m) out.tokens[id] = m;
     }
   } catch (e) {
     const message = e instanceof BoingRpcError ? `${e.message} (RPC ${e.method ?? "?"})` : e instanceof Error ? e.message : "Unknown error";
