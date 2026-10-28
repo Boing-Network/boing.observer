@@ -3,9 +3,9 @@ import { useId, type SVGProps } from "react";
 type LogoMarkProps = SVGProps<SVGSVGElement>;
 
 /**
- * Boing "Arc Slab" mark: the shared Boing recovery arc + orb on a rounded slab, in Boing blue
- * (BRAND.md accent #3B8CFF), with speed streaks. Identical across Boing Network, Express,
- * Observer and Finance; only the wordmark changes per product.
+ * Boing Observer mark: the Boing "Arc Slab" family (rounded slab, recovery arc, glowing orb) in its
+ * Observer variant: a flatter scan arc ending in an orb with a pupil and a segmented aperture ring,
+ * so it reads as "observing". Each product has its own variant (see BRAND.md).
  * Source of truth for rasters: public/brand/boing-observer-mark.svg (keep geometry in sync).
  */
 export function LogoMark({ className, ...props }: LogoMarkProps) {
@@ -48,16 +48,26 @@ export function LogoMark({ className, ...props }: LogoMarkProps) {
         </filter>
       </defs>
       <rect x="6" y="6" width="52" height="52" rx="14" fill={`url(#${slab})`} stroke={`url(#${frame})`} strokeWidth="2.25" />
-      <path d="M15 21h9M12 27h8" stroke={`url(#${frame})`} strokeWidth="2" strokeLinecap="round" opacity="0.55" />
       <path
-        d="M13 45 C 19 45 21 40 25 33 C 29 26 33 21 38 19 C 43 17 47 20 49 24"
+        d="M12 47 C 20 47 25 44 29 39 C 33 34 37 30 43 27"
         stroke={`url(#${frame})`}
         strokeWidth="2.6"
         strokeLinecap="round"
         opacity="0.9"
       />
-      <circle cx="49" cy="24" r="7.25" fill={`url(#${orb})`} filter={`url(#${glow})`} />
-      <circle cx="46.8" cy="21.6" r="2" fill="#F0F4F8" opacity="0.45" />
+      <circle
+        cx="45"
+        cy="25"
+        r="11"
+        stroke={`url(#${frame})`}
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeDasharray="9.6 1.9"
+        opacity="0.8"
+      />
+      <circle cx="45" cy="25" r="6.4" fill={`url(#${orb})`} filter={`url(#${glow})`} />
+      <circle cx="45" cy="25" r="2.6" fill="#0A1128" opacity="0.88" />
+      <circle cx="43.6" cy="23.6" r="1.1" fill="#F0F4F8" opacity="0.6" />
     </svg>
   );
 }
