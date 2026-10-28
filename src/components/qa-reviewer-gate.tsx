@@ -270,7 +270,7 @@ export function QaReviewerSessionPanel({
   if (!session.configured) {
     return (
       <div className="rounded-lg border border-[var(--border-color)] bg-boing-black/40 p-4 text-sm text-[var(--text-secondary)]">
-        <p>Public voting is not available on this explorer yet.</p>
+        <p>Boing Quality Gate voting is not enabled on this explorer yet.</p>
       </div>
     );
   }
@@ -288,7 +288,7 @@ export function QaReviewerSessionPanel({
             {session.viaWallet ? (
               <span className="ml-2 text-xs text-[var(--text-muted)]">via Boing Express</span>
             ) : (
-              <span className="ml-2 text-xs text-amber-200">unsigned (no treasury reward)</span>
+              <span className="ml-2 text-xs text-[var(--text-muted)]">unsigned vote (treasury rewards need a wallet)</span>
             )}
           </p>
           <button
@@ -310,21 +310,22 @@ export function QaReviewerSessionPanel({
             if needed.
           </p>
         ) : (
-          <p className="text-xs text-amber-200">
-            Paste-hex votes are recorded on the pool when the node allows unsigned RPC votes. They
-            do not pay treasury rewards. Connect Boing Express to vote on-chain.
+          <p className="text-xs text-[var(--text-muted)]">
+            Unsigned votes are recorded on the Boing Quality Gate pool when the node accepts them.
+            Treasury rewards are paid for signed votes, so connect Boing Express to vote on-chain
+            and earn them.
           </p>
         )}
         {session.chainMismatch ? (
-          <div className="flex flex-wrap items-center gap-2 text-xs text-amber-200">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
             <span>
-              Wallet is on {session.walletChainId ?? "another chain"}; this page uses{" "}
-              {session.expectedChainId}.
+              Your wallet is on {session.walletChainId ?? "another chain"}. This page uses{" "}
+              {session.expectedChainId}, so switch networks to vote here.
             </span>
             <button
               type="button"
               onClick={() => void onSwitchChain().catch((e) => setFormError(mapWalletErrorToUi(e)))}
-              className="rounded-md border border-amber-400/50 px-2 py-1 text-amber-100 hover:bg-amber-950/40"
+              className="rounded-md border border-network-cyan/50 px-2 py-1 text-network-cyan hover:bg-network-cyan/10"
             >
               Switch network
             </button>
@@ -346,14 +347,15 @@ export function QaReviewerSessionPanel({
         <a href={WALLET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
           Boing Express
         </a>{" "}
-        to Allow, Reject, or Abstain on Unsure deploys. Signed votes can earn on-chain treasury
-        rewards. No reviewer code is required.
+        to Allow, Reject, or Abstain on Unsure deploys in the Boing Quality Gate. Signed votes can
+        earn on-chain treasury rewards. No reviewer code is required.
       </p>
       {!session.operatorTokenConfigured ? (
-        <p className="text-xs text-amber-200">
-          This explorer has no operator RPC token set. If the validator requires{" "}
-          <code className="rounded bg-white/10 px-1">X-Boing-Operator</code>, unsigned fallback votes
-          will fail until operators add{" "}
+        <p className="text-xs text-[var(--text-muted)]">
+          Signed votes from Boing Express work as usual. The unsigned fallback also needs this
+          explorer to send the{" "}
+          <code className="rounded bg-white/10 px-1">X-Boing-Operator</code> header when the node
+          requires it, which operators enable with{" "}
           <code className="rounded bg-white/10 px-1">BOING_OPERATOR_RPC_TOKEN</code>.
         </p>
       ) : null}
@@ -392,7 +394,7 @@ export function QaReviewerSessionPanel({
         className="text-xs text-[var(--text-muted)] hover:text-network-cyan"
         onClick={() => setShowAdvanced((v) => !v)}
       >
-        {showAdvanced ? "Hide unsigned fallback" : "Advanced: vote without a wallet (no reward)"}
+        {showAdvanced ? "Hide unsigned fallback" : "Advanced: vote without a wallet (no treasury reward)"}
       </button>
       {showAdvanced ? (
         <form
@@ -441,12 +443,12 @@ export function QaReviewerSessionPanel({
 function noteFromOutcome(outcome: string | undefined, mempool: boolean | undefined, rewarded: boolean): string {
   const pay = rewarded
     ? " Counted Allow/Reject votes earn treasury rewards when included."
-    : " Unsigned votes do not earn treasury rewards.";
+    : " Treasury rewards are paid for signed votes.";
   if (outcome === "allow") {
     return (mempool ? "Approved — deploy admitted to the mempool." : "Approved.") + pay;
   }
   if (outcome === "reject") {
-    return "Rejected — this deploy will not be included." + pay;
+    return "Rejected — this deploy will not be included in the chain." + pay;
   }
   return "Vote recorded. Waiting for quorum." + pay;
 }
