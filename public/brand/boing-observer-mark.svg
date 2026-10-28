@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Boing Observer">
+  <defs>
+    <linearGradient id="bx-frame" x1="8" y1="54" x2="56" y2="10" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B8CFF"/><stop offset="0.5" stop-color="#5ab0ff"/><stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="bx-orb" x1="40" y1="14" x2="56" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#CFE0FF"/><stop offset="0.5" stop-color="#3B8CFF"/><stop offset="1" stop-color="#8DB8FF"/>
+    </linearGradient>
+    <radialGradient id="bx-slab" cx="34%" cy="28%" r="78%">
+      <stop offset="0" stop-color="#18244A"/><stop offset="1" stop-color="#0A1128"/>
+    </radialGradient>
+    <filter id="bx-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#bx-slab)" stroke="url(#bx-frame)" stroke-width="2.25"/>
+  <path d="M12 47 C 20 47 25 44 29 39 C 33 34 37 30 43 27" stroke="url(#bx-frame)" stroke-width="2.6" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="45" cy="25" r="11" stroke="url(#bx-frame)" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9.6 1.9" opacity="0.8"/>
+  <circle cx="45" cy="25" r="6.4" fill="url(#bx-orb)" filter="url(#bx-glow)"/>
+  <circle cx="45" cy="25" r="2.6" fill="#0A1128" opacity="0.88"/>
+  <circle cx="43.6" cy="23.6" r="1.1" fill="#F0F4F8" opacity="0.6"/>
+</svg>
