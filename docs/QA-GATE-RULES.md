@@ -2,11 +2,7 @@
 
 **Operational catalog of every rule a deployment must satisfy before it can be approved for inclusion in a block.**
 
-The Boing Quality Gate screens deployments against transparent rules before they reach the ledger. Automated checks handle clear cases. A decentralized community pool reviews edge cases. Boing Observer is where those rules, deployments, and outcomes stay visible and auditable.
-
-Transparent by default — observable rules, deployments and outcomes.
-
-Designed to reduce malicious, deceptive and low-quality deployments through transparent, protocol-level checks. Boing introduces protocol-level deployment checks designed to identify and restrict deployments that fail transparent quality criteria before they are accepted on-chain.
+What the Boing Quality Gate is, and how this explorer surfaces it, is defined once in the [README](../README.md#boing-observer--see-what-happens-on-chain). This file is only the rule catalog.
 
 Public testnet — mainnet not live. The live registry on the RPC you query is the authority for list contents.
 

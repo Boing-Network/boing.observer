@@ -21,7 +21,7 @@ Observer reads Boing RPC through `@boing-network/boing-sdk`. Liquidity and EVM c
 
 > **People using the chain:** paste a block height, block hash, or 64-character account into search. Testnet is the default. Get testnet coins at [boing.network/faucet](https://boing.network/faucet).  
 > **Developers:** deployment QA status is on [`/qa`](https://boing.observer/qa) and [`/tools/qa-check`](https://boing.observer/tools/qa-check). Next.js 15 App Router. Browser traffic goes through same-origin `POST /api/rpc` (CORS-safe). Direct node calls happen only on the server.  
-> **Validators and node operators:** participation and endpoint health are on [`/tools/node-health`](https://boing.observer/tools/node-health). `NEXT_PUBLIC_TESTNET_RPC` defaults to `https://testnet-rpc.boing.network/`. Upgrading a laptop node does not change the production explorer RPC. Designed for verifiability and institutional review.
+> **Validators and node operators:** participation and endpoint health are on [`/tools/node-health`](https://boing.observer/tools/node-health). `NEXT_PUBLIC_TESTNET_RPC` defaults to `https://testnet-rpc.boing.network/`. Upgrading a laptop node does not change the production explorer RPC.
 
 ```mermaid
 flowchart LR
@@ -43,7 +43,7 @@ flowchart LR
 | Gate rules | [`/qa/rules`](https://boing.observer/qa/rules) | Plain-language outcomes plus every Allow / Reject / Unsure rule + PDF |
 | QA pre-flight | `/tools/qa-check` | Pre-flight `boing_qaCheck` |
 | 💱 DEX | `/dex/pools`, `/dex/quote` | Read-only directory + CP quotes via `@boing-network/boing-sdk` |
-| 🖼️ Asset | `/asset/:address`, `/asset/:address/item/:tokenId`, `/tokens` | Metadata scan; reference NFT collection + **per-item** profiles (owner/metadata XOR slots). FreshMint-style hash token ids via mint calldata decode in recent blocks ([BOING-REFERENCE-NFT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-REFERENCE-NFT.md) — v3 `mint_batch` n≤500 is one receipt). **Linked tokens & collections** (plain-language UI) resolve official NFT↔fungible links from the on-chain registry on asset, account, and NFT item pages (read-only; `links_count` / `get_link_at`, tombstones skipped) — see [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md). **Builder attested** (planned read-only): optional builder signal from a separate on-chain registry when an active attestation exists for a companion pair — see [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md) |
+| 🖼️ Asset | `/asset/:address`, `/asset/:address/item/:tokenId`, `/tokens` | Metadata scan, reference NFT collections with per-item profiles, and linked token/collection companions. Details: [docs/ASSET-PAGES.md](docs/ASSET-PAGES.md) |
 | 📡 RPC catalog | `/tools/rpc-catalog` | Live `boing_getRpcMethodCatalog` |
 | ❤️ Node health | `/tools/node-health` | Height, sync, optional `boing_health` |
 | Account proof | `/tools/account-proof` | `boing_getAccountProof` + `boing_verifyAccountProof`, root anchored to recent block state roots |
@@ -85,7 +85,7 @@ npm run test:e2e   # Playwright, mocked RPC; build first
 | `NEXT_PUBLIC_TESTNET_RPC` | Testnet RPC (default `https://testnet-rpc.boing.network/`) |
 | `NEXT_PUBLIC_TESTNET_RPC_FALLBACKS` | Extra testnet origins (comma-separated). The proxy already failsovers to hosted Fly nodes |
 | `NEXT_PUBLIC_MAINNET_RPC` | Mainnet RPC. **Leave unset** until a distinct mainnet endpoint is published |
-| `BOING_OPERATOR_RPC_TOKEN` | Server-only; must match validator `X-Boing-Operator`. Never `NEXT_PUBLIC_` |
+| `BOING_OPERATOR_RPC_TOKEN` | Server-only; must match the validator's token (sent as `X-Boing-Operator`). Operator-only RPC methods are fail-closed: nodes reject them unless a token is configured. Never `NEXT_PUBLIC_` |
 | `BOING_QA_VOTE_RPC` | Validator JSON-RPC for `boing_qaPoolVote` (defaults to `https://boing-testnet-1.fly.dev`). Signed Express votes normally submit through the wallet RPC. |
 | `BOING_BLOB_DOWNLOAD_TOKENS` | Comma-separated download permission tokens for `GET /api/blob/download` (also accepts the operator token). |
 | `BOING_BLOB_DOWNLOAD_RPC` | Origin for raw `GET /v1/media/blob?id=…` (defaults to Fly `boing-testnet-1`, not the public gateway). |
@@ -134,11 +134,15 @@ GitHub Actions deploys on `main` **after** CI (lint, typecheck, unit tests, prod
 | Command | Description |
 |--------|-------------|
 | `npm run dev` | Local Next.js |
-| `npm run build` | Production Next build |
-| `npm run lint` / `typecheck` / `test` | ESLint / `tsc --noEmit` / Vitest |
+| `npm run build` / `npm start` | Production Next build / serve it |
+| `npm run lint` / `typecheck` / `test` | ESLint / `tsc --noEmit` / Vitest (`test:watch` for watch mode) |
 | `npm run test:e2e` | Playwright (run `build` first) |
 | `npm run preview` | OpenNext in Workers runtime |
-| `npm run deploy` | Build and deploy to Cloudflare |
+| `npm run deploy` / `upload` | Build and deploy / upload a version to Cloudflare |
+| `npm run sync:chain-metadata` | Refresh `src/data/chain-metadata.json` from boing.network |
+| `npm run generate:brand-assets` | Regenerate brand icons and images |
+| `npm run csp:summary -- <file>` | Summarize a captured CSP report log (see [docs/OPERATIONS.md](docs/OPERATIONS.md)) |
+| `npm run cf-typegen` | Regenerate Cloudflare env types |
 
 ## 💬 Community
 

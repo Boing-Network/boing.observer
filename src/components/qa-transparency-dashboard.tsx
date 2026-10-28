@@ -72,7 +72,7 @@ const RPC_QA_ERRORS: { code: string; summary: string }[] = [
   { code: "-32054", summary: "QA pool disabled by governance (e.g. no admins / zero capacity)." },
   { code: "-32055", summary: "Global pool capacity reached." },
   { code: "-32056", summary: "Per-deployer pending cap reached." },
-  { code: "-32057", summary: "Operator RPC auth — vote/apply require X-Boing-Operator when the node sets BOING_OPERATOR_RPC_TOKEN." },
+  { code: "-32057", summary: "Operator RPC auth — operator-only calls (admin votes, policy apply) are rejected unless the node has BOING_OPERATOR_RPC_TOKEN set and X-Boing-Operator matches." },
 ];
 
 export function QaTransparencyDashboard() {
