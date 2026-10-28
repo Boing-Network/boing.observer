@@ -16,7 +16,7 @@ dashboard, and secrets with `wrangler secret put`. `NEXT_PUBLIC_*` values are in
 | `NEXT_PUBLIC_BOING_LINKED_NFT_TOKEN_REGISTRY` (alias `BOING_LINKED_NFT_TOKEN_REGISTRY`) | build/server | Linked NFT/token registry AccountId override (testnet v2 default baked in) |
 | `NEXT_PUBLIC_BOING_BUILDER_ATTESTATION_REGISTRY` | build | Builder attestation registry AccountId (UI not shipped yet) |
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_BING_SITE_VERIFICATION` | build | Search-console verification meta tags |
-| `BOING_OPERATOR_RPC_TOKEN` | **secret** | Validator `X-Boing-Operator` value; server-only, never `NEXT_PUBLIC_` |
+| `BOING_OPERATOR_RPC_TOKEN` | **secret** | Validator `X-Boing-Operator` value; server-only, never `NEXT_PUBLIC_`. Operator-only RPC methods are fail-closed (rejected with `-32057` unless the node has a token) |
 | `BOING_QA_VOTE_RPC` | server | Producing validator for `boing_qaPoolVote` (default `https://boing-testnet-1.fly.dev`) |
 | `BOING_BLOB_DOWNLOAD_TOKENS` | **secret** | Comma-separated tokens for `GET /api/blob/download` (operator token also accepted) |
 | `BOING_BLOB_DOWNLOAD_RPC` | server | Origin for raw `GET /v1/media/blob?id=...` (default Fly `boing-testnet-1`) |
