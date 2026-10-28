@@ -158,6 +158,7 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
         <Link href="/" className="text-sm text-network-cyan hover:underline">
           ← Home
         </Link>
+        <h1 className="font-display text-xl font-bold text-[var(--text-primary)] sm:text-2xl">Account</h1>
         <div className="space-y-2 text-red-400" role="alert">
           <p>
             Invalid address. Boing uses a 32-byte AccountId (64 hex digits, optional{" "}

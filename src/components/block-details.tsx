@@ -128,9 +128,9 @@ export function BlockDetails({
               {block.header.state_root ? <CopyButton value={String(block.header.state_root)} label="Copy state root" /> : null}
             </dd>
             {storageActivation != null ? (
-              <p className="basis-full text-xs text-[var(--text-muted)]" data-testid="storage-tree-note">
+              <dd className="basis-full text-xs text-[var(--text-muted)]" data-testid="storage-tree-note">
                 {describeStorageTree(Number(block.header.height), storageActivation)}
-              </p>
+              </dd>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

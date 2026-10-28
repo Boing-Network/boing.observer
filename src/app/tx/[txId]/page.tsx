@@ -96,6 +96,7 @@ export default function TransactionByIdPage() {
         <Link href="/" className="text-sm text-network-cyan hover:underline">
           ← Home
         </Link>
+        <h1 className="font-display text-xl font-bold text-[var(--text-primary)] sm:text-2xl">Transaction</h1>
         <p className="text-red-400" role="alert">
           Invalid transaction id (64 hex characters).
         </p>

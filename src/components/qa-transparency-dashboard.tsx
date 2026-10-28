@@ -59,7 +59,7 @@ function ConfigStat({
     <div className="rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/50 px-3 py-2.5">
       <dt className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">{label}</dt>
       <dd className="mt-1 font-mono text-sm text-[var(--text-primary)]">{value}</dd>
-      {hint ? <p className="mt-1 text-xs text-[var(--text-muted)]">{hint}</p> : null}
+      {hint ? <dd className="mt-1 text-xs text-[var(--text-muted)]">{hint}</dd> : null}
     </div>
   );
 }

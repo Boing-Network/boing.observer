@@ -61,6 +61,7 @@ export function NetworkChainContext() {
           ) : loading ? (
             <div className="space-y-2" aria-busy="true" aria-label="Loading sync state"><Skeleton className="h-4 w-40" /><Skeleton className="h-4 w-32" /><Skeleton className="h-4 w-56" /></div>
           ) : sync ? (
+            <>
             <dl className="space-y-2 text-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <dt className="text-[var(--text-muted)]">Head height</dt>
@@ -97,10 +98,11 @@ export function NetworkChainContext() {
                   {describeActivationStatus(sync.head_height, storageActivation).detail}
                 </dd>
               </div>
-              <p className="pt-2 text-xs leading-relaxed text-[var(--text-muted)]">
-                Head is the latest committed height. Finalized may diverge later if the network exposes optimistic tips.
-              </p>
             </dl>
+            <p className="pt-2 text-xs leading-relaxed text-[var(--text-muted)]">
+              Head is the latest committed height. Finalized may diverge later if the network exposes optimistic tips.
+            </p>
+            </>
           ) : (
             <p className="text-sm text-[var(--text-muted)]">No sync data.</p>
           )}

@@ -150,7 +150,11 @@ body.app-page-canvas {
 /* One restrained accent glow. Charts and diagrams carry the technical detail. */
 .app-neon-layer {
   position: absolute;
-  inset: 0;
+  /* Sized to the viewport, not the page: the orbs' % offsets used to follow the document height and jumped
+     whenever client-loaded content changed it (CLS). */
+  inset: 0 0 auto 0;
+  height: 100vh;
+  height: 100svh;
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
