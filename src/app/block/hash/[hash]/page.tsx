@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
-import { fetchBlockByHash, fetchNetworkInfo } from "@/lib/rpc-methods";
+import { fetchBlockByHash, fetchNetworkInfo, restoreBlockCalldata } from "@/lib/rpc-methods";
 import type { Block, BoingNetworkInfo } from "@/lib/rpc-types";
 import { isHex64, normalizeHex64 } from "@/lib/rpc-types";
 import { getFriendlyRpcErrorMessage } from "@/lib/rpc-status";
@@ -41,7 +41,14 @@ export default function BlockByHashPage() {
         if (cancelled) return;
         const [blockRes, infoRes] = results;
         if (blockRes.status === "fulfilled") {
-          setBlock(blockRes.value ?? null);
+          const slim = blockRes.value ?? null;
+          setBlock(slim);
+          // Slim blocks stub calldata; restore small ContractCall calldata so swaps/approvals can be decoded.
+          if (slim) {
+            void restoreBlockCalldata(network, slim).then((full) => {
+              if (!cancelled && full && full !== slim) setBlock(full);
+            });
+          }
         } else {
           setBlock(null);
           setError(getFriendlyRpcErrorMessage(blockRes.reason, network, "block"));

@@ -20,6 +20,7 @@ import type {
 import { normalizeHex64 } from "./rpc-types";
 import { cachedRpc } from "./rpc-cache";
 import { normalizeBlock } from "./block-normalize";
+import { getTxPayloadInner, getTxPayloadKind } from "./tx-payload";
 
 export type NetworkId = "testnet" | "mainnet";
 
@@ -294,5 +295,51 @@ export async function tryFetchNetworkFeePolicy(network: NetworkId): Promise<Boin
     );
   } catch {
     return null;
+  }
+}
+
+/** Largest calldata we restore into a slim block (bytes). Real calls are a few hundred bytes; this skips deploy-sized blobs. */
+const RESTORE_CALLDATA_MAX_BYTES = 16 * 1024;
+
+function omittedCalldataSize(tx: Block["transactions"][number]): number | null {
+  if (getTxPayloadKind(tx.payload) !== "ContractCall") return null;
+  const cd = (getTxPayloadInner(tx.payload) as { calldata?: unknown }).calldata;
+  if (cd && typeof cd === "object" && (cd as { omitted?: unknown }).omitted) {
+    const size = Number((cd as { size?: unknown }).size);
+    return Number.isFinite(size) ? size : null;
+  }
+  return null;
+}
+
+/**
+ * Slim block views (`include_code=false`, used so PutBlob / deploy bodies cannot blow the gateway cap) also stub
+ * every ContractCall's calldata, which hides which tokens a swap or approval touched. When a slim block has small
+ * stubbed calldata, re-fetch the same height with `include_code=true` (no receipts) and copy those payloads back.
+ * Best-effort: if the full block is too large or the call fails, the slim block is returned unchanged.
+ */
+export async function restoreBlockCalldata(network: NetworkId, block: Block | null): Promise<Block | null> {
+  if (!block) return block;
+  const wanted = block.transactions
+    .map((tx, i) => ({ i, size: omittedCalldataSize(tx) }))
+    .filter((x): x is { i: number; size: number } => x.size != null && x.size <= RESTORE_CALLDATA_MAX_BYTES);
+  if (wanted.length === 0) return block;
+  try {
+    const full = await fetchBlockByHeight(network, block.header.height, false, true);
+    if (!full || full.transactions.length !== block.transactions.length) return block;
+    const transactions = block.transactions.slice();
+    let changed = false;
+    for (const { i } of wanted) {
+      const f = full.transactions[i];
+      const s = transactions[i];
+      if (!f || !s || f.sender !== s.sender) continue;
+      const cd = (getTxPayloadInner(f.payload) as { calldata?: unknown }).calldata;
+      if (getTxPayloadKind(f.payload) === "ContractCall" && typeof cd === "string") {
+        transactions[i] = { ...s, payload: f.payload };
+        changed = true;
+      }
+    }
+    return changed ? { ...block, transactions } : block;
+  } catch {
+    return block;
   }
 }

@@ -19,6 +19,8 @@ import { kindBadgeTone } from "@/lib/tx-details";
 import { compactBoingAt } from "@/lib/native-unit";
 import { CopyButton } from "@/components/copy-button";
 import { TransactionInsight } from "@/components/transaction-insight";
+import { DecodedHeadline } from "@/components/tx-decoded-panel";
+import { useTxDescription } from "@/components/use-tx-description";
 import { TESTNET_FAUCET_ACCOUNT_HEX } from "@/lib/testnet-constants";
 
 function receiptTxId(receipt: { tx_id?: string } | null | undefined): string {
@@ -114,6 +116,75 @@ function TransferGroupRows({
   );
 }
 
+function GenericGroupRow({
+  slot,
+  network,
+  blockHeight,
+}: {
+  slot: TxInsightGroup["items"][number];
+  network: string;
+  blockHeight?: number | null;
+}): ReactNode {
+  const summary = getTxPayloadSummary(slot.tx.payload, blockHeight, network);
+  const decoded = useTxDescription(slot.tx, slot.receipt, network);
+  const success = slot.receipt?.success;
+  const gas = slot.receipt?.gas_used;
+  const txId = receiptTxId(slot.receipt);
+  const failed = success === false;
+  return (
+    <li id={`tx-${slot.index}`} className="scroll-mt-24 py-3 first:pt-0 last:pb-0">
+      <details className="group/row">
+        <summary className="flex cursor-pointer list-none flex-col gap-2 sm:flex-row sm:items-center sm:justify-between [&::-webkit-details-marker]:hidden">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="font-mono text-xs text-[var(--text-muted)]">#{slot.index}</span>
+            {decoded ? (
+              <DecodedHeadline description={decoded} network={network} />
+            ) : (
+              <span className="text-sm text-[var(--text-secondary)]">{summary}</span>
+            )}
+            {success === true ? (
+              <span className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[0.65rem] font-semibold text-emerald-200">
+                Success
+              </span>
+            ) : null}
+            {failed ? (
+              <span className="rounded-full border border-red-500/40 bg-red-500/15 px-2 py-0.5 text-[0.65rem] font-semibold text-red-200">
+                Failed
+              </span>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--text-muted)]">
+            {gas != null ? <span>Gas {Number(gas).toLocaleString()}</span> : null}
+            {txId ? (
+              <Link
+                href={explorerTxHref(txId, network)}
+                className="hash text-network-cyan hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {shortenHash(txId)}
+              </Link>
+            ) : null}
+            <span className="text-[var(--text-muted)] group-open/row:hidden">Expand</span>
+            <span className="hidden text-[var(--text-muted)] group-open/row:inline">Collapse</span>
+          </div>
+        </summary>
+        <div className="mt-3 border-t border-[var(--border-color)]/50 pt-3">
+          <TransactionInsight
+            tx={slot.tx}
+            index={slot.index}
+            network={network}
+            blockHeight={blockHeight ?? undefined}
+            receipt={slot.receipt === undefined ? undefined : slot.receipt}
+            receiptsWereRequested={slot.receipt !== undefined}
+            visualScale="standard"
+            embedded
+          />
+        </div>
+      </details>
+    </li>
+  );
+}
+
 function GenericGroupRows({
   group,
   network,
@@ -125,61 +196,9 @@ function GenericGroupRows({
 }): ReactNode {
   return (
     <ul className="divide-y divide-[var(--border-color)]/70" data-testid="payload-group-rows">
-      {group.items.map((slot) => {
-        const summary = getTxPayloadSummary(slot.tx.payload, blockHeight, network);
-        const success = slot.receipt?.success;
-        const gas = slot.receipt?.gas_used;
-        const txId = receiptTxId(slot.receipt);
-        const failed = success === false;
-        return (
-          <li key={slot.index} id={`tx-${slot.index}`} className="scroll-mt-24 py-3 first:pt-0 last:pb-0">
-            <details className="group/row">
-              <summary className="flex cursor-pointer list-none flex-col gap-2 sm:flex-row sm:items-center sm:justify-between [&::-webkit-details-marker]:hidden">
-                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="font-mono text-xs text-[var(--text-muted)]">#{slot.index}</span>
-                  <span className="text-sm text-[var(--text-secondary)]">{summary}</span>
-                  {success === true ? (
-                    <span className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[0.65rem] font-semibold text-emerald-200">
-                      Success
-                    </span>
-                  ) : null}
-                  {failed ? (
-                    <span className="rounded-full border border-red-500/40 bg-red-500/15 px-2 py-0.5 text-[0.65rem] font-semibold text-red-200">
-                      Failed
-                    </span>
-                  ) : null}
-                </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--text-muted)]">
-                  {gas != null ? <span>Gas {Number(gas).toLocaleString()}</span> : null}
-                  {txId ? (
-                    <Link
-                      href={explorerTxHref(txId, network)}
-                      className="hash text-network-cyan hover:underline"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {shortenHash(txId)}
-                    </Link>
-                  ) : null}
-                  <span className="text-[var(--text-muted)] group-open/row:hidden">Expand</span>
-                  <span className="hidden text-[var(--text-muted)] group-open/row:inline">Collapse</span>
-                </div>
-              </summary>
-              <div className="mt-3 border-t border-[var(--border-color)]/50 pt-3">
-                <TransactionInsight
-                  tx={slot.tx}
-                  index={slot.index}
-                  network={network}
-                  blockHeight={blockHeight ?? undefined}
-                  receipt={slot.receipt === undefined ? undefined : slot.receipt}
-                  receiptsWereRequested={slot.receipt !== undefined}
-                  visualScale="standard"
-                  embedded
-                />
-              </div>
-            </details>
-          </li>
-        );
-      })}
+      {group.items.map((slot) => (
+        <GenericGroupRow key={slot.index} slot={slot} network={network} blockHeight={blockHeight} />
+      ))}
     </ul>
   );
 }

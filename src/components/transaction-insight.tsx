@@ -42,6 +42,8 @@ import { AssetMediaThumb } from "@/components/asset-media-thumb";
 import { BlobDownloadPanel } from "@/components/blob-download-panel";
 import { extractPutBlobDownloadHint } from "@/lib/blob-download";
 import { nameHref } from "@/lib/boing-names";
+import { TxDecodedPanel } from "@/components/tx-decoded-panel";
+import { useTxDescription } from "@/components/use-tx-description";
 
 function formatBoingName(name: unknown): string {
   const s = String(name ?? "").trim();
@@ -926,6 +928,7 @@ export function TransactionInsight({
   const payloadInner = getTxPayloadInner(tx.payload);
   const detailLines = buildPayloadDetailLines(tx.payload, txHeight, network);
   const txFailed = receipt?.success === false;
+  const decoded = useTxDescription(tx, receipt, network);
   const txFeeBase = failedTxFeeBaseUnits(receipt, txHeight, network);
   const txFeeBoing = txFeeBase != null ? formatBoingBase(txFeeBase) : null;
   const deployedAssetHex =
@@ -1154,6 +1157,8 @@ export function TransactionInsight({
           <TxContextNarrativeRich kind={kind} sender={tx.sender} payload={tx.payload} network={network} height={txHeight} />
         </p>
       ) : null}
+
+      {decoded ? <TxDecodedPanel description={decoded} network={network} /> : null}
 
       {kind !== "Unknown" ? (
         <div className="rounded-xl border border-network-primary/35 bg-gradient-to-br from-network-primary/[0.12] via-boing-navy-mid/50 to-boing-black/40 p-4 sm:p-5">

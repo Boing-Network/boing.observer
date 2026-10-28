@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useNetwork } from "@/context/network-context";
-import { fetchBlockByHeight, fetchChainHeight, fetchTransactionReceipt } from "@/lib/rpc-methods";
+import { fetchBlockByHeight, fetchChainHeight, fetchTransactionReceipt, restoreBlockCalldata } from "@/lib/rpc-methods";
 import { analyzeMissingReceipt, describeMissingReceipt } from "@/lib/receipt-retention";
 import { useNodeProtocolInfo } from "@/hooks/use-node-protocol-info";
 import type { Block, BlockTransaction, TransactionReceipt } from "@/lib/rpc-types";
@@ -74,6 +74,12 @@ export default function TransactionByIdPage() {
           // Slim block body (no PutBlob/deploy bytes) — receipt already has success/logs/gas.
           const b = await fetchBlockByHeight(network, r.block_height, true, false);
           if (!cancelled) setBlock(b ?? null);
+          // Slim blocks stub calldata; restore small ContractCall calldata so the call can be decoded.
+          if (b) {
+            void restoreBlockCalldata(network, b).then((full) => {
+              if (!cancelled && full && full !== b) setBlock(full);
+            });
+          }
         } catch (e) {
           if (!cancelled) setError(getFriendlyRpcErrorMessage(e, network, "block"));
         }
