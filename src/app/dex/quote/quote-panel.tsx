@@ -148,7 +148,7 @@ export function QuotePanel() {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-network-primary px-4 py-2.5 font-display text-sm font-semibold text-white hover:bg-network-primary-light disabled:opacity-60"
+          className="rounded-lg bg-network-primary px-4 py-2.5 font-display text-sm font-semibold text-boing-black hover:bg-network-primary-light disabled:opacity-60"
         >
           {loading ? "Computing…" : "Find routes"}
         </button>

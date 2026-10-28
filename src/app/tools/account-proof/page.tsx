@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE_URL } from "@/lib/constants";
+import { BRAND } from "@/lib/brand";
 import { AccountProofPanel } from "./account-proof-panel";
 
 export const metadata: Metadata = {
@@ -35,7 +36,7 @@ export default function AccountProofPage() {
         <h1 className="page-title font-display">Account proof</h1>
         <p className="max-w-2xl text-[var(--text-secondary)] leading-relaxed">
           Fetch a Merkle proof for an account, have the node verify it, and check that its root equals the state root
-          of a recent block.
+          of a recent block. {BRAND.verifiability}
         </p>
       </header>
 

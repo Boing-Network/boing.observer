@@ -21,12 +21,12 @@ except ImportError:
     sys.exit(1)
 
 # Boing design tokens
-BG_DARK = "#0a0a12"
-BG_NAVY = "#0c1428"
-ACCENT_CYAN = "#00d4ff"
-ACCENT_PURPLE = "#7c3aed"
-TEXT_PRIMARY = "#f8fafc"
-TEXT_MUTED = "#94a3b8"
+BG_DARK = "#050A1A"
+BG_NAVY = "#0A1128"
+ACCENT_CYAN = "#3B8CFF"
+ACCENT_PURPLE = "#3B8CFF"
+TEXT_PRIMARY = "#F0F4F8"
+TEXT_MUTED = "#8b9bb0"
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "public"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -73,7 +73,7 @@ def draw_og_image() -> None:
     font_small = get_font(36)
 
     title = "Boing Observer"
-    subtitle = "Blockchain Explorer | boing.observer"
+    subtitle = "See what happens on-chain"
 
     # Title with slight glow
     bbox = draw.textbbox((0, 0), title, font=font_large)
@@ -92,7 +92,7 @@ def draw_og_image() -> None:
     draw.text((x2, y + th + 30), subtitle, fill=hex_to_rgb(ACCENT_CYAN), font=font_small)
 
     # Tagline
-    tagline = "Authentic. Decentralized. Optimal. Sustainable."
+    tagline = "Public testnet — mainnet not live"
     bbox3 = draw.textbbox((0, 0), tagline, font=font_small)
     tw3 = bbox3[2] - bbox3[0]
     draw.text(((w - tw3) // 2, h - 80), tagline, fill=hex_to_rgb(TEXT_MUTED), font=font_small)
@@ -107,20 +107,13 @@ def draw_favicon() -> None:
     s = 48
     img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    pad = s // 8
-    r = (s - 2 * pad) // 2
-    cx, cy = s // 2, s // 2
-    stroke = max(2, s // 16)
-
-    # Rounded rect background
     draw.rounded_rectangle([0, 0, s - 1, s - 1], radius=s // 6, fill=hex_to_rgb(BG_DARK))
-
-    # Circle
-    draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=hex_to_rgb(ACCENT_CYAN), width=stroke, fill=None)
-
-    # Clock hand
-    hand_len = r - stroke
-    draw.line([(cx, cy), (cx + hand_len * 0.7, cy - hand_len * 0.7)], fill=hex_to_rgb(ACCENT_CYAN), width=stroke)
+    inset = s // 5
+    draw.rounded_rectangle(
+        [inset, inset, s - 1 - inset, s - 1 - inset],
+        radius=max(2, s // 10),
+        fill=hex_to_rgb(ACCENT_CYAN),
+    )
 
     out = OUTPUT_DIR / "favicon.ico"
     img.save(out, "ICO", sizes=[(16, 16), (32, 32), (48, 48)])
@@ -133,20 +126,13 @@ def draw_apple_touch_icon() -> None:
     img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    pad = s // 10
-    r = (s - 2 * pad) // 2
-    cx, cy = s // 2, s // 2
-    stroke = max(2, s // 20)
-
-    # Rounded rect background
     draw.rounded_rectangle([0, 0, s - 1, s - 1], radius=s // 6, fill=hex_to_rgb(BG_DARK))
-
-    # Circle
-    draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=hex_to_rgb(ACCENT_CYAN), width=stroke, fill=None)
-
-    # Clock hand
-    hand_len = r - stroke * 2
-    draw.line([(cx, cy), (cx + hand_len * 0.7, cy - hand_len * 0.7)], fill=hex_to_rgb(ACCENT_CYAN), width=stroke)
+    inset = s // 5
+    draw.rounded_rectangle(
+        [inset, inset, s - 1 - inset, s - 1 - inset],
+        radius=max(4, s // 10),
+        fill=hex_to_rgb(ACCENT_CYAN),
+    )
 
     out = OUTPUT_DIR / "apple-touch-icon.png"
     img.save(out, "PNG", optimize=True)

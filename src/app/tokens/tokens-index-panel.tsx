@@ -172,7 +172,7 @@ export function TokensIndexPanel() {
             type="button"
             onClick={() => load({ refresh: true })}
             disabled={loading}
-            className="rounded-lg bg-network-primary px-4 py-2.5 font-display text-sm font-semibold text-white hover:bg-network-primary-light disabled:opacity-60"
+            className="rounded-lg bg-network-primary px-4 py-2.5 font-display text-sm font-semibold text-boing-black hover:bg-network-primary-light disabled:opacity-60"
           >
             {loading ? "Scanning…" : "Rescan"}
           </button>
@@ -270,7 +270,8 @@ export function TokensIndexPanel() {
               <p className="mt-4 text-sm text-[var(--text-muted)]">
                 {data.entries.length === 0 ? (
                   <>
-                    No included contract deploys in this window. Mempool accept on boing.finance is not enough — wait for
+                    No included contract deploys in this window. A Boing Finance “Deploy submitted” toast is mempool
+                    accept, not a listing here — wait for
                     a block, then Rescan. DEX-listed tokens need a published factory; see{" "}
                     <Link href="/dex/tokens" className="text-network-cyan hover:underline">
                       DEX token directory

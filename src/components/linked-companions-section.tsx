@@ -107,7 +107,7 @@ export function LinkedCompanionsSection({
             target="_blank"
             rel="noopener noreferrer"
           >
-            boing.finance
+            Boing Finance
           </a>
           {" "}
           or{" "}

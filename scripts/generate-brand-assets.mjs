@@ -12,7 +12,8 @@ const root = join(__dirname, '..')
 const publicDir = join(root, 'public')
 const svgPath = join(publicDir, 'favicon.svg')
 
-const BRAND_RGB = { r: 5, g: 12, b: 24 }
+const BRAND_RGB = { r: 5, g: 10, b: 26 }
+const ACCENT = '#3B8CFF'
 
 function pngsToIco(pngBuffers) {
   const count = pngBuffers.length
@@ -94,9 +95,10 @@ function ogTextOverlaySvg() {
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   return Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="680" height="400" viewBox="0 0 680 400">
-  <text x="0" y="52" fill="#00e8c8" font-family="Segoe UI,system-ui,-apple-system,sans-serif" font-size="48" font-weight="700">${esc('Boing Observer')}</text>
-  <text x="0" y="112" fill="#94a3b8" font-family="Segoe UI,system-ui,-apple-system,sans-serif" font-size="26">${esc('Blockchain explorer for Boing Network')}</text>
-  <text x="0" y="162" fill="#64748b" font-family="Segoe UI,system-ui,-apple-system,sans-serif" font-size="22">${esc('boing.observer')}</text>
+  <text x="0" y="48" fill="${ACCENT}" font-family="Segoe UI,system-ui,-apple-system,sans-serif" font-size="46" font-weight="700">${esc('Boing Observer')}</text>
+  <text x="0" y="100" fill="#F0F4F8" font-family="Segoe UI,system-ui,-apple-system,sans-serif" font-size="26">${esc('See what happens on-chain')}</text>
+  <text x="0" y="148" fill="#c5d0de" font-family="Segoe UI,system-ui,-apple-system,sans-serif" font-size="20">${esc('Quality, enforced by the protocol')}</text>
+  <text x="0" y="196" fill="#8b9bb0" font-family="Segoe UI,system-ui,-apple-system,sans-serif" font-size="18">${esc('Public testnet — mainnet not live')}</text>
 </svg>`,
     'utf8',
   )

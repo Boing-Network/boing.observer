@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE_URL } from "@/lib/constants";
+import { FINANCE_URL, SITE_URL } from "@/lib/constants";
+import { BRAND } from "@/lib/brand";
 import { TechnicalDetails } from "@/components/technical-details";
 import { QuotePanel } from "./quote-panel";
 
@@ -28,8 +29,12 @@ export default function DexQuotePage() {
       <header className="space-y-2">
         <h1 className="page-title font-display">Native DEX route quotes</h1>
         <p className="text-[var(--text-secondary)] leading-relaxed">
-          Preview read-only swap routes across known pools. This explorer does not execute trades — use Boing Express or
-          your dApp for that.
+          Preview read-only swap routes across known pools. {BRAND.financeName} is where you {BRAND.financeLine.toLowerCase()}.
+          This page does not execute trades — use {BRAND.expressName} or your dApp for that.{" "}
+          <a href={FINANCE_URL} className="text-network-cyan hover:underline" target="_blank" rel="noopener noreferrer">
+            {BRAND.financeName}
+          </a>
+          .
         </p>
         <TechnicalDetails summary="Technical details">
           <p>

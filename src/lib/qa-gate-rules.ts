@@ -64,9 +64,10 @@ export const HARD_RULES: {
   {
     id: "R8",
     ruleId: "SCAM_PATTERN_MATCH",
-    title: "Scam byte patterns",
+    title: "Known-bad byte patterns",
     outcome: "Reject",
-    summary: "Bytecode must not contain any registry.scam_patterns sequence as a contiguous window. Default list is empty.",
+    summary:
+      "Bytecode must not contain a registry pattern (field scam_patterns) as a contiguous window. The default list is empty until governance publishes one.",
   },
   {
     id: "R9",

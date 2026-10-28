@@ -1,12 +1,12 @@
 {
   "name": "Boing Observer",
   "short_name": "Observer",
-  "description": "Blockchain explorer for Boing Network. Browse blocks, transactions, and accounts.",
+  "description": "Boing Observer — an explorer with integrated QA transparency. See what happens on-chain. Public testnet — mainnet not live.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#050c18",
-  "theme_color": "#050c18",
+  "background_color": "#050A1A",
+  "theme_color": "#050A1A",
   "icons": [
     {
       "src": "/favicon.svg",

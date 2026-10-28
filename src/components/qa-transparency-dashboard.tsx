@@ -27,6 +27,9 @@ import {
   useQaReviewerSession,
 } from "@/components/qa-reviewer-gate";
 import { AssetMediaThumb } from "@/components/asset-media-thumb";
+import { LogoMark } from "@/components/logo-mark";
+import { TestnetStatus } from "@/components/testnet-status";
+import { BRAND } from "@/lib/brand";
 
 function formatDuration(secs: number): string {
   if (secs < 60) return `${secs}s`;
@@ -146,21 +149,24 @@ export function QaTransparencyDashboard() {
             </Link>
           </li>
           <li aria-hidden="true">/</li>
-          <li className="text-[var(--text-primary)]">QA transparency</li>
+          <li className="text-[var(--text-primary)]">Quality Gate</li>
         </ol>
       </nav>
 
       <header>
-        <h1 className="page-title font-display">
-          QA transparency
-        </h1>
-        <p className="mt-3 max-w-2xl text-[var(--text-secondary)] leading-relaxed">
-          Live pool config, pending queue, and rule registry from public RPC — same methods the explorer uses elsewhere.
-          Anyone can Allow or Reject Unsure deploys in the public QA vote below.
+        <h1 className="page-title font-display">{BRAND.qualityGateName}</h1>
+        <div className="mt-3">
+          <TestnetStatus />
+        </div>
+        <p className="mt-3 max-w-2xl text-[var(--text-secondary)] leading-relaxed">{BRAND.qualityGateSummary}</p>
+        <p className="mt-2 max-w-2xl text-[var(--text-secondary)] leading-relaxed">
+          {BRAND.transparentDefault} {BRAND.outcomesVisible} This page is the live registry, pool, and queue from public
+          RPC. Anyone can Allow or Reject an Unsure deployment in the vote below.
         </p>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--text-muted)]">{BRAND.reduceMalicious}</p>
         <p className="mt-2 text-sm text-[var(--text-muted)]">
           <Link href="/qa/rules" className="text-network-cyan hover:underline">
-            QA gate rules
+            Gate rules
           </Link>
           {" · "}
           <Link href="/tools/qa-check" className="text-network-cyan hover:underline">
@@ -282,7 +288,11 @@ export function QaTransparencyDashboard() {
             <dl className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
               <ConfigStat label="Max bytecode" value={`${(registry.max_bytecode_size / 1024).toFixed(0)} KiB`} />
               <ConfigStat label="Bytecode blocklist" value={registry.blocklist?.length ?? 0} hint="32-byte hashes." />
-              <ConfigStat label="Scam patterns" value={registry.scam_patterns?.length ?? 0} />
+              <ConfigStat
+                label="Known-bad patterns"
+                value={registry.scam_patterns?.length ?? 0}
+                hint="Live scam_patterns entries."
+              />
               <ConfigStat
                 label="Always-review categories"
                 value={registry.always_review_categories?.length ?? 0}
@@ -379,13 +389,14 @@ export function QaTransparencyDashboard() {
           Public vote
         </h2>
         <p className="mb-4 max-w-3xl text-sm text-[var(--text-muted)]">
-          Automated QA already Allow/Rejects most deploys. Items here are{" "}
-          <strong className="text-[var(--text-secondary)]">Unsure</strong> — public voting: connect{" "}
+          Automated checks already Allow or Reject clear cases. Items here are{" "}
+          <strong className="text-[var(--text-secondary)]">Unsure</strong> — the community pool reviews the edge cases.
+          Connect{" "}
           <a href={WALLET_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
             Boing Express
           </a>{" "}
-          to Allow or Reject based on the asset (name, symbol, purpose, bytecode) before it can enter
-          a block. This explorer does not pay voters. Counted Allow/Reject votes earn on-chain
+          — {BRAND.expressLine} — to Allow or Reject from the asset name, symbol, purpose, and bytecode
+          before it can enter a block. This explorer does not pay voters. Counted Allow/Reject votes earn on-chain
           treasury rewards (typically 1 BOING) when a signed <code className="rounded bg-white/10 px-1">QaPoolVote</code>{" "}
           is included. Abstain does not pay by default.{" "}
           <a href={RPC_SPEC_URL} target="_blank" rel="noopener noreferrer" className="text-network-cyan hover:underline">
@@ -417,9 +428,11 @@ export function QaTransparencyDashboard() {
           <div className="h-32 glass-card animate-pulse bg-white/5" aria-busy="true" />
         ) : items.length === 0 ? (
           <div className="glass-card p-8 text-center text-[var(--text-muted)]">
-            <p>No pending items.</p>
+            <LogoMark className="mx-auto h-10 w-10 text-[var(--accent)]" />
+            <p className="mt-3">No pending items.</p>
             <p className="mt-2 text-sm">
-              <code className="rounded bg-white/10 px-1">-32051</code> deploys show here when referred.
+              The queue is clear. Deployments referred with{" "}
+              <code className="rounded bg-white/10 px-1">-32051</code> show up here.
             </p>
           </div>
         ) : (
@@ -603,7 +616,7 @@ export function QaTransparencyDashboard() {
           </li>
           <li>
             <Link href="/qa/rules" className="text-network-cyan hover:underline">
-              QA gate rules
+              Quality Gate rules
             </Link>
             {" — "}
             every Allow / Reject / Unsure rule, plus PDF.
