@@ -1,6 +1,9 @@
 /**
- * Rasterize public/favicon.svg for favicons, Apple touch icon, Open Graph, and SEO fallbacks.
- * Run via npm run generate:brand-assets (also intended before next build).
+ * Rasterize the Boing "Arc Slab" mark for favicons, Apple touch / PWA icons and the OG banner.
+ * - public/brand/boing-observer-mark.svg: full mark (48px and larger rasters)
+ * - public/favicon.svg: simplified 32-grid mark (16/32px rasters and favicon.ico layers)
+ * - public/brand/boing-observer-wordmark.svg: mark + "Boing Observer" in Comfortaa Bold, outlined (OG banner)
+ * Run via npm run generate:brand-assets. Output is committed.
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
@@ -10,10 +13,13 @@ import sharp from 'sharp'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = join(__dirname, '..')
 const publicDir = join(root, 'public')
-const svgPath = join(publicDir, 'favicon.svg')
+const assetsDir = join(publicDir, 'brand')
+const svgPath = join(assetsDir, 'boing-observer-mark.svg')
+const smallSvgPath = join(publicDir, 'favicon.svg')
+const wordmarkPath = join(assetsDir, 'boing-observer-wordmark.svg')
 
 const BRAND_RGB = { r: 5, g: 10, b: 26 }
-const ACCENT = '#3B8CFF'
+const PNG = { compressionLevel: 9 }
 
 function pngsToIco(pngBuffers) {
   const count = pngBuffers.length
@@ -43,111 +49,83 @@ function pngsToIco(pngBuffers) {
   return buf
 }
 
-async function writeSolidIcon(svg, size, outPath, pad = 0.12) {
-  const inner = Math.round(size * (1 - 2 * pad))
-  const resized = await sharp(svg)
-    .resize(inner, inner, {
-      fit: 'contain',
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
-    .png()
-    .toBuffer()
+/** Rasterize at 4x the target size, then downsample (crisp, stable output). */
+const raster = (svg, size, viewBox) =>
+  sharp(svg, { density: Math.round(((size * 4) / viewBox) * 72) }).resize(size, size, { kernel: 'lanczos3' })
 
-  await sharp({
-    create: {
-      width: size,
-      height: size,
-      channels: 3,
-      background: BRAND_RGB,
-    },
-  })
-    .composite([{ input: resized, gravity: 'centre' }])
-    .png()
+async function writePng(svg, size, viewBox, outPath) {
+  await raster(svg, size, viewBox).png(PNG).toFile(outPath)
+}
+
+/** Mark centred on the solid brand background (Apple touch / PWA icons). */
+async function writeSolidIcon(svg, size, outPath, pad = 0.04) {
+  const inner = Math.round(size * (1 - 2 * pad))
+  const mark = await raster(svg, inner, 64).png().toBuffer()
+  await sharp({ create: { width: size, height: size, channels: 3, background: BRAND_RGB } })
+    .composite([{ input: mark, gravity: 'centre' }])
+    .png(PNG)
     .toFile(outPath)
 }
 
-async function writeFaviconIco(svg, outPath) {
-  const sizes = [16, 32, 48]
-  const pngs = []
-  for (const size of sizes) {
-    pngs.push(
-      await sharp({
-        create: { width: size, height: size, channels: 3, background: BRAND_RGB },
-      })
-        .composite([
-          {
-            input: await sharp(svg)
-              .resize(size, size, { fit: 'contain', background: BRAND_RGB })
-              .png()
-              .toBuffer(),
-            gravity: 'centre',
-          },
-        ])
-        .png()
-        .toBuffer(),
-    )
-  }
+async function writeFaviconIco(smallSvg, svg, outPath) {
+  const pngs = [
+    await raster(smallSvg, 16, 32).png(PNG).toBuffer(),
+    await raster(smallSvg, 32, 32).png(PNG).toBuffer(),
+    await raster(svg, 48, 64).png(PNG).toBuffer(),
+  ]
   await writeFile(outPath, pngsToIco(pngs))
 }
 
-function ogTextOverlaySvg() {
-  const esc = (s) =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+function ogTaglineSvg() {
   return Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="680" height="400" viewBox="0 0 680 400">
-  <text x="0" y="48" fill="${ACCENT}" font-family="Segoe UI,system-ui,-apple-system,sans-serif" font-size="46" font-weight="700">${esc('Boing Observer')}</text>
-  <text x="0" y="100" fill="#F0F4F8" font-family="Segoe UI,system-ui,-apple-system,sans-serif" font-size="26">${esc('See what happens on-chain')}</text>
-  <text x="0" y="148" fill="#c5d0de" font-family="Segoe UI,system-ui,-apple-system,sans-serif" font-size="20">${esc('Quality, enforced by the protocol')}</text>
-  <text x="0" y="196" fill="#8b9bb0" font-family="Segoe UI,system-ui,-apple-system,sans-serif" font-size="18">${esc('Public testnet — mainnet not live')}</text>
+    `<svg xmlns="http://www.w3.org/2000/svg" width="760" height="170" viewBox="0 0 760 170">
+  <text x="0" y="40" fill="#94a3b8" font-family="Comfortaa,Segoe UI,system-ui,sans-serif" font-size="30">See what happens on-chain</text>
+  <text x="0" y="90" fill="#94a3b8" font-family="Comfortaa,Segoe UI,system-ui,sans-serif" font-size="24">Quality, enforced by the protocol</text>
+  <text x="0" y="140" fill="#64748b" font-family="Comfortaa,Segoe UI,system-ui,sans-serif" font-size="22">boing.observer · Public testnet, mainnet not live</text>
 </svg>`,
     'utf8',
   )
 }
 
-async function writeOgImage(svg, outPath) {
+/** 1200x630: outlined wordmark (mark + Comfortaa Bold paths) with the tagline under the text. */
+async function writeOgImage(wordmarkSvg, outPath) {
   const W = 1200
   const H = 630
-  const bg = await sharp({
-    create: { width: W, height: H, channels: 3, background: BRAND_RGB },
-  })
-    .png()
-    .toBuffer()
-
-  const logoSize = 360
-  const logoBuf = await sharp(svg)
-    .resize(logoSize, logoSize, {
-      fit: 'contain',
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
-    .png()
-    .toBuffer()
-
-  const textBuf = await sharp(ogTextOverlaySvg()).png().toBuffer()
-  const logoLeft = Math.round((W * 0.38 - logoSize) / 2)
-  const logoTop = Math.round((H - logoSize) / 2)
-
-  await sharp(bg)
+  const wmWidth = 900
+  const wm = await sharp(wordmarkSvg, { density: 900 }).resize({ width: wmWidth }).png().toBuffer()
+  const { height: wmHeight } = await sharp(wm).metadata()
+  const tag = await sharp(ogTaglineSvg()).png().toBuffer()
+  const left = Math.round((W - wmWidth) / 2)
+  const top = Math.round(H / 2 - wmHeight / 2 - 50)
+  // the text starts at x=76 of the wordmark's 307-unit viewBox
+  const textLeft = left + Math.round(wmWidth * (76 / 307))
+  await sharp({ create: { width: W, height: H, channels: 3, background: BRAND_RGB } })
     .composite([
-      { input: logoBuf, left: Math.max(48, logoLeft), top: logoTop },
-      { input: textBuf, left: Math.round(W * 0.38) + 32, top: Math.round(H / 2 - 200) },
+      { input: wm, left, top },
+      { input: tag, left: textLeft, top: top + wmHeight + 8 },
     ])
-    .png()
+    .png(PNG)
     .toFile(outPath)
 }
 
 async function main() {
   const svg = await readFile(svgPath)
-  await mkdir(publicDir, { recursive: true })
+  const smallSvg = await readFile(smallSvgPath)
+  const wordmark = await readFile(wordmarkPath)
+  await mkdir(assetsDir, { recursive: true })
 
-  await writeSolidIcon(svg, 16, join(publicDir, 'favicon-16x16.png'), 0)
-  await writeSolidIcon(svg, 32, join(publicDir, 'favicon-32x32.png'), 0)
-  await writeSolidIcon(svg, 180, join(publicDir, 'apple-touch-icon.png'), 0)
-  await writeSolidIcon(svg, 192, join(publicDir, 'icon-192.png'), 0)
-  await writeSolidIcon(svg, 512, join(publicDir, 'icon-512.png'), 0.08)
-  await writeOgImage(svg, join(publicDir, 'og.png'))
-  await writeFaviconIco(svg, join(publicDir, 'favicon.ico'))
+  await writeSolidIcon(svg, 180, join(publicDir, 'apple-touch-icon.png'))
+  await writeSolidIcon(svg, 192, join(publicDir, 'icon-192.png'))
+  await writeSolidIcon(svg, 512, join(publicDir, 'icon-512.png'))
+  await writePng(smallSvg, 16, 32, join(publicDir, 'favicon-16x16.png'))
+  await writePng(smallSvg, 32, 32, join(publicDir, 'favicon-32x32.png'))
+  await writeOgImage(wordmark, join(publicDir, 'og.png'))
+  await writeOgImage(wordmark, join(publicDir, 'og-image.png'))
+  await writeFaviconIco(smallSvg, svg, join(publicDir, 'favicon.ico'))
 
-  console.log('Boing Observer brand assets written: favicon PNG/ICO, apple-touch-icon, icons, og.png')
+  console.log(
+    'Boing Observer brand assets written: apple-touch-icon, icon-192/512, favicon-16/32, favicon.ico, og.png, og-image.png',
+  )
 }
 
 main().catch((err) => {

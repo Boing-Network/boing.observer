@@ -49,10 +49,9 @@ specs), `CONTRACT_SHOTS=1`, `NAMES_SHOTS=1` (screenshots), `CI`.
 | `npm run deploy` / `npm run upload` | OpenNext build + `wrangler deploy` / version upload |
 | `npm run sync:chain-metadata` | Refresh `src/data/chain-metadata.json` from a sibling `boing.network` checkout (`git show main:docs/chain-metadata.json`), else GitHub raw; accepts a path or URL; refuses unknown `schema_version`. Review the diff, then run unit tests |
 | `npm run cf-typegen` | Regenerate Cloudflare env types |
-| `npm run generate:brand-assets` | `scripts/generate-brand-assets.mjs` |
+| `npm run generate:brand-assets` | `scripts/generate-brand-assets.mjs`: regenerate favicons, Apple touch icon, PWA icons and the OG image (`og.png`, `og-image.png`) from the Arc Slab SVGs in `public/` and `public/brand/` |
 | `npm install` (postinstall) | `scripts/copy-pdf-worker.mjs` copies the pdf.js worker so PDFs stay same-origin |
-| `python scripts/generate-seo-assets.py` | OG image, favicon, apple-touch icon (needs `pip install -r requirements-seo.txt`) |
-| `python scripts/generate-qa-gate-rules-pdf.py` | Render `docs/QA-GATE-RULES.md` to a PDF (needs `pip install markdown fpdf2`; not in `requirements-seo.txt`) |
+| `python scripts/generate-qa-gate-rules-pdf.py` | Render `docs/QA-GATE-RULES.md` to a PDF (needs `pip install markdown fpdf2`) |
 | `npx vite-node scripts/gen-published-interfaces.ts -- <outDir> [rpcUrl]` | Generate canonical interface JSONs for the on-chain interface registry |
 
 `npm ci --legacy-peer-deps` is required (the Cloudflare adapter's peer range lags Next 15).

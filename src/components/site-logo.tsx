@@ -10,23 +10,23 @@ type SiteLogoProps = {
 };
 
 /**
- * Wordmark + mark; matches Comfortaa + Express / engraved theme.
+ * Arc Slab mark + all-blue Comfortaa Bold wordmark; same lockup style as Boing Express.
  */
 export function SiteLogo({ variant = "header", className = "", headingId }: SiteLogoProps) {
   const isHero = variant === "hero";
   const markClass = isHero ? "h-10 w-10 shrink-0 sm:h-12 sm:w-12" : "h-8 w-8 shrink-0 sm:h-9 sm:w-9";
   const textClass = isHero
-    ? "font-display text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl"
-    : "font-display text-base font-bold tracking-tight text-[var(--text-primary)] sm:text-lg";
+    ? "font-display text-2xl font-bold tracking-tight text-[var(--accent)] sm:text-3xl"
+    : "font-display text-base font-bold tracking-tight text-[var(--accent)] sm:text-lg";
 
-  const shellClass = `group inline-flex min-w-0 items-center gap-2 rounded-md outline-none transition-[filter,colors] ${headingId ? "" : "hover:text-network-cyan focus-visible:ring-2 focus-visible:ring-network-cyan/50"} ${className}`;
+  const shellClass = `group inline-flex min-w-0 items-center gap-2 rounded-md outline-none transition-[filter,colors] ${headingId ? "" : "focus-visible:ring-2 focus-visible:ring-network-cyan/50"} ${className}`;
 
   const inner = (
     <>
       <LogoMark
-        className={`${markClass} text-[var(--text-primary)] transition-[filter] ${headingId ? "" : "group-hover:drop-shadow-[0_0_12px_rgba(59, 140, 255,0.35)]"}`}
+        className={`${markClass} transition-[filter] ${headingId ? "" : "group-hover:drop-shadow-[0_0_12px_rgba(59,140,255,0.35)]"}`}
       />
-      <span className={`min-w-0 ${textClass}`}>
+      <span className={`min-w-0 transition-colors ${textClass} ${headingId ? "" : "group-hover:text-[var(--accent-soft)]"}`}>
         <span className="hidden min-[360px]:inline">Boing </span>
         Observer
       </span>
