@@ -214,7 +214,7 @@ export async function buildTokenIndexForHeightRange(
 
   if (deployTxSeen === 0) {
     indexWarnings.push(
-      "No ContractDeploy transactions in this window. boing.finance shows Deploy submitted when the mempool accepts a tx; this index only lists tokens after that tx is included in a block.",
+      "No ContractDeploy transactions in this window. Boing Finance shows Deploy submitted when the mempool accepts a tx; this index only lists tokens after that tx is included in a block.",
     );
   } else if (deployIndexed === 0) {
     indexWarnings.push(
