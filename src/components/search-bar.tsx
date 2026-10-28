@@ -17,9 +17,11 @@ type SearchBarProps = {
   className?: string;
   /** Compact (`sm`) for the sticky header; `md` for page bodies. */
   size?: "sm" | "md";
+  /** Accessible name of the search landmark (must differ when several searches share a page). */
+  landmarkLabel?: string;
 };
 
-export function SearchBar({ layout = "inline", className = "max-w-lg", size = "md" }: SearchBarProps) {
+export function SearchBar({ layout = "inline", className = "max-w-lg", size = "md", landmarkLabel = "Search the explorer" }: SearchBarProps) {
   const router = useRouter();
   const { network } = useNetwork();
   const uid = useId();
@@ -77,6 +79,7 @@ export function SearchBar({ layout = "inline", className = "max-w-lg", size = "m
     <div className={`w-full ${className}`}>
       <form
         role="search"
+        aria-label={landmarkLabel}
         className={
           stacked
             ? "flex w-full flex-col gap-2"
@@ -112,7 +115,7 @@ export function SearchBar({ layout = "inline", className = "max-w-lg", size = "m
           disabled={loading}
           aria-label={loading ? "Searching…" : "Search"}
           data-testid="explorer-search-submit"
-          className={`shrink-0 rounded-md bg-network-primary font-display font-semibold text-white hover:bg-network-primary-light transition-colors focus:outline-none focus:ring-2 focus:ring-network-cyan disabled:opacity-60 ${
+          className={`shrink-0 rounded-md bg-network-primary font-display font-semibold text-[#050A1A] hover:bg-network-primary-light transition-colors focus:outline-none focus:ring-2 focus:ring-network-cyan disabled:opacity-60 ${
             size === "sm" ? "min-h-9 px-3 py-1.5 text-sm" : "min-h-10 px-3.5 py-2 text-sm"
           } ${stacked ? "w-full" : "w-auto"}`}
         >

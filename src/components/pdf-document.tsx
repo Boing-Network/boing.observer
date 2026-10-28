@@ -84,7 +84,12 @@ export function PdfDocument({
           </a>
         </span>
       </figcaption>
-      <div className="max-h-[min(80vh,880px)] overflow-y-auto bg-[#f7f5f0]">
+      <div
+        className="max-h-[min(80vh,880px)] overflow-y-auto bg-[#f7f5f0]"
+        tabIndex={0}
+        role="region"
+        aria-label={`${title} (scrollable)`}
+      >
         {status === "loading" ? (
           <p className="p-6 text-sm text-slate-700">Loading {title}…</p>
         ) : null}

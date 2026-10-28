@@ -97,7 +97,7 @@ export function NodeHealthPanel() {
       )}
 
       {!loading && data && data.warnings.length > 0 && (
-        <ul className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200" role="status">
+        <ul className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200" aria-label="Node warnings">
           {data.warnings.map((w, i) => (
             <li key={i}>{w}</li>
           ))}

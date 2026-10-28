@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SearchBar } from "@/components/search-bar";
 import { NAV_GROUPS, navItemIsActive } from "@/lib/nav";
 import { BOING_APPS } from "@/components/boing-apps-menu";
 
@@ -115,13 +114,6 @@ export function MobileMenu() {
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4">
               <div className="space-y-6">
-                <div role="search">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                    Search
-                  </p>
-                  <SearchBar layout="stacked" />
-                </div>
-
                 {NAV_GROUPS.map((group) => (
                   <nav
                     key={group.id}

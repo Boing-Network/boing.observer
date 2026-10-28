@@ -7,6 +7,7 @@ import { Header } from "@/components/header";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { CollaborationBanner } from "@/components/collaboration-banner";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
+import { ChainStaleBanner } from "@/components/chain-stale-banner";
 import { NetworkLinkNotice } from "@/components/network-link-notice";
 import Link from "next/link";
 import { SITE_URL, WEBSITE_URL, WALLET_URL, FINANCE_URL, DISCORD_URL } from "@/lib/constants";
@@ -178,6 +179,7 @@ export default function RootLayout({
               <CollaborationBanner />
               <Header />
               <NetworkStatusBanner />
+              <ChainStaleBanner />
               <NetworkLinkNotice />
               <main
                 className="app-main-readable mx-auto w-full min-w-0 max-w-7xl overflow-x-hidden px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8"
