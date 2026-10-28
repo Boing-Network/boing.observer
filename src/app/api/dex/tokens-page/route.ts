@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
         supported: false as const,
         reason: "no_canonical_factory",
         message:
-          "No canonical native DEX factory on this RPC (end_user.canonical_native_dex_factory is null, and this host has no factory override). This page lists tokens in registered pools only — deploying a token on boing.finance does not add it here. After the deploy is included in a block, use the Token & asset index (/tokens).",
+          "No canonical native DEX factory on this RPC (end_user.canonical_native_dex_factory is null, and this host has no factory override). This page lists tokens in registered pools only — deploying a token on Boing Finance does not add it here. After the deploy is included in a block, use the Token & asset index (/tokens).",
       });
     }
 
