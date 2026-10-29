@@ -16,10 +16,10 @@ dashboard, and secrets with `wrangler secret put`. `NEXT_PUBLIC_*` values are in
 | `NEXT_PUBLIC_BOING_LINKED_NFT_TOKEN_REGISTRY` (alias `BOING_LINKED_NFT_TOKEN_REGISTRY`) | build/server | Linked NFT/token registry AccountId override (testnet v2 default baked in) |
 | `NEXT_PUBLIC_BOING_BUILDER_ATTESTATION_REGISTRY` | build | Builder attestation registry AccountId (UI not shipped yet) |
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_BING_SITE_VERIFICATION` | build | Search-console verification meta tags |
-| `BOING_OPERATOR_RPC_TOKEN` | **secret** | Validator `X-Boing-Operator` value; server-only, never `NEXT_PUBLIC_`. Operator-only RPC methods are fail-closed (rejected with `-32057` unless the node has a token) |
+| `BOING_OPERATOR_RPC_TOKEN` | **secret** | Validator `X-Boing-Operator` value; server-only, never `NEXT_PUBLIC_`. Operator-only RPC methods are fail-closed (rejected with `-32057` unless the node has a token). Also accepted as break-glass for blob download |
 | `BOING_QA_VOTE_RPC` | server | Producing validator for `boing_qaPoolVote` (default `https://boing-testnet-1.fly.dev`) |
-| `BOING_BLOB_DOWNLOAD_TOKENS` | **secret** | Comma-separated tokens for `GET /api/blob/download` (operator token also accepted) |
-| `BOING_BLOB_DOWNLOAD_RPC` | server | Origin for raw `GET /v1/media/blob?id=...` (default Fly `boing-testnet-1`) |
+| `BOING_BLOB_DOWNLOAD_TOKENS` | **secret** | Optional comma-separated operator override tokens for `GET /api/blob/download` (operator token also accepted). Primary path is Phase 34 wallet proof |
+| `BOING_BLOB_DOWNLOAD_RPC` | server | Origin for raw `GET /v1/media/blob?id=...` (default Fly `boing-testnet-1` only; bypasses the public gateway 6 MiB JSON cap) |
 | `NFT_OWNER_INDEXER_URL` (alias `BOING_NFT_OWNER_INDEXER_URL`) | server | Origin of the NFT owner indexer Worker; enables `/api/account/nfts` |
 | `BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS` | server | `1` returns DEX diagnostics on `/api/dex/*`; set as plain text, not secret |
 | `BOING_NATIVE_VM_DEX_FACTORY` / `BOING_DEX_FACTORY_HEX` | server | `0x` + 64 hex DEX factory override for discovery (normally resolved from `boing_getNetworkInfo`) |
@@ -123,6 +123,23 @@ Setup notes:
   | csp-report | `http.request.uri.path eq "/api/csp-report"` | 20 / 1 min |
   | other API | `starts_with(http.request.uri.path, "/api/")` (place last) | 120 / 1 min |
 
+## Slim blocks, gateway caps, and blob download
+
+- **Public gateway / `/api/rpc`:** both cap JSON responses at **6 MiB**. Oversized tip blocks (full PutBlob / deploy bytecode) used to
+  arrive truncated as HTTP 200 and break `JSON.parse` on the home page; the proxy now rejects incomplete or non-JSON bodies, and
+  explorer pages request **slim** blocks.
+- **Slim fetches:** `boing_getBlockByHeight` / `ByHash` with `include_code=false` (third param; receipts still on when needed). Large
+  byte fields become `{ omitted, size, hash }` stubs. Home recent blocks, block height/hash pages, tx detail, and search use slim mode.
+  Block pages may best-effort restore small ContractCall calldata via a second fetch (`restoreBlockCalldata`).
+- **PutBlob raw bytes** stay off the JSON-RPC path. `GET /api/blob/download?network=&id=` streams from Fly-direct
+  (`BOING_BLOB_DOWNLOAD_RPC` or `HOSTED_TESTNET_RPC_FALLBACKS[0]` = `boing-testnet-1` only; **`boing-testnet-2` is retired**):
+  1. **Phase 34 (primary):** wallet proof headers (`X-Boing-Blob-Downloader` / `Expires` / `Nonce` / `Signature`) for
+     `meta.publisher` or ACL grantees (`GrantBlobDownload` / `RevokeBlobDownload`). ACL listing: `GET /api/blob/access` →
+     `boing_getBlobAccess`.
+  2. **Operator override:** caller presents a token ∈ `BOING_BLOB_DOWNLOAD_TOKENS` ∪ `BOING_OPERATOR_RPC_TOKEN`; Worker then uses the
+     server operator secret upstream when configured.
+- UI: PutBlob / BlobAnnounce insights show `BlobDownloadPanel` (wallet download first; operator token under an override disclosure).
+
 ## Indexing and caching
 
 - In-process RPC memoisation: `src/lib/rpc-cache.ts` (bounded, TTL).
@@ -132,8 +149,9 @@ Setup notes:
   256 blocks; `0` keeps all) and `boing_getTransactionReceipt` returns `null` beyond that, which is indistinguishable from an unknown
   id. `/tx/:id` therefore reads the chain head and says either "unknown / pending / other network" or "may have been pruned (older
   than about block #N)". Blocks, headers and signed payloads are never pruned. **Indexing note:** an indexer or archive explorer
-  must not rely on receipt lookups for history. Backfill by walking `boing_getBlockByHeight` (the explorer's block fetch can
-  include receipts) while the node still holds them, or run the node with `BOING_RECEIPT_RETENTION_BLOCKS=0`.
+  must not rely on receipt lookups for history. Backfill by walking `boing_getBlockByHeight` with slim/`include_code` as needed
+  (the explorer's block fetch can include receipts) while the node still holds them, or run the node with
+  `BOING_RECEIPT_RETENTION_BLOCKS=0`.
 - NFT ownership: optional external indexer Worker (`NFT_OWNER_INDEXER_URL`); without it the API returns 503 and the UI
   explains how to enable it.
 

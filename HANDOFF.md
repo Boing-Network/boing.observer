@@ -5,7 +5,7 @@ Short, current-state notes for the next maintainer or agent. Setup, env vars, sc
 [boing.network](https://github.com/Boing-Network/boing.network) repo (`docs/`, `crates/boing-node/src/rpc.rs`,
 `crates/boing-node/schemas/developer_api.json`).
 
-Last reviewed against boing.network `main` and the public testnet: 2026-10-25.
+Last reviewed against boing.network `main` and the public testnet: 2026-10-29.
 
 ## What this is
 
@@ -34,10 +34,15 @@ Search accepts: block height, 64-hex block hash / tx id / account (resolved by R
 
 - Browser -> same-origin `POST /api/rpc` -> upstream node (never direct; avoids CORS).
 - Proxy policy (`src/lib/rpc-proxy-policy.ts`, `src/app/api/rpc/route.ts`):
-  allow-list of read methods plus oing_faucetRequest, name methods and oing_simulateContractCall (no transaction submit), `params` must be an array of <= 8,
-  `id` coerced to a safe integer, batches rejected, 1 MiB request cap (bytes), 6 MiB response cap, 30 s upstream timeout,
+  allow-list of read methods plus `boing_faucetRequest`, name methods and `boing_simulateContractCall` (no transaction submit), `params` must be an array of <= 8,
+  `id` coerced to a safe integer, batches rejected, 1 MiB request cap (bytes), **6 MiB response cap** (same as public
+  `testnet-rpc` gateway), incomplete / non-JSON upstream bodies rejected, 30 s upstream timeout,
   failover on 403 / 502-504 / 521-526 / 530 and Cloudflare challenge pages. Non-allowed methods get a JSON-RPC
-  `-32601` error. No failover on `Method not found`.
+  `-32601` error. No failover on `Method not found`. Hosted fallback is **`boing-testnet-1` only** (`boing-testnet-2` retired).
+- **Slim block fetches:** UI calls `getBlockByHeight` / `ByHash` with `include_code=false` so PutBlob/deploy payloads stay
+  stubs under the gateway cap; block pages may restore small ContractCall calldata afterward.
+- **Blob download:** `GET /api/blob/download` (Fly-direct, not the gateway) — Phase 34 wallet proof for publisher/grantee;
+  operator / `BOING_BLOB_DOWNLOAD_TOKENS` override. `GET /api/blob/access` → `boing_getBlobAccess`.
 - Server routes under `/api/*` call upstream directly with `createServerBoingClient` / `rpcCall`. They are **not**
   bound by the proxy allow-list, so each validates `network` (`testnet|mainnet`) and 32-byte hex ids itself.
 - Client cache: `src/lib/rpc-cache.ts` (`cachedRpc`, bounded to 500 entries, TTL per call, failed entries evicted).
@@ -63,7 +68,10 @@ Search accepts: block height, 64-hex block hash / tx id / account (resolved by R
 | Accounts | `pending_unbond`, `pending_unbond_boing`, `unbond_unlock_height` typed and shown. |
 | Contract bytecode | `boing_getContractCode` first, deploy-search fallback for older nodes. |
 | Chain IDs | testnet `0x1b01` (6913), mainnet `0x1b02` (6914): wallet convention, not in block headers. |
-| Tx payloads | Decoded through the SDK payload catalog. Unknown payload types render as raw. |
+| Tx payloads | Decoded through the SDK payload catalog (incl. names, PutBlob, Grant/RevokeBlobDownload). Unknown payload types render as raw. Multi-tx block views group consecutive same-kind + same-signer txs. |
+| Slim blocks / gateway | Explorer uses `include_code=false`; public gateway + `/api/rpc` refuse >6 MiB / truncated JSON. |
+| Blob download ACL | Phase 34 wallet proof + operator override on PutBlob panels; see docs/OPERATIONS.md. |
+| Testnet backends | `HOSTED_TESTNET_RPC_FALLBACKS` = `boing-testnet-1` only; t2 destroyed. |
 | Linked NFT/token registry | **v2** `0xf704485a...55dd` (salt `BOING_NFT_TOKEN_LINK_REG_V2`, selectors `0xE0`-`0xE8`, `claim_self 0xE7`, `get_asset_deployer 0xE8`). v1 `0xebf9f019...3dd8` is superseded but still recognised. |
 | Builder attestation registry | AccountId documented only; read-only "Builder attested" UI is **not shipped**. |
 
@@ -91,9 +99,12 @@ Search accepts: block height, 64-hex block hash / tx id / account (resolved by R
 
 ## Wallet (boing.express) contract
 
-The explorer does not connect a wallet by itself except for QA voting (`/qa`), which uses the injected provider
-(`boing_requestAccounts`, `boing_signMessage`, `boing_sendTransaction`; `boing_chainId`, `boing_switchChain`).
-Unsigned fallback votes go through `BOING_QA_VOTE_RPC` using the server-only operator token.
+The explorer connects a wallet for:
+
+- **QA voting** (`/qa`): `boing_requestAccounts`, `boing_signMessage`, `boing_sendTransaction`; `boing_chainId`, `boing_switchChain`.
+  Unsigned fallback votes go through `BOING_QA_VOTE_RPC` using the server-only operator token.
+- **PutBlob download** (Phase 34): same injected provider; signs a domain-separated download proof (not a chain tx).
+  Operator shared-token paste remains a break-glass override on the panel.
 
 ## Indexing boundary (OBS-1)
 
