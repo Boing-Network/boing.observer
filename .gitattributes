@@ -1,0 +1,4 @@
+# Keep node/shell scripts LF on Windows checkouts (core.autocrlf=true). With CRLF after the #!/usr/bin/env node hashbang,
+# Vitest cannot load scripts/csp-report-summary.mjs (SyntaxError: Invalid or unexpected token).
+*.mjs text eol=lf
+*.sh text eol=lf
