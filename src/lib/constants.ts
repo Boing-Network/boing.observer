@@ -1,7 +1,7 @@
 /** Canonical site URL for metadata, links, and structured data. */
 export const SITE_URL = "https://boing.observer";
 
-/** Canonical website; desktop clients may merge `GET https://boing.network/api/networks` → `meta` / `meta.ecosystem` (VIBEMINER-INTEGRATION.md). */
+/** Canonical website; clients may merge `GET https://boing.network/api/networks` → `meta` / `meta.ecosystem` (see boing.network docs/NETWORKS-API.md). */
 export const WEBSITE_URL = "https://boing.network";
 
 /** Official Boing Network community Discord invite. */
@@ -71,7 +71,7 @@ export const NFT_OWNER_INDEX_HANDOFF_DOC_URL = `${DOCS_BASE}/HANDOFF_NFT_OWNER_I
 /** §4 — 32-byte AccountId (64 hex), not 20-byte Ethereum addresses. */
 export const ADDRESS_FORMAT_ALIGNMENT_URL = `${THREE_CODEBASE_ALIGNMENT_URL}#4-token-and-address-format`;
 
-/** Local VibeMiner / localhost:8545 vs public testnet RPC (THREE-CODEBASE-ALIGNMENT §2.1). */
+/** Local node (localhost:8545) vs public testnet RPC (THREE-CODEBASE-ALIGNMENT §2.1). */
 export const QA_RPC_TWO_SURFACES_DOC_URL = `${THREE_CODEBASE_ALIGNMENT_URL}#21-qa-registry-rpc-boing_getqaregistry--two-different-surfaces`;
 
 /** Canonical public faucet page on boing.network. */

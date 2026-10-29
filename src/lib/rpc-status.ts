@@ -1,6 +1,6 @@
 /**
  * RPC connectivity helpers for friendly error messages.
- * Used when Boing Network nodes are not yet available (e.g. before incentivized testnet launch).
+ * Used when Boing Network nodes are not yet available (e.g. during maintenance or an outage).
  */
 
 import { describeRpcRejection, isRateLimitedError } from "./rpc-error";
