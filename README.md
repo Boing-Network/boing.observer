@@ -85,10 +85,10 @@ npm run test:e2e   # Playwright, mocked RPC; build first
 | `NEXT_PUBLIC_TESTNET_RPC` | Testnet RPC (default `https://testnet-rpc.boing.network/`) |
 | `NEXT_PUBLIC_TESTNET_RPC_FALLBACKS` | Extra testnet origins (comma-separated). The proxy already failsovers to hosted Fly nodes |
 | `NEXT_PUBLIC_MAINNET_RPC` | Mainnet RPC. **Leave unset** until a distinct mainnet endpoint is published |
-| `BOING_OPERATOR_RPC_TOKEN` | Server-only; must match the validator's token (sent as `X-Boing-Operator`). Operator-only RPC methods are fail-closed: nodes reject them unless a token is configured. Never `NEXT_PUBLIC_` |
+| `BOING_OPERATOR_RPC_TOKEN` | Server-only; must match the validator's token (sent as `X-Boing-Operator`). Operator-only RPC methods are fail-closed: nodes reject them unless a token is configured. Also break-glass for blob download. Never `NEXT_PUBLIC_` |
 | `BOING_QA_VOTE_RPC` | Validator JSON-RPC for `boing_qaPoolVote` (defaults to `https://boing-testnet-1.fly.dev`). Signed Express votes normally submit through the wallet RPC. |
-| `BOING_BLOB_DOWNLOAD_TOKENS` | Comma-separated download permission tokens for `GET /api/blob/download` (also accepts the operator token). |
-| `BOING_BLOB_DOWNLOAD_RPC` | Origin for raw `GET /v1/media/blob?id=…` (defaults to Fly `boing-testnet-1`, not the public gateway). |
+| `BOING_BLOB_DOWNLOAD_TOKENS` | Optional comma-separated operator override tokens for `GET /api/blob/download` (also accepts the operator token). Primary UX is Phase 34 wallet proof (publisher / ACL grantee). |
+| `BOING_BLOB_DOWNLOAD_RPC` | Origin for raw `GET /v1/media/blob?id=…` (defaults to Fly `boing-testnet-1` only — `boing-testnet-2` is retired; never the public gateway). |
 | `NFT_OWNER_INDEXER_URL` | Origin of `workers/nft-owner-indexer` (no trailing slash; alias `BOING_NFT_OWNER_INDEXER_URL`). Enables **`GET /api/account/nfts?network=&id=`**. |
 | `NEXT_PUBLIC_BOING_LINKED_NFT_TOKEN_REGISTRY` | Optional override for companions registry AccountId (public testnet default baked in) |
 | `NEXT_PUBLIC_BOING_BUILDER_ATTESTATION_REGISTRY` | Optional override for builder attestation registry AccountId (public testnet `0x734077a9…1816`; for future read-only **Builder attested** UI) |
@@ -115,10 +115,13 @@ and sends an enforcing, nonce-based Content-Security-Policy (the root layout is 
 ### RPC retries and “Method not found”
 
 - Browser calls **`POST /api/rpc`**. Client retries **once** on network errors, HTTP 429, and 5xx. The proxy fails over to Fly origins on **403, 502-504, 521-526, 530** and Cloudflare challenge pages.
-- The proxy only forwards an allow-list of methods (`src/lib/rpc-proxy-policy.ts`), rejects batches, requires `params` to be an array of at most 8 items, and caps request bodies at 1 MiB and responses at 6 MiB. Other methods get JSON-RPC `-32601`.
+- The proxy only forwards an allow-list of methods (`src/lib/rpc-proxy-policy.ts`), rejects batches, requires `params` to be an array of at most 8 items, and caps request bodies at 1 MiB and responses at 6 MiB (aligned with the public RPC gateway). Incomplete or non-JSON upstream bodies are not forwarded. Other methods get JSON-RPC `-32601`.
+- **Slim block fetches:** home, block, tx, and search call `boing_getBlockByHeight` / `ByHash` with `include_code=false` so PutBlob/deploy bytes stay `{ omitted, size, hash }` stubs under the 6 MiB cap. Small ContractCall calldata may be restored best-effort afterward.
+- **PutBlob bytes** are not on the JSON-RPC proxy. `GET /api/blob/download` streams from Fly-direct: Phase 34 wallet proof (publisher / grant) first; operator / `BOING_BLOB_DOWNLOAD_TOKENS` as override. ACL metadata: `GET /api/blob/access` → `boing_getBlobAccess`.
 - Global security headers (nosniff, `X-Frame-Options: DENY`, HSTS, Permissions-Policy, baseline CSP) come from `security-headers.mjs`.
 - There is **no** automatic failover on **`Method not found`**. `/qa` still shows **canonical QA JSON and doc links** when `boing_getQaRegistry` fails. See [THREE-CODEBASE-ALIGNMENT.md §2.1](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md#21-qa-registry-rpc-boing_getqaregistry--two-different-surfaces).
 - **`/dex/pools`** uses **`@boing-network/boing-sdk` against RPC** today. Optional Worker directory: [HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_NATIVE_DEX_DIRECTORY_R2_AND_CHAIN.md).
+- Public testnet backend is **`boing-testnet-1` only** (`boing-testnet-2` retired).
 
 ## ☁️ Hosting on Cloudflare
 

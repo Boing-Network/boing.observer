@@ -8,7 +8,9 @@
 
 ## Learned Workspace Facts
 
-- Default public testnet RPC is `https://testnet-rpc.boing.network/` (read-only, no API key); Testnet should use that rather than localhost unless the user explicitly chooses local or custom RPC.
+- Default public testnet RPC is `https://testnet-rpc.boing.network/` (read-only, no API key); Testnet should use that rather than localhost unless the user explicitly chooses local or custom RPC. Hosted backend is `boing-testnet-1` only (`boing-testnet-2` retired).
+- Public gateway and explorer `/api/rpc` both cap JSON at 6 MiB and reject truncated/invalid bodies; explorer block fetches use `include_code=false` (slim stubs for PutBlob/deploy bytes).
+- PutBlob raw download is gated: Phase 34 wallet proof (publisher / ACL grantee) primary, operator / `BOING_BLOB_DOWNLOAD_TOKENS` override; bytes stream Fly-direct via `/api/blob/download`, not the public gateway.
 - DEX listing aligns to one RPC snapshot: `boing_getNetworkInfo` fields `developer.dex_discovery_methods` and `end_user.canonical_native_dex_factory` together with factory-scoped `boing_listDexPools` and `boing_listDexTokens`.
 - Node operator defaults for metadata scan depth, receipt caps, and related env are documented in the boing.network repo (`tools/boing-node-public-testnet.env.example`, `docs/PUBLIC-RPC-NODE-UPGRADE-CHECKLIST.md`); env-only updates need a process restart on the node, code changes need a new `boing-node` build.
 - Token and asset discoverability pages aggregate from RPC with real limits (timeouts, pruning, receipt coverage); durable planet-scale indexing is a separate OBS-1 / indexer concern, not the same as bounded RPC aggregation.
