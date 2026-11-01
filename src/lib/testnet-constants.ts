@@ -6,8 +6,8 @@ export const TESTNET_FAUCET_ACCOUNT_HEX =
   "1e1a11f9eb8612aee66bdf0286dbb29ca662cadf7d76e384ac19449d62433615";
 
 /**
- * Historical public testnet native CP pool `AccountId` (previous tunnel ledger, chain 6913).
- * Hosted Fly RPC currently leaves `end_user.canonical_native_cp_pool` unset — prefer live RPC.
+ * Public testnet native CP pool `AccountId` (chain 6913), matching hosted Fly
+ * `end_user.canonical_native_cp_pool` when published (verified 2026-11-01). Prefer live RPC.
  * See THREE-CODEBASE-ALIGNMENT.md §3.1.
  */
 export const CANONICAL_TESTNET_NATIVE_CP_POOL_HEX =
