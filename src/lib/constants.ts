@@ -51,7 +51,7 @@ export const CANONICAL_QA_REGISTRY_JSON_URL = `${DOCS_RAW_BASE}/config/qa_regist
 export const CANONICAL_QA_POOL_CONFIG_JSON_URL = `${DOCS_RAW_BASE}/config/qa_pool_config.canonical.json`;
 
 /** Explains canonical vs live QA config and links to RPC. */
-export const CANONICAL_QA_DOC_URL = `${DOCS_BASE}/config/CANONICAL-QA-REGISTRY.md`;
+export const CANONICAL_QA_DOC_URL = `${DOCS_BASE}/QUALITY-ASSURANCE-NETWORK.md#public-transparency--live-registry-and-canonical-reference`;
 
 /** Cross-app alignment: URLs, RPC envs, chain IDs, address format (§4). */
 export const THREE_CODEBASE_ALIGNMENT_URL = `${DOCS_BASE}/THREE-CODEBASE-ALIGNMENT.md`;
