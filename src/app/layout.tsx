@@ -40,7 +40,7 @@ const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION;
 
 const OG_IMAGE = {
-  url: "/og.png",
+  url: "/og.png?v=7",
   width: 1200,
   height: 630,
   alt: "Boing Observer — See what happens on-chain",
@@ -110,11 +110,11 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "48x48" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon.svg?v=7", type: "image/svg+xml" },
+      { url: "/favicon-32x32.png?v=7", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png?v=7", sizes: "16x16", type: "image/png" },
     ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    apple: [{ url: "/apple-touch-icon.png?v=7", sizes: "180x180" }],
   },
   manifest: "/manifest.json",
   ...((googleVerification || bingVerification) && {
@@ -149,7 +149,7 @@ export default function RootLayout({
         slogan: BRAND.tagline,
         description: BRAND.core,
         logo: `${SITE_URL}/icon-512.png`,
-        image: `${SITE_URL}/og.png`,
+        image: `${SITE_URL}/og.png?v=7`,
         sameAs: [WEBSITE_URL, WALLET_URL, FINANCE_URL, DISCORD_URL],
       },
     ],

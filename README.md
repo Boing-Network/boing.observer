@@ -11,7 +11,7 @@ Boing is an independent Layer 1 where quality is enforced by the protocol. **Boi
 | **Boing Network** | Core protocol and ecosystem. The quality-assured Layer 1 |
 | **Boing Express** | Wallet. Your gateway to Boing |
 | **Boing Observer** | Explorer and transparency layer. See what happens on-chain |
-| **Boing Finance** | DeFi and liquidity. Move liquidity across chains |
+| **Boing Finance** | DeFi and liquidity. The DEX for Boing Network |
 
 The **Boing Quality Gate** screens deployments against transparent rules before they reach the ledger. Automated checks handle clear cases. A decentralized community pool reviews edge cases. This explorer is where those rules, deployments, and outcomes stay visible and auditable.
 

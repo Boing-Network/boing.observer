@@ -16,7 +16,7 @@ export const BRAND = {
   observerLine: "See what happens on-chain",
   observerBoundary: "Boing Observer — an explorer with integrated QA transparency.",
   expressLine: "Your gateway to Boing",
-  financeLine: "Move liquidity across chains",
+  financeLine: "The DEX for Boing Network",
   networkLine: "The quality-assured Layer 1",
 
   promise:
