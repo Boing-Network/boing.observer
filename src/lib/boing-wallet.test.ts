@@ -51,6 +51,6 @@ describe("walletMissingMessage", () => {
     expect(walletMissingMessage("Mozilla/5.0 (Windows NT 10.0; rv:120.0) Gecko/20100101 Firefox/120.0")).toMatch(/Chrome extension/);
   });
   it("asks desktop Chrome users to install", () => {
-    expect(walletMissingMessage("Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/130.0 Safari/537.36")).toMatch(/Chrome Web Store/);
+    expect(walletMissingMessage("Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/130.0 Safari/537.36")).toMatch(/boing\.express/);
   });
 });

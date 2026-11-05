@@ -22,7 +22,8 @@ export const HOME_BLOCK_WINDOW = 40;
  * Stats cadence: shared provider refreshes at this rate so all home widgets
  * derive from one tip + block window instead of overlapping independent polls.
  */
-export const HOME_REFRESH_MS = 15_000;
+/** Latest-blocks / shared home window: ~30–60s (AGENTS preference); was 15s and hammered public RPC. */
+export const HOME_REFRESH_MS = 30_000;
 
 type HomeChainDataValue = {
   tipHeight: number | null;

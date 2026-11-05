@@ -201,9 +201,8 @@ export function firstAccountHex(accounts: string[]): string | null {
   return isAccountHex(hex) ? hex : null;
 }
 
-/** Chrome Web Store listing for the Boing Express extension. */
-export const BOING_EXPRESS_CHROME_STORE_URL =
-  "https://chromewebstore.google.com/detail/hhknjdhknnghccmfnfafbkapjljicbfh";
+/** Live wallet until a real Chrome Web Store item URL is committed (was `[REDACTED]`). */
+export const BOING_EXPRESS_CHROME_STORE_URL = "https://boing.express";
 
 /**
  * User-facing explanation when no `window.boing` provider is present.
@@ -220,5 +219,5 @@ export function walletMissingMessage(userAgent: string = typeof navigator !== "u
   if (!chromium) {
     return "Boing Express is a Chrome extension. Open this page in Chrome, Edge, or Brave with the extension installed, or use the web wallet at boing.express.";
   }
-  return "Boing Express isn't installed in this browser. Install it from the Chrome Web Store, then reload this page.";
+  return "Boing Express isn't installed in this browser. Open https://boing.express to use the web wallet (or install the Chrome extension when the store listing is live), then reload this page.";
 }
