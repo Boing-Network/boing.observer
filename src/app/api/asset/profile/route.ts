@@ -5,6 +5,7 @@ import { resolveNativeDexFactoryForExplorer } from "@/lib/resolve-native-dex-fac
 import { resolveImageUrlFromSources } from "@/lib/extract-media-url";
 import { isNftPurposeOrKind } from "@/lib/asset-kind-label";
 import { buildTokenIndexForHeightRange } from "@/lib/token-index/build-token-index";
+import { readTokenIndexDiskCache } from "@/lib/token-index/file-cache-store";
 import { fetchAccountDeployHeights } from "@/lib/account-deploy-heights";
 import { resolveOffchainTokenMetadata } from "@/lib/token-metadata-lookup";
 import { resolveFungibleTotalSupplyFromMintFirst } from "@/lib/fungible-mint-supply";
@@ -19,6 +20,8 @@ export const maxDuration = 120;
 export const runtime = "nodejs";
 
 const PROFILE_INDEX_WINDOW = 256;
+/** Match the default `/api/tokens/index` window so cold asset pages can reuse its disk cache for logos. */
+const PROFILE_CACHE_HINT_WINDOW = 512;
 
 function parseNetwork(v: string | null): NetworkId | null {
   if (v === "testnet" || v === "mainnet") return v;
@@ -125,6 +128,15 @@ export async function GET(req: NextRequest) {
         }
         return true;
       });
+    } else {
+      // No deploy scan requested: still try the durable token-index cache so Create Token logos
+      // (description_hash → R2 metadata) show on asset pages without a heavy RPC window.
+      const toHeight = headHeight;
+      const fromHeight = Math.max(0, toHeight - (PROFILE_CACHE_HINT_WINDOW - 1));
+      const disk = await readTokenIndexDiskCache(network, fromHeight, toHeight);
+      if (disk.ok) {
+        tokenIndex = disk.envelope.result.entries.find((e) => e.address === address64) ?? null;
+      }
     }
 
     const onChainImage = resolveImageUrlFromSources(

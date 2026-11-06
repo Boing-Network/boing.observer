@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useNetwork } from "@/context/network-context";
 import { explorerAssetHref, explorerBlockHeightHref } from "@/lib/explorer-href";
@@ -17,6 +17,12 @@ type DexTokenRow = {
   poolCount: number;
   firstSeenHeight: number | null;
   metadataSource?: "deploy" | "abbrev";
+};
+
+type TokenIconHint = {
+  imageUrl?: string;
+  descriptionHash?: string;
+  description?: string;
 };
 
 type TokenDiagnostics = {
@@ -43,8 +49,17 @@ type TokensUnsupported = {
   message: string;
 };
 
-function tokenDisplay(row: DexTokenRow) {
-  return parseAssetDisplayMetadata(row.name, row.symbol);
+function tokenDisplay(row: DexTokenRow, hint?: TokenIconHint | null) {
+  const base = parseAssetDisplayMetadata(row.name, row.symbol);
+  return {
+    ...base,
+    imageUrl: hint?.imageUrl || base.imageUrl || null,
+    description: hint?.description || base.description || null,
+  };
+}
+
+function addressKey(id: string): string {
+  return normalizeHex64(id.replace(/^0x/i, ""))?.toLowerCase() ?? id.toLowerCase();
 }
 
 function assetPath(hexWith0x: string, network: string): string {
@@ -67,6 +82,8 @@ export function DexTokensPanel() {
   const [diagnostics, setDiagnostics] = useState<TokenDiagnostics | null>(null);
   const [tipHeight, setTipHeight] = useState<number | null>(null);
   const [rpcHost, setRpcHost] = useState<string | null>(null);
+  const [iconHints, setIconHints] = useState<Record<string, TokenIconHint>>({});
+  const attemptedMeta = useRef<Set<string>>(new Set());
 
   const loadPage = useCallback(
     async (append: boolean, cursorVal: string | null) => {
@@ -137,6 +154,93 @@ export function DexTokensPanel() {
       cancelled = true;
     };
   }, [loadPage]);
+
+  // Join Create Token logos from the token index (description_hash → R2 image).
+  useEffect(() => {
+    let cancelled = false;
+    setIconHints({});
+    attemptedMeta.current = new Set();
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/tokens/index?network=${encodeURIComponent(network)}&window=512`,
+          { headers: { Accept: "application/json" } },
+        );
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as {
+          entries?: Array<{
+            address?: string;
+            imageUrl?: string | null;
+            descriptionHash?: string | null;
+          }>;
+        };
+        const next: Record<string, TokenIconHint> = {};
+        for (const e of json.entries ?? []) {
+          const key = addressKey(String(e.address || ""));
+          if (!key) continue;
+          if (e.imageUrl || e.descriptionHash) {
+            next[key] = {
+              imageUrl: e.imageUrl ?? undefined,
+              descriptionHash: e.descriptionHash ?? undefined,
+            };
+          }
+        }
+        if (!cancelled && Object.keys(next).length) setIconHints(next);
+      } catch {
+        /* best-effort icon enrichment */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [network]);
+
+  useEffect(() => {
+    const missing = rows.filter((row) => {
+      const key = addressKey(row.id);
+      if (!key || attemptedMeta.current.has(key)) return false;
+      const hint = iconHints[key];
+      if (hint?.imageUrl || parseAssetDisplayMetadata(row.name, row.symbol).imageUrl) return false;
+      return Boolean(hint?.descriptionHash);
+    });
+    if (missing.length === 0) return;
+    for (const row of missing) attemptedMeta.current.add(addressKey(row.id));
+    let cancelled = false;
+    void Promise.all(
+      missing.slice(0, 24).map(async (row) => {
+        const key = addressKey(row.id);
+        const hash = iconHints[key]?.descriptionHash;
+        if (!hash) return null;
+        const res = await fetch(`/api/asset/metadata?hash=${encodeURIComponent(hash)}`);
+        const json = (await res.json()) as {
+          found?: boolean;
+          imageUrl?: string | null;
+          description?: string | null;
+        };
+        if (json.found && (json.imageUrl || json.description)) {
+          return [
+            key,
+            {
+              imageUrl: json.imageUrl ?? undefined,
+              description: json.description ?? undefined,
+              descriptionHash: hash,
+            },
+          ] as const;
+        }
+        return null;
+      }),
+    ).then((pairs) => {
+      if (cancelled) return;
+      const next: Record<string, TokenIconHint> = {};
+      for (const pair of pairs) {
+        if (pair) next[pair[0]] = { ...iconHints[pair[0]], ...pair[1] };
+      }
+      if (Object.keys(next).length) setIconHints((prev) => ({ ...prev, ...next }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rows, iconHints]);
 
   const loadMore = useCallback(async () => {
     if (!nextCursor) return;
@@ -274,7 +378,7 @@ export function DexTokensPanel() {
               <>
                 <div className="data-card-list md:hidden">
                   {rows.map((row) => {
-                    const display = tokenDisplay(row);
+                    const display = tokenDisplay(row, iconHints[addressKey(row.id)]);
                     const label = formatAssetDisplayLabel(display, row.symbol || "—");
                     return (
                     <div key={row.id} className="data-card space-y-2">
@@ -344,7 +448,7 @@ export function DexTokensPanel() {
                     </thead>
                     <tbody>
                       {rows.map((row) => {
-                        const display = tokenDisplay(row);
+                        const display = tokenDisplay(row, iconHints[addressKey(row.id)]);
                         const label = formatAssetDisplayLabel(display, "—");
                         return (
                         <tr key={row.id} className="border-b border-[var(--border-color)]/60">
