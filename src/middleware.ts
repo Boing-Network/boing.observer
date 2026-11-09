@@ -8,6 +8,15 @@ import { buildCsp, cspHeaderName, generateNonce, parseCspMode } from "@/lib/csp"
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const host = (req.headers.get("host") || "").toLowerCase().split(":")[0];
+
+  // Apex is canonical. Cloudflare also 301s www→apex; keep this as an app-level belt.
+  if (host === "www.boing.observer") {
+    const url = req.nextUrl.clone();
+    url.protocol = "https:";
+    url.host = "boing.observer";
+    return NextResponse.redirect(url, 301);
+  }
 
   if (pathname.startsWith("/api/")) {
     const rl = await applyRateLimit(pathname, req.headers, rateLimitConfigFromEnv(process.env));
