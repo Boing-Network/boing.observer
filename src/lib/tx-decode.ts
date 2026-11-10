@@ -8,6 +8,7 @@
  */
 
 import { CONTRACT_INTERFACES, type ContractFunction } from "./contract-interfaces";
+import { decodeMultiTokenCalldata } from "./reference-multi-token";
 
 export type TokenMeta = { symbol: string | null; name: string | null; decimals: number | null };
 export type PoolMeta = { tokenA: string; tokenB: string; feeBps: number | null };
@@ -49,6 +50,8 @@ export type DecodedCall = {
   hops?: Array<{ pool: string; direction: bigint; tokenIn: string }>;
   /** Pool call forwarded by a ledger router: the inner call. */
   inner?: DecodedCall;
+  /** Multi-token batch entries (`mint_batch` / `transfer_batch`). */
+  items?: Array<{ itemId: bigint; amount: bigint }>;
 };
 
 const HEX64 = /^[0-9a-f]{64}$/;
@@ -132,6 +135,19 @@ export function decodeContractCall(input: {
   else if (input.isPool) candidates = [...POOL_FAMILIES];
 
   for (const id of candidates) {
+    if (id === "multi-token" && (sel === 0x24 || sel === 0x25)) {
+      const d = decodeMultiTokenCalldata(`0x${words.join("")}`);
+      if (d && (d.kind === "mint_batch" || d.kind === "transfer_batch")) {
+        return {
+          interfaceId: id,
+          contract,
+          fn: { selector: sel, name: d.kind },
+          args: [argFrom("to", "account", d.to)],
+          items: d.entries,
+        };
+      }
+      continue;
+    }
     if (id === "custody-router") {
       const d = decodeCustodyRouter(contract, words);
       if (d) return d;
@@ -679,6 +695,84 @@ function describeGeneric(call: DecodedCall, sender: string, receipt: ReceiptLike
   };
 }
 
+function describeMultiToken(call: DecodedCall, sender: string, receipt: ReceiptLike, ctx: DecodeContext): TxDescription | null {
+  const failed = receipt?.success === false;
+  const ok = receipt?.success === true;
+  const arg = (n: string) => call.args.find((a) => a.name === n);
+  const to = arg("to")?.account ?? null;
+  const qty = (v: bigint): Segment => ({ t: "amount", text: formatTokenAmount(v, 0), title: `${v.toString()} items` });
+  const item = (id: bigint): Segment => t(`item #${id.toString()}`);
+  const coll: DetailRow = { label: "Item collection", value: [acct(call.contract, ctx, "contract")] };
+  const verb = (past: string, now: string) => (failed ? `Attempted to ${now.toLowerCase()} ` : ok ? `${past} ` : `${now} `);
+  switch (call.fn.name) {
+    case "transfer":
+    case "mint": {
+      const id = arg("item_id")?.value;
+      const amount = arg("amount")?.value;
+      if (!to || id == null || amount == null) return null;
+      const mint = call.fn.name === "mint";
+      const headline = [t(mint ? verb("Minted", "Mint") : verb("Sent", "Send")), qty(amount), t(" × "), item(id), t(" to "), acct(to, ctx)];
+      return {
+        kind: mint ? "mint" : "transfer",
+        title: mint ? "Mint game items" : "Send game items",
+        headline,
+        rows: [
+          coll,
+          { label: "Item", value: [item(id)] },
+          { label: "Quantity", value: [qty(amount)] },
+          { label: mint ? "Admin (signer)" : "From (signer)", value: [acct(sender, ctx)] },
+          { label: "To", value: [acct(to, ctx)] },
+        ],
+        failed,
+      };
+    }
+    case "mint_batch":
+    case "transfer_batch": {
+      if (!to || !call.items?.length) return null;
+      const mint = call.fn.name === "mint_batch";
+      const list = joinSegs(call.items.map((e) => [qty(e.amount), t(" × "), item(e.itemId)]), ", ");
+      return {
+        kind: mint ? "mint" : "transfer",
+        title: mint ? "Mint game items (batch)" : "Send game items (batch)",
+        headline: [t(mint ? verb("Minted", "Mint") : verb("Sent", "Send")), ...list, t(" to "), acct(to, ctx)],
+        rows: [
+          coll,
+          { label: "Items", value: list },
+          { label: "Entries", value: [t(String(call.items.length))] },
+          { label: mint ? "Admin (signer)" : "From (signer)", value: [acct(sender, ctx)] },
+          { label: "To", value: [acct(to, ctx)] },
+        ],
+        failed,
+      };
+    }
+    case "set_item_metadata": {
+      const id = arg("item_id")?.value;
+      const hash = arg("metadata_hash")?.word;
+      if (id == null || !hash) return null;
+      return {
+        kind: "call",
+        title: "Set item metadata",
+        headline: [t(failed ? "Attempted to set metadata for " : "Set metadata for "), item(id)],
+        rows: [coll, { label: "Item", value: [item(id)] }, { label: "Metadata hash", value: [t(`0x${hash}`)] }, { label: "Admin (signer)", value: [acct(sender, ctx)] }],
+        failed,
+      };
+    }
+    case "transfer_admin": {
+      const next = arg("new_admin")?.account;
+      if (!next) return null;
+      return {
+        kind: "call",
+        title: "Hand over item admin",
+        headline: [t(failed ? "Attempted to hand mint rights to " : "Handed mint rights to "), acct(next, ctx)],
+        rows: [coll, { label: "New admin", value: [acct(next, ctx)] }, { label: "Old admin (signer)", value: [acct(sender, ctx)] }],
+        failed,
+      };
+    }
+    default:
+      return null;
+  }
+}
+
 const FUNGIBLE_IFACES = new Set(["fungible-v1", "fungible-v2", "fungible-secured", "lp-share-token"]);
 
 /** Turn a decoded call (+ receipt) into a headline and detail rows. Always returns something for a decoded call. */
@@ -700,6 +794,10 @@ export function describeDecodedCall(
   }
   if (call.interfaceId === "lp-vault-v2") {
     const d = describeVault(call, sender, receipt, ctx);
+    if (d) return d;
+  }
+  if (call.interfaceId === "multi-token") {
+    const d = describeMultiToken(call, sender, receipt, ctx);
     if (d) return d;
   }
   if (FUNGIBLE_IFACES.has(call.interfaceId)) {

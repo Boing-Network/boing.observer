@@ -46,6 +46,7 @@ const RULES = {
 const HEAVY_PREFIXES = [
   "/api/account/history",
   "/api/account/nfts",
+  "/api/items",
   "/api/asset/profile",
   "/api/asset/metadata",
   "/api/asset/nft",

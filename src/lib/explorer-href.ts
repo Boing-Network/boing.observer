@@ -27,6 +27,14 @@ export function explorerNftItemHref(
   return withNetwork(`/asset/${collection}/item/${tokenId}`, network);
 }
 
+/** Reference multi-token item-type page (supply, metadata, holders): contract + u64 item id. */
+export function explorerItemHref(contractHex64: string, itemId: string | bigint, network: string): string {
+  const c = normalizeHex64(contractHex64);
+  const id = String(itemId);
+  if (!c || !/^\d{1,20}$/.test(id)) return "/";
+  return withNetwork(`/items/${c}/${id}`, network);
+}
+
 /** Account view (balances, nonce, transaction history) for a 32-byte AccountId. */
 export function explorerAccountHref(addressHex64: string, network: string): string {
   const h = normalizeHex64(addressHex64);

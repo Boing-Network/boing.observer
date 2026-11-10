@@ -48,6 +48,10 @@ const AccountNftGallery = dynamic(
   () => import("@/components/account-nft-gallery").then((m) => m.AccountNftGallery),
   { ssr: false, loading: () => <PanelSkeleton label="Loading NFTs..." /> }
 );
+const AccountItemsPanel = dynamic(
+  () => import("@/components/account-items-panel").then((m) => m.AccountItemsPanel),
+  { ssr: false }
+);
 
 export function AddressExplorerView({ variant }: { variant: "account" | "asset" }) {
   const params = useParams();
@@ -435,6 +439,10 @@ export function AddressExplorerView({ variant }: { variant: "account" | "asset" 
 
       {variant === "account" && isHex64(address) ? (
         <AccountNftGallery address64={address} network={network} />
+      ) : null}
+
+      {variant === "account" && isHex64(address) ? (
+        <AccountItemsPanel address64={address} network={network} />
       ) : null}
 
       {isHex64(address) ? (

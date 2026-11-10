@@ -28,6 +28,7 @@ import {
   type ContractFunction,
 } from "./contract-interfaces";
 import type { NetworkId } from "./rpc-types";
+import { REFERENCE_MULTI_TOKEN_DEPLOY_HEX, REFERENCE_MULTI_TOKEN_RUNTIME_HEX } from "./reference-multi-token";
 
 const h64 = (h: string) => h.replace(/^0x/i, "").toLowerCase();
 
@@ -76,6 +77,9 @@ export function knownBytecodeMap(): Map<string, Known> {
   add(BOING_CUSTODY_ROUTER_BYTECODE_HEX, { interfaceId: "custody-router", label: "Custody router v1 (canonical template)" });
   add(DEFAULT_LINKED_NFT_TOKEN_REGISTRY_BYTECODE_HEX, { interfaceId: "linked-nft-registry", label: "Linked NFT / token registry v1 (canonical template)" });
   add(DEFAULT_BUILDER_ATTESTATION_REGISTRY_BYTECODE_HEX, { interfaceId: "builder-attestation", label: "Builder attestation registry (canonical template)" });
+  // Multi-token installs a runtime different from its 0xFD deploy payload: match both.
+  add(REFERENCE_MULTI_TOKEN_RUNTIME_HEX, { interfaceId: "multi-token", label: "Reference multi-token v1 (game items, canonical template)" });
+  add(REFERENCE_MULTI_TOKEN_DEPLOY_HEX, { interfaceId: "multi-token", label: "Reference multi-token v1 (game items, canonical template)" });
   knownBytecodes = m;
   return m;
 }
