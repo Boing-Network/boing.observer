@@ -333,6 +333,10 @@ export function kindBadgeTone(kind: TxPayloadKind): string {
     case "ResolveSlashAppeal":
     case "ResolveSlashAppealAttested":
     case "ResolveSlashAppealBlsAggregate":
+    case "ReportEquivocation":
+    case "GovernancePropose":
+    case "GovernanceVote":
+    case "GovernanceAdvanceCooling":
       return "border-emerald-500/40 bg-emerald-500/10 text-emerald-200";
     case "ContractCall":
     case "Batch":

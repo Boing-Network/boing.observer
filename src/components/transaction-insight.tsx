@@ -328,6 +328,10 @@ function SignedPayloadHeadlineRich({
     case "ResolveSlashAppeal":
     case "ResolveSlashAppealAttested":
     case "ResolveSlashAppealBlsAggregate":
+    case "ReportEquivocation":
+    case "GovernancePropose":
+    case "GovernanceVote":
+    case "GovernanceAdvanceCooling":
       return <>You signed a {payloadKindLabel(kind).toLowerCase()}.</>;
     case "Unknown":
       return null;
