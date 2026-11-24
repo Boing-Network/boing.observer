@@ -2,12 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRpcBaseUrl, getTestnetRpcCandidates } from "@/lib/rpc-client";
 import { validateProxyRequest } from "@/lib/rpc-proxy-policy";
 import type { NetworkId } from "@/lib/rpc-types";
+import {
+  TIP_TTL_SEC,
+  cacheTtlSeconds,
+  isCacheCandidate,
+  needsFinalizedHeight,
+  readCachedResult,
+  writeCachedResult,
+} from "@/lib/rpc-edge-cache";
 
 function isValidNetwork(v: string | null): v is NetworkId {
   return v === "testnet" || v === "mainnet";
 }
 
 const UPSTREAM_TIMEOUT_MS = 30_000;
+/** Parsed JSON of successful upstream responses, so the cache step does not parse a large body again. */
+const parsedBodies = new WeakMap<Response, unknown>();
 const MAX_BODY_BYTES = 1_048_576; // 1 MiB (qaCheck bytecode payloads)
 /**
  * Cap upstream response bodies. Tip blocks with large ContractDeploy bytecode can be
@@ -78,8 +88,47 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: checked.error }, { status: 400 });
   }
   const reqId = checked.request.id;
+  const { method, params } = checked.request;
   const serialized = JSON.stringify(checked.request);
 
+  if (!isCacheCandidate(method)) return forwardToUpstream(upstreamBases, serialized, reqId);
+
+  const hit = await readCachedResult(network, method, params);
+  if (hit !== undefined) {
+    return NextResponse.json({ jsonrpc: "2.0", id: reqId, result: hit }, { headers: { "X-Boing-Cache": "HIT" } });
+  }
+
+  const res = await forwardToUpstream(upstreamBases, serialized, reqId);
+  // Reuse the parse the forwarder already did (large blocks are expensive to parse twice).
+  const parsed = parsedBodies.get(res) as { result?: unknown; error?: unknown } | undefined;
+  if (res.status !== 200 || !parsed || typeof parsed !== "object" || parsed.error != null) return res;
+  const result = parsed.result;
+  const finalized = needsFinalizedHeight(method) ? await finalizedHeight(network, upstreamBases) : null;
+  await writeCachedResult(network, method, params, result, cacheTtlSeconds(method, params, result, finalized));
+  return res;
+}
+
+/** `finalized_height` from the (micro-cached) sync state, or null when it cannot be read. */
+async function finalizedHeight(network: NetworkId, upstreamBases: string[]): Promise<number | null> {
+  const pick = (v: unknown) => {
+    const f = v && typeof v === "object" ? (v as { finalized_height?: unknown }).finalized_height : undefined;
+    return typeof f === "number" && Number.isSafeInteger(f) ? f : null;
+  };
+  const cached = await readCachedResult(network, "boing_getSyncState", []);
+  if (cached !== undefined) return pick(cached);
+  const res = await forwardToUpstream(
+    upstreamBases,
+    JSON.stringify({ jsonrpc: "2.0", id: 0, method: "boing_getSyncState", params: [] }),
+    0,
+  );
+  const parsed = parsedBodies.get(res) as { result?: unknown } | undefined;
+  if (!parsed || typeof parsed !== "object" || parsed.result == null) return null;
+  await writeCachedResult(network, "boing_getSyncState", [], parsed.result, TIP_TTL_SEC);
+  return pick(parsed.result);
+}
+
+/** Forward one validated request with failover, size caps and JSON checks. */
+async function forwardToUpstream(upstreamBases: string[], serialized: string, reqId: number): Promise<NextResponse> {
   // 403: CF Bot Fight / challenge HTML on the public hostname (not a JSON-RPC body).
   const failoverStatuses = new Set([403, 502, 503, 504, 521, 522, 523, 524, 525, 526, 530]);
   let lastStatus = 0;
@@ -190,8 +239,9 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      let parsedBody: unknown;
       try {
-        JSON.parse(text);
+        parsedBody = JSON.parse(text);
       } catch {
         return NextResponse.json(
           {
@@ -208,10 +258,12 @@ export async function POST(req: NextRequest) {
       }
 
       const ct = upstream.headers.get("Content-Type") ?? "application/json";
-      return new NextResponse(text, {
+      const out = new NextResponse(text, {
         status: upstream.status,
         headers: { "Content-Type": ct },
       });
+      parsedBodies.set(out, parsedBody);
+      return out;
     } catch (e) {
       const timedOut =
         e instanceof Error &&
