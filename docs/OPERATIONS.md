@@ -32,6 +32,7 @@ dashboard, and secrets with `wrangler secret put`. `NEXT_PUBLIC_*` values are in
 | `BOING_OBSERVER_RATE_LIMIT_SCALE` | server | Multiplier for the per-isolate in-memory limits (default `1`; use `2`-`5` behind a shared NAT/proxy). Does **not** change the fixed limits of the Workers Rate Limiting bindings in `wrangler.toml` |
 | `BOING_OBSERVER_CSP` | server | `nonce-enforce` (default, also for unset/unrecognised values), `report-only` (rollback), `nonce-report-only`, `off` (see Security). Set it in `wrangler.toml [vars]`: `wrangler deploy` overwrites dashboard-only variables |
 | `TOKEN_METADATA_GATEWAY_URLS` | server | Extra comma-separated gateway templates with a `{hash}` placeholder for off-chain token metadata |
+| `TOKEN_METADATA_ALLOW_UNVERIFIED` | server | `1` accepts metadata whose bytes do not BLAKE3-hash to the on-chain `description_hash` (legacy uploads). Off by default: unmatched bodies are ignored |
 
 Test-only (Playwright): `PLAYWRIGHT_BASE_URL`, `OBSERVER_CONTRACTS_LIVE=1`, `OBSERVER_NAMES_LIVE=1` (run the live testnet
 specs), `CONTRACT_SHOTS=1`, `NAMES_SHOTS=1` (screenshots), `CI`.

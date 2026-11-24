@@ -1,6 +1,8 @@
 import { parseAssetDisplayMetadata, resolveImageUrlFromSources } from "@/lib/extract-media-url";
 import { normalizeHexData } from "@/lib/tx-details";
 import { readTextCapped } from "@/lib/bounded-body";
+import { blake3 } from "@noble/hashes/blake3";
+import { bytesToHex } from "@noble/hashes/utils";
 
 /** Max off-chain metadata JSON accepted from a gateway (bytes). */
 const MAX_METADATA_BYTES = 512_000;
@@ -11,15 +13,32 @@ export type OffchainTokenMetadata = {
   displayName: string | null;
   displaySymbol: string | null;
   description: string | null;
+  /** True when BLAKE3 of the fetched bytes equals the on-chain `description_hash`. */
+  verified: boolean;
 };
 
 const DEFAULT_URL_TEMPLATES = [
   "https://pub-fdf80a26d0d54acd86aa835377381ea3.r2.dev/metadata/{hash}.json",
   "https://pub-fdf80a26d0d54acd86aa835377381ea3.r2.dev/{hash}.json",
   "https://boing-api-prod.nico-chikuji.workers.dev/api/r2/file/metadata%2F{hash}.json",
-  "https://ipfs.io/ipfs/{hash}",
-  "https://cloudflare-ipfs.com/ipfs/{hash}",
+  // No IPFS templates: `description_hash` is a BLAKE3 digest, not a CID, so `/ipfs/{hash}` never resolves
+  // (and cloudflare-ipfs.com was retired).
 ];
+
+/**
+ * Operators can set `TOKEN_METADATA_ALLOW_UNVERIFIED=1` to accept metadata whose bytes do not hash to the
+ * on-chain commitment (legacy uploads). Off by default: anything at a gateway path is otherwise trusted
+ * only when it matches what the deployer committed.
+ */
+function allowUnverified(): boolean {
+  const v = (process.env.TOKEN_METADATA_ALLOW_UNVERIFIED ?? "").trim().toLowerCase();
+  return v === "1" || v === "true";
+}
+
+/** BLAKE3-256 hex of the UTF-8 bytes (what boing.finance commits as `description_hash`). */
+export function metadataContentHashHex(text: string): string {
+  return bytesToHex(blake3(new TextEncoder().encode(text)));
+}
 
 /** Public R2 rejects requests with no browser-like User-Agent (HTTP 403). */
 const METADATA_FETCH_HEADERS = {
@@ -51,7 +70,8 @@ function looksLikeJsonObject(text: string): boolean {
 
 /**
  * Resolve off-chain token/NFT metadata JSON that was committed as `description_hash`
- * (blake3 of the launch JSON on boing.finance). Tries content-addressed R2/IPFS URLs.
+ * (blake3 of the launch JSON on boing.finance). Tries content-addressed R2 URLs and accepts a body only
+ * when its BLAKE3 matches the hash (see `TOKEN_METADATA_ALLOW_UNVERIFIED`).
  */
 export async function resolveOffchainTokenMetadata(
   descriptionHash: unknown,
@@ -79,6 +99,8 @@ export async function resolveOffchainTokenMetadata(
       if (!text) continue;
       if (contentType.includes("text/html") && !looksLikeJsonObject(text)) continue;
       if (!looksLikeJsonObject(text) && !contentType.includes("json")) continue;
+      const verified = metadataContentHashHex(text) === hash;
+      if (!verified && !allowUnverified()) continue;
       const parsed = JSON.parse(text) as unknown;
       const imageUrl = resolveImageUrlFromSources(
         text,
@@ -93,6 +115,7 @@ export async function resolveOffchainTokenMetadata(
         displayName: display.displayName,
         displaySymbol: display.displaySymbol,
         description: display.description,
+        verified,
       };
     } catch {
       continue;
