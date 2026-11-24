@@ -55,7 +55,7 @@ Network selector: **Testnet** by default. **Mainnet** only appears as live when 
 
 - **Next.js 15** (App Router), React 18, TypeScript
 - **Tailwind CSS** with Boing design tokens (Comfortaa, deep navy, electric blue accent)
-- **RPC** — Browser: same-origin `POST /api/rpc`. Server routes: direct HTTP. DEX tooling uses **`@boing-network/boing-sdk@^0.5.38`** from npm
+- **RPC** — Browser: same-origin `POST /api/rpc`. Server routes: direct HTTP. DEX tooling uses **`@boing-network/boing-sdk@^0.5.41`** from npm
 - **Cloudflare** — OpenNext adapter → Workers; custom domain **boing.observer**
 
 ## 🚀 Setup

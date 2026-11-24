@@ -17,9 +17,19 @@ export const maxDuration = 120;
 export const runtime = "nodejs";
 
 const MAX_BLOCKS_PER_REQUEST = 2048;
+/**
+ * `refresh=1` is public (the Tokens page has a Refresh button), so a fresh snapshot younger than this is
+ * served instead of rescanning: repeated refreshes cannot force back-to-back 2048-block RPC scans.
+ */
+const MIN_REFRESH_INTERVAL_SEC = 60;
+
+function snapshotAgeSeconds(savedAt: string): number {
+  const t = Date.parse(savedAt);
+  return Number.isFinite(t) ? (Date.now() - t) / 1000 : Number.POSITIVE_INFINITY;
+}
 
 const INDEX_NOTE =
-  "Snapshots merge included contract deploys (return_data when present, otherwise CREATE2 / nonce-derived AccountId matching the node) and native DEX register_pair tokens when a live canonical factory is published. A Boing Finance Deploy submitted toast is mempool accept, not explorer listing. Durable copies are written under TOKEN_INDEX_CACHE_DIR (default .cache/token-index) with TTL — use ?refresh=1 to force a new RPC scan. This is not OBS-1: pruned nodes and receipt gaps can still miss assets.";
+  "Snapshots merge included contract deploys (return_data when present, otherwise CREATE2 / nonce-derived AccountId matching the node) and native DEX register_pair tokens when a live canonical factory is published. A Boing Finance Deploy submitted toast is mempool accept, not explorer listing. Durable copies are written under TOKEN_INDEX_CACHE_DIR (default .cache/token-index) with TTL — use ?refresh=1 to force a new RPC scan (at most once a minute per range). This is not OBS-1: pruned nodes and receipt gaps can still miss assets.";
 
 function parseNetwork(v: string | null): NetworkId | null {
   if (v === "testnet" || v === "mainnet") return v;
@@ -29,7 +39,8 @@ function parseNetwork(v: string | null): NetworkId | null {
 /**
  * Token / asset index with optional on-disk cache between requests.
  *
- * Query: `network` (required), `window` or `fromHeight`+`toHeight`, `refresh=1` to bypass cache.
+ * Query: `network` (required), `window` or `fromHeight`+`toHeight`, `refresh=1` to bypass a cached snapshot
+ * older than `MIN_REFRESH_INTERVAL_SEC`.
  */
 export async function GET(req: NextRequest) {
   const network = parseNetwork(req.nextUrl.searchParams.get("network"));
@@ -86,9 +97,9 @@ export async function GET(req: NextRequest) {
       fromHeight = Math.max(0, toHeight - window + 1);
     }
 
-    if (!refresh && cacheBackend === "file") {
+    if (cacheBackend === "file") {
       const disk = await readTokenIndexDiskCache(network, fromHeight, toHeight);
-      if (disk.ok) {
+      if (disk.ok && (!refresh || snapshotAgeSeconds(disk.envelope.savedAt) < MIN_REFRESH_INTERVAL_SEC)) {
         const e = disk.envelope;
         return NextResponse.json({
           ...e.result,
