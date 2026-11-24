@@ -11,6 +11,13 @@ import {
 import { isMainnetConfigured } from "@/lib/rpc-client";
 import { createServerBoingClient } from "@/lib/server-boing-client";
 import type { NetworkId } from "@/lib/rpc-types";
+import { readCachedResult, writeCachedResult } from "@/lib/rpc-edge-cache";
+
+/**
+ * On Workers the disk cache is a no-op, so window requests (the Tokens page, asset pages) are also kept in the
+ * edge Cache API for this long. Every viewer in a colo shares one scan; `refresh=1` cannot bypass it.
+ */
+const EDGE_WINDOW_TTL_SEC = 30;
 
 export const maxDuration = 120;
 /** Node filesystem cache; explicit so route is not bundled for Edge (no `node:fs`). */
@@ -59,6 +66,14 @@ export async function GET(req: NextRequest) {
 
   const ttlSeconds = defaultTokenIndexCacheTtlSeconds();
   const cacheBackend = resolveTokenIndexCacheDir() != null ? "file" : "none";
+
+  const edgeKey = fromParam == null || toParam == null ? [windowParam ?? "512"] : null;
+  if (edgeKey) {
+    const hit = await readCachedResult(network, "observer_tokensIndexWindow", edgeKey);
+    if (hit && typeof hit === "object") {
+      return NextResponse.json(hit, { headers: { "X-Boing-Cache": "HIT" } });
+    }
+  }
 
   try {
     const client = createServerBoingClient(network);
@@ -137,7 +152,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({
+    const payload = {
       ...result,
       note: INDEX_NOTE,
       cacheMeta: assembleTokenIndexCacheMeta({
@@ -151,7 +166,9 @@ export async function GET(req: NextRequest) {
         scannedToHeight: toHeight,
         snapshotPersisted: cacheBackend === "file" ? persisted : null,
       }),
-    });
+    };
+    if (edgeKey) await writeCachedResult(network, "observer_tokensIndexWindow", edgeKey, payload, EDGE_WINDOW_TTL_SEC);
+    return NextResponse.json(payload);
   } catch (e) {
     const message =
       e instanceof BoingRpcError

@@ -144,7 +144,13 @@ Setup notes:
 
 ## Indexing and caching
 
-- In-process RPC memoisation: `src/lib/rpc-cache.ts` (bounded, TTL).
+- In-process RPC memoisation: `src/lib/rpc-cache.ts` (bounded, TTL, per browser).
+- **Shared edge cache** (`src/lib/rpc-edge-cache.ts`, Workers Cache API, no binding or paid plan needed, per colo):
+  `/api/rpc` caches `boing_getBlockByHash` and, once at or below `finalized_height`, `boing_getBlockByHeight` and
+  `boing_getTransactionReceipt` for a day; `boing_getContractCode` for 5 minutes; tip reads (`boing_chainHeight`,
+  `boing_getSyncState`, `boing_getNetworkInfo`) for 2 seconds. Errors and null results are never cached. Hits carry
+  `X-Boing-Cache: HIT`. `/api/tokens/index` window requests are cached for 30 seconds the same way. To clear it, purge the
+  zone cache or wait out the TTL.
 - Token index snapshots: disk cache (`TOKEN_INDEX_CACHE_*`), best effort. Not durable on Workers.
 - Account history: `boing_getAccountTransactions` (cursor paging), block-scan fallback for older nodes.
 - **Receipt retention:** nodes keep receipts for the newest `BOING_RECEIPT_RETENTION_BLOCKS` blocks (default 1,000,000, pruned every
