@@ -102,7 +102,8 @@ Search accepts: block height, 64-hex block hash / tx id / account (resolved by R
 The explorer connects a wallet for:
 
 - **QA voting** (`/qa`): `boing_requestAccounts`, `boing_signMessage`, `boing_sendTransaction`; `boing_chainId`, `boing_switchChain`.
-  Unsigned fallback votes go through `BOING_QA_VOTE_RPC` using the server-only operator token.
+  `/api/qa/vote` relays only signed `QaPoolVote` txs to `BOING_QA_VOTE_RPC` and never sends the operator token (an
+  operator-authenticated call lets the node trust any `voter_hex` when `public_membership` is off).
 - **PutBlob download** (Phase 34): same injected provider; signs a domain-separated download proof (not a chain tx).
   Operator shared-token paste remains a break-glass override on the panel.
 

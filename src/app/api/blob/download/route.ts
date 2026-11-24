@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readTextCapped } from "@/lib/bounded-body";
+import { capStream, safeDownloadContentType } from "@/lib/blob-download-proxy";
 import { HOSTED_TESTNET_RPC_FALLBACKS, getRpcBaseUrl, isMainnetConfigured } from "@/lib/rpc-client";
 import { normalizeHex64 } from "@/lib/rpc-types";
 import type { NetworkId } from "@/lib/rpc-types";
@@ -41,10 +42,10 @@ function presentedToken(req: NextRequest): string | null {
   const bearer = auth.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
   // Do not treat Phase 34 proof bearer as an operator token.
   if (bearer && !bearer.startsWith("boing-blob")) return bearer;
-  const q = req.nextUrl.searchParams.get("token")?.trim();
-  if (q) return q;
+  // Tokens are not accepted in the query string: URLs end up in logs, history and Referer headers.
   return null;
 }
+
 
 /** Phase 34 wallet proof headers (forwarded upstream as-is). */
 function presentedProofHeaders(req: NextRequest): Record<string, string> | null {
@@ -180,10 +181,10 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const contentType = upstream.headers.get("content-type") || "application/octet-stream";
-  const disposition =
-    upstream.headers.get("content-disposition") ||
-    `attachment; filename="boing-blob-${blobId.slice(0, 8)}.bin"`;
+  // Blob bytes and their declared type come from whoever published them. Never let them render
+  // on the explorer origin: always download as an attachment, with an allow-listed media type.
+  const contentType = safeDownloadContentType(upstream.headers.get("content-type"));
+  const disposition = `attachment; filename="boing-blob-${blobId.slice(0, 8)}.bin"`;
 
   const headers = new Headers({
     "Content-Type": contentType,
@@ -198,7 +199,7 @@ export async function GET(req: NextRequest) {
   if (contentLength > 0) headers.set("Content-Length", String(contentLength));
 
   if (upstream.body) {
-    return new NextResponse(upstream.body, { status: 200, headers });
+    return new NextResponse(capStream(upstream.body, MAX_PROXY_BYTES), { status: 200, headers });
   }
 
   const buf = await upstream.arrayBuffer();

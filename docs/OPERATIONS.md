@@ -16,11 +16,12 @@ dashboard, and secrets with `wrangler secret put`. `NEXT_PUBLIC_*` values are in
 | `NEXT_PUBLIC_BOING_LINKED_NFT_TOKEN_REGISTRY` (alias `BOING_LINKED_NFT_TOKEN_REGISTRY`) | build/server | Linked NFT/token registry AccountId override (testnet v2 default baked in) |
 | `NEXT_PUBLIC_BOING_BUILDER_ATTESTATION_REGISTRY` | build | Builder attestation registry AccountId (UI not shipped yet) |
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_BING_SITE_VERIFICATION` | build | Search-console verification meta tags |
-| `BOING_OPERATOR_RPC_TOKEN` | **secret** | Validator `X-Boing-Operator` value; server-only, never `NEXT_PUBLIC_`. Operator-only RPC methods are fail-closed (rejected with `-32057` unless the node has a token). Also accepted as break-glass for blob download |
+| `BOING_OPERATOR_RPC_TOKEN` | **secret** | Validator `X-Boing-Operator` value; server-only, never `NEXT_PUBLIC_`. Used only as break-glass for blob download; `/api/qa/vote` never sends it |
 | `BOING_QA_VOTE_RPC` | server | Producing validator for `boing_qaPoolVote` (default `https://boing-testnet-1.fly.dev`) |
 | `BOING_BLOB_DOWNLOAD_TOKENS` | **secret** | Optional comma-separated operator override tokens for `GET /api/blob/download` (operator token also accepted). Primary path is Phase 34 wallet proof |
 | `BOING_BLOB_DOWNLOAD_RPC` | server | Origin for raw `GET /v1/media/blob?id=...` (default Fly `boing-testnet-1` only; bypasses the public gateway 6 MiB JSON cap) |
-| `NFT_OWNER_INDEXER_URL` (alias `BOING_NFT_OWNER_INDEXER_URL`) | server | Origin of the NFT owner indexer Worker; enables `/api/account/nfts` |
+| `NFT_OWNER_INDEXER_URL` (alias `BOING_NFT_OWNER_INDEXER_URL`) | server | Origin of the testnet NFT owner indexer Worker; enables `/api/account/nfts` |
+| `NFT_OWNER_INDEXER_URL_MAINNET` | server | Mainnet NFT owner indexer origin; unset = `/api/account/nfts?network=mainnet` returns 503 |
 | `BOING_OBSERVER_ALLOW_DEX_DIAGNOSTICS` | server | `1` returns DEX diagnostics on `/api/dex/*`; set as plain text, not secret |
 | `BOING_NATIVE_VM_DEX_FACTORY` / `BOING_DEX_FACTORY_HEX` | server | `0x` + 64 hex DEX factory override for discovery (normally resolved from `boing_getNetworkInfo`) |
 | `TOKEN_INDEX_CACHE_DIR` | server | Token index disk cache dir (default `<cwd>/.cache/token-index`; `off` disables) |

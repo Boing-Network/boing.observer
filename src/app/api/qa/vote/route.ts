@@ -34,9 +34,14 @@ function voteRpcUrl(network: NetworkId): string {
 
 /**
  * Public proxy for `boing_qaPoolVote`.
- * Browser never sees `BOING_OPERATOR_RPC_TOKEN`.
- * With a signed `QaPoolVote` hex (4th RPC param), public-membership nodes accept the vote
- * and inclusion can pay treasury rewards. Unsigned 3-param votes do not pay.
+ *
+ * Only signed votes are relayed: the request must carry a signed `QaPoolVote` transaction
+ * (4th RPC param), which public-membership nodes verify against `voterHex`.
+ *
+ * This route never sends `X-Boing-Operator`. When `public_membership` is off, the node trusts
+ * `voter_hex` from any operator-authenticated caller without checking a signature, so attaching
+ * the operator token here would let any visitor cast votes as any reviewer. Admin-only votes
+ * belong on the operator's own tooling, not on a public endpoint.
  */
 export async function POST(req: NextRequest) {
   let body: VoteBody;
@@ -72,15 +77,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Vote must be allow, reject, or abstain." }, { status: 400 });
   }
 
-  let signedTxHex: string | null = null;
-  if (typeof body.signedTxHex === "string" && body.signedTxHex.trim()) {
-    signedTxHex = normalizeSignedTxHex(body.signedTxHex);
-    if (!signedTxHex) {
-      return NextResponse.json({ error: "signedTxHex must be even-length hex of a signed QaPoolVote." }, { status: 400 });
-    }
+  const signedTxHex =
+    typeof body.signedTxHex === "string" && body.signedTxHex.trim()
+      ? normalizeSignedTxHex(body.signedTxHex)
+      : null;
+  if (!signedTxHex) {
+    return NextResponse.json(
+      {
+        error: "A signed QaPoolVote transaction is required. Vote with Boing Express.",
+        code: "signed_vote_required",
+      },
+      { status: 400 }
+    );
   }
 
-  const operatorToken = process.env.BOING_OPERATOR_RPC_TOKEN?.trim();
   const upstream = voteRpcUrl(network);
   const upstreamUrl = upstream.endsWith("/") ? upstream : `${upstream}/`;
   const headers: Record<string, string> = {
@@ -88,9 +98,6 @@ export async function POST(req: NextRequest) {
     Accept: "application/json",
     "User-Agent": "boing-observer/qa-vote",
   };
-  if (operatorToken) {
-    headers["X-Boing-Operator"] = operatorToken;
-  }
 
   let upstreamRes: Response;
   try {
@@ -135,6 +142,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     result: data.result ?? {},
-    rewardedPath: Boolean(signedTxHex),
+    rewardedPath: true,
   });
 }

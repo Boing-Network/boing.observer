@@ -52,6 +52,7 @@ const HEAVY_PREFIXES = [
   "/api/asset/nft",
   "/api/asset/companions",
   "/api/tokens/index",
+  "/api/tx/context",
   "/api/contract/interface",
   "/api/dex/",
   "/api/blob/",

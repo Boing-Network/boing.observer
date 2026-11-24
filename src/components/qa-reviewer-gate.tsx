@@ -31,7 +31,6 @@ const SOURCE_KEY = "boing.observer.qa-voter.source";
 type VoteStatus = {
   configured: boolean;
   publicVoting: boolean;
-  operatorTokenConfigured: boolean;
 };
 
 type VoteKind = "allow" | "reject" | "abstain";
@@ -41,7 +40,6 @@ export type QaReviewerSession = {
   ready: boolean;
   configured: boolean;
   publicVoting: boolean;
-  operatorTokenConfigured: boolean;
   voterHex: string;
   signedIn: boolean;
   walletDetected: boolean;
@@ -94,7 +92,6 @@ export function useQaReviewerSession(): {
           setStatus({
             configured: s.configured !== false,
             publicVoting: s.publicVoting !== false,
-            operatorTokenConfigured: Boolean(s.operatorTokenConfigured),
           });
         }
       })
@@ -103,7 +100,6 @@ export function useQaReviewerSession(): {
           setStatus({
             configured: true,
             publicVoting: true,
-            operatorTokenConfigured: false,
           });
         }
       });
@@ -229,7 +225,6 @@ export function useQaReviewerSession(): {
       ready: status !== null,
       configured,
       publicVoting: Boolean(status?.publicVoting),
-      operatorTokenConfigured: Boolean(status?.operatorTokenConfigured),
       voterHex,
       signedIn,
       walletDetected,
@@ -258,10 +253,8 @@ export function QaReviewerSessionPanel({
   onConnectWallet: () => Promise<void>;
   onSwitchChain: () => Promise<void>;
 }) {
-  const [voter, setVoter] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   if (!session.ready) {
     return <div className="h-24 rounded-lg bg-white/5 animate-pulse" aria-busy="true" />;
@@ -288,7 +281,7 @@ export function QaReviewerSessionPanel({
             {session.viaWallet ? (
               <span className="ml-2 text-xs text-[var(--text-muted)]">via Boing Express</span>
             ) : (
-              <span className="ml-2 text-xs text-[var(--text-muted)]">unsigned vote (treasury rewards need a wallet)</span>
+              <span className="ml-2 text-xs text-[var(--text-muted)]">not signed: connect Boing Express to vote</span>
             )}
           </p>
           <button
@@ -350,15 +343,6 @@ export function QaReviewerSessionPanel({
         to Allow, Reject, or Abstain on Unsure deploys in the Boing Quality Gate. Signed votes can
         earn on-chain treasury rewards. No reviewer code is required.
       </p>
-      {!session.operatorTokenConfigured ? (
-        <p className="text-xs text-[var(--text-muted)]">
-          Signed votes from Boing Express work as usual. The unsigned fallback also needs this
-          explorer to send the{" "}
-          <code className="rounded bg-white/10 px-1">X-Boing-Operator</code> header when the node
-          requires it, which operators enable with{" "}
-          <code className="rounded bg-white/10 px-1">BOING_OPERATOR_RPC_TOKEN</code>.
-        </p>
-      ) : null}
       {/* Extension when injected; otherwise the boing.express web wallet (popup approvals). */}
         <button
           type="button"
@@ -388,53 +372,6 @@ export function QaReviewerSessionPanel({
         <p className="text-xs text-rose-300" role="alert">
           {formError}
         </p>
-      ) : null}
-      <button
-        type="button"
-        className="text-xs text-[var(--text-muted)] hover:text-network-cyan"
-        onClick={() => setShowAdvanced((v) => !v)}
-      >
-        {showAdvanced ? "Hide unsigned fallback" : "Advanced: vote without a wallet (no treasury reward)"}
-      </button>
-      {showAdvanced ? (
-        <form
-          className="space-y-3 border-t border-[var(--border-color)] pt-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const hex = normalizeVoterHex(voter);
-            if (!isAccountHex(hex)) {
-              setFormError("Enter a 32-byte account id (64 hex characters).");
-              return;
-            }
-            setFormError(null);
-            onSignIn(hex);
-          }}
-        >
-          <label className="block text-sm" htmlFor="qa-voter-account">
-            <span className="text-[var(--text-muted)]">Voter account (32-byte hex)</span>
-            <input
-              id="qa-voter-account"
-              name="qa-voter-account"
-              type="text"
-              autoComplete="off"
-              spellCheck={false}
-              value={voter}
-              onChange={(e) => {
-                setVoter(e.target.value);
-                setFormError(null);
-              }}
-              placeholder="0x…"
-              className="mt-1 w-full rounded-lg border border-[var(--border-color)] bg-boing-navy-mid/60 px-3 py-2 font-mono text-sm text-[var(--text-primary)]"
-              required
-            />
-          </label>
-          <button
-            type="submit"
-            className="rounded-lg border border-[var(--border-color)] px-4 py-2 text-sm text-[var(--text-secondary)] hover:border-network-cyan/50 hover:text-[var(--text-primary)]"
-          >
-            Start unsigned voting
-          </button>
-        </form>
       ) : null}
     </div>
   );
@@ -536,32 +473,9 @@ export function QaReviewerVoteButtons({
         return;
       }
 
-      const res = await fetch("/api/qa/vote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          network,
-          voterHex: session.voterHex,
-          txHash,
-          vote,
-        }),
-      });
-      const data = (await res.json()) as {
-        error?: string;
-        code?: number;
-        data?: unknown;
-        result?: { outcome?: string; mempool?: boolean; duplicate?: boolean };
-      };
-      if (!res.ok) {
-        throw new BoingRpcCallError(data.error || `Vote failed (${res.status})`, {
-          code: data.code,
-          data: data.data,
-          httpStatus: res.status,
-          method: "boing_qaPoolVote",
-        });
-      }
-      setNote(noteFromOutcome(data.result?.outcome, data.result?.mempool, false));
-      onVoted();
+      // Unsigned votes are not relayed (anyone could claim any voter account). Older sessions
+      // started with a pasted account land here: ask them to connect a wallet instead.
+      throw new Error("Unsigned voting is no longer supported. Disconnect, then connect Boing Express to sign your vote.");
     } catch (e) {
       setError(mapWalletErrorToUi(e));
     } finally {
