@@ -19,6 +19,7 @@ describe("ruleForPath", () => {
     expect(ruleForPath("/api/account/history")?.name).toBe("heavy");
     expect(ruleForPath("/api/asset/profile")?.name).toBe("heavy");
     expect(ruleForPath("/api/tokens/index")?.name).toBe("heavy");
+    expect(ruleForPath("/api/tx/context")?.name).toBe("heavy");
     expect(ruleForPath("/api/dex/quote")?.name).toBe("heavy");
     expect(ruleForPath("/api/qa/vote")?.name).toBe("vote");
     expect(ruleForPath("/api/qa/reviewer-status")?.name).toBe("api");

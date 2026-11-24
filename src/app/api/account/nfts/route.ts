@@ -35,11 +35,15 @@ function parseNetwork(v: string | null): NetworkId | null {
   return null;
 }
 
-function indexerBaseUrl(): string | null {
+/**
+ * The indexer Worker follows one chain. `NFT_OWNER_INDEXER_URL` is the testnet indexer;
+ * mainnet needs its own `NFT_OWNER_INDEXER_URL_MAINNET` so testnet data is never labelled mainnet.
+ */
+function indexerBaseUrl(network: NetworkId): string | null {
   const raw =
-    process.env.NFT_OWNER_INDEXER_URL?.trim() ||
-    process.env.BOING_NFT_OWNER_INDEXER_URL?.trim() ||
-    "";
+    network === "mainnet"
+      ? process.env.NFT_OWNER_INDEXER_URL_MAINNET?.trim() || ""
+      : process.env.NFT_OWNER_INDEXER_URL?.trim() || process.env.BOING_NFT_OWNER_INDEXER_URL?.trim() || "";
   if (!raw) return null;
   return raw.replace(/\/+$/, "");
 }
@@ -66,12 +70,14 @@ export async function GET(req: NextRequest) {
     return corsJson({ error: "Invalid id (expect 32-byte hex)" }, 400);
   }
 
-  const base = indexerBaseUrl();
+  const base = indexerBaseUrl(network);
   if (!base) {
     return corsJson(
       {
         error: "NFT owner indexer is not configured",
-        hint: "Set NFT_OWNER_INDEXER_URL to the boing-nft-owner-indexer Worker origin (see boing.network docs/HANDOFF_NFT_OWNER_INDEX.md).",
+        hint: network === "mainnet"
+          ? "Set NFT_OWNER_INDEXER_URL_MAINNET to a mainnet boing-nft-owner-indexer Worker origin."
+          : "Set NFT_OWNER_INDEXER_URL to the boing-nft-owner-indexer Worker origin (see boing.network docs/HANDOFF_NFT_OWNER_INDEX.md).",
         owner,
         network,
         items: [],
@@ -92,6 +98,7 @@ export async function GET(req: NextRequest) {
     const upstream = await fetch(`${base}/v1/nfts/by-owner?${qs.toString()}`, {
       headers: { Accept: "application/json" },
       cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
     });
     const body = (await upstream.json()) as Record<string, unknown>;
     if (!upstream.ok) {
